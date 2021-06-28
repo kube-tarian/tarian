@@ -28,6 +28,6 @@ Why another new security tool when there are many tools available already, like 
 #### Architecture diagram
 > I will finalize the design diagram soon once I finish talking to some security experts (I already talked to few, and have few more discussions pending). 
 
-![Arch. Diagram](https://github.com/devopstoday11/tarian/blob/532246dd55b1631fac06135eae30149651ea04f6/Kube-Tarian.png)
+![Arch. Diagram](https://github.com/devopstoday11/tarian/blob/5eeed9a0bd5875e6cee423d2d12161a3f7d2d84c/Kube-Tarian.svg)
 
 #
