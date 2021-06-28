@@ -26,6 +26,6 @@ Why another new security tool when there are many tools available already, like 
 #
 
 #### Architecture diagram
-
+> I will add the design diagram soon once I finish talking to some security experts (I already talked to few, and have few more discussions pending). 
 
 #
