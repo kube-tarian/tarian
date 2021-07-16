@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package tarianpb.types;
+option go_package = "github.com/devopstoday11/tarian/pkg/tarianpb";
+
+message MatchLabel {
+	string key = 1;
+	string value = 2;
+}
+
+message Selector {
+	repeated MatchLabel labels = 1;
+}
+
+message Constraint {
+	string namespace = 1;
+
+	Selector selector = 2;
+}
+
+message Config {
+	repeated Constraint constraints = 1;
+}
+
