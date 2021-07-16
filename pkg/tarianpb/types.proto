@@ -9,13 +9,18 @@ message MatchLabel {
 }
 
 message Selector {
-	repeated MatchLabel labels = 1;
+	repeated MatchLabel match_labels = 1;
+}
+
+message AllowedProcessRule {
+	optional string regex = 1;
 }
 
 message Constraint {
 	string namespace = 1;
 
 	Selector selector = 2;
+	repeated AllowedProcessRule allowed_processes = 3;
 }
 
 message Config {

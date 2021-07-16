@@ -7,5 +7,9 @@ import "tarianpb/types.proto";
 import "google/protobuf/empty.proto";
 
 service Config {
-	rpc GetConfig(google.protobuf.Empty) returns (tarianpb.types.Config) {}
+	rpc GetConfig(google.protobuf.Empty) returns (GetConfigResponse) {}
+}
+
+message GetConfigResponse {
+	tarianpb.types.Config config = 1;
 }

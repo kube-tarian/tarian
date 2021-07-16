@@ -19,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigClient interface {
-	GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*Config, error)
+	GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*GetConfigResponse, error)
 }
 
 type configClient struct {
@@ -30,8 +30,8 @@ func NewConfigClient(cc grpc.ClientConnInterface) ConfigClient {
 	return &configClient{cc}
 }
 
-func (c *configClient) GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*Config, error) {
-	out := new(Config)
+func (c *configClient) GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*GetConfigResponse, error) {
+	out := new(GetConfigResponse)
 	err := c.cc.Invoke(ctx, "/tarianpb.api.Config/GetConfig", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (c *configClient) GetConfig(ctx context.Context, in *empty.Empty, opts ...g
 // All implementations must embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
-	GetConfig(context.Context, *empty.Empty) (*Config, error)
+	GetConfig(context.Context, *empty.Empty) (*GetConfigResponse, error)
 	mustEmbedUnimplementedConfigServer()
 }
 
@@ -51,7 +51,7 @@ type ConfigServer interface {
 type UnimplementedConfigServer struct {
 }
 
-func (UnimplementedConfigServer) GetConfig(context.Context, *empty.Empty) (*Config, error) {
+func (UnimplementedConfigServer) GetConfig(context.Context, *empty.Empty) (*GetConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
 }
 func (UnimplementedConfigServer) mustEmbedUnimplementedConfigServer() {}
