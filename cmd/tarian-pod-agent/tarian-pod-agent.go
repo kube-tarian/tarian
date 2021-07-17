@@ -13,7 +13,7 @@ import (
 var grpcConn *grpc.ClientConn
 
 func main() {
-	fmt.Println("tarian-cluster-agent")
+	fmt.Println("tarian-pod-agent")
 
 	var err error
 
