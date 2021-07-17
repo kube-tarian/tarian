@@ -4,6 +4,9 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/devopstoday11/tarian/pkg/server"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
@@ -96,11 +99,27 @@ func run(c *cli.Context) error {
 	s := grpc.NewServer()
 	tarianpb.RegisterConfigServer(s, server.NewServer())
 
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		sig := <-sigCh
+		logger.Infow("got sigterm signal, attempting graceful shutdown", "signal", sig)
+
+		s.GracefulStop()
+		wg.Done()
+	}()
+
 	logger.Infow("tarian-server is listening at", "address", listener.Addr())
 
 	if err := s.Serve(listener); err != nil {
 		logger.Fatalw("failed to serve", "err", err)
 	}
+
+	wg.Wait()
+	logger.Info("tarian-server shutdown gracefully")
 
 	return nil
 }
