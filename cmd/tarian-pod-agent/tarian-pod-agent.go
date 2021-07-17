@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"log"
 	"os"
-	"time"
 
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"github.com/devopstoday11/tarian/pkg/podagent"
 	cli "github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -90,32 +88,10 @@ func run(c *cli.Context) error {
 
 	logger.Infow("tarian-pod-agent is running")
 
-	var err error
+	podAgent := podagent.NewPodAgent(host + ":" + port)
+	podAgent.Run()
 
-	grpcConn, err = grpc.Dial(host+":"+port, grpc.WithInsecure(), grpc.WithBlock())
-
-	if err != nil {
-		logger.Fatalw("couldn't connect to the cluster agent", "err", err)
-	}
-
-	defer grpcConn.Close()
-
-	client := tarianpb.NewConfigClient(grpcConn)
-
-	for {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-
-		r, err := client.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{Namespace: "default"})
-
-		if err != nil {
-			logger.Fatalw("error while getting constraints from the cluster agent", "err", err)
-		}
-
-		logger.Infow("received constraints from the cluster agent", "constraint", r.GetConstraints())
-
-		cancel()
-		time.Sleep(3 * time.Second)
-	}
+	return nil
 }
 
 func getLogger(level string, encoding string) *zap.SugaredLogger {
