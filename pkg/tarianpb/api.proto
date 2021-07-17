@@ -4,12 +4,15 @@ package tarianpb.api;
 option go_package = "github.com/devopstoday11/tarian/pkg/tarianpb";
 
 import "tarianpb/types.proto";
-import "google/protobuf/empty.proto";
 
 service Config {
-	rpc GetConfig(google.protobuf.Empty) returns (GetConfigResponse) {}
+	rpc GetConstraints(GetConstraintsRequest) returns (GetConstraintsResponse) {}
 }
 
-message GetConfigResponse {
-	tarianpb.types.Config config = 1;
+message GetConstraintsRequest {
+	string namespace = 1;
+}
+
+message GetConstraintsResponse {
+	repeated tarianpb.types.Constraint constraints = 1;
 }

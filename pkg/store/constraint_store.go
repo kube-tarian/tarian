@@ -4,6 +4,7 @@ import "github.com/devopstoday11/tarian/pkg/tarianpb"
 
 type ConstraintStore interface {
 	GetAll() ([]*tarianpb.Constraint, error)
+	FindByNamespace(namespace string) ([]*tarianpb.Constraint, error)
 }
 
 type MemoryConstraintStore struct {
@@ -28,6 +29,13 @@ func (m *MemoryConstraintStore) GetAll() ([]*tarianpb.Constraint, error) {
 	for _, nsConstraints := range m.data {
 		allConstraints = append(allConstraints, nsConstraints...)
 	}
+
+	return allConstraints, nil
+}
+
+func (m *MemoryConstraintStore) FindByNamespace(namespace string) ([]*tarianpb.Constraint, error) {
+	allConstraints := []*tarianpb.Constraint{}
+	allConstraints = append(allConstraints, m.data[namespace]...)
 
 	return allConstraints, nil
 }

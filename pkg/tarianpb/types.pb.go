@@ -232,53 +232,6 @@ func (x *Constraint) GetAllowedProcesses() []*AllowedProcessRule {
 	return nil
 }
 
-type Config struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Constraints []*Constraint `protobuf:"bytes,1,rep,name=constraints,proto3" json:"constraints,omitempty"`
-}
-
-func (x *Config) Reset() {
-	*x = Config{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_tarianpb_types_proto_msgTypes[4]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *Config) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Config) ProtoMessage() {}
-
-func (x *Config) ProtoReflect() protoreflect.Message {
-	mi := &file_tarianpb_types_proto_msgTypes[4]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Config.ProtoReflect.Descriptor instead.
-func (*Config) Descriptor() ([]byte, []int) {
-	return file_tarianpb_types_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *Config) GetConstraints() []*Constraint {
-	if x != nil {
-		return x.Constraints
-	}
-	return nil
-}
-
 var File_tarianpb_types_proto protoreflect.FileDescriptor
 
 var file_tarianpb_types_proto_rawDesc = []byte{
@@ -307,15 +260,10 @@ var file_tarianpb_types_proto_rawDesc = []byte{
 	0x32, 0x22, 0x2e, 0x74, 0x61, 0x72, 0x69, 0x61, 0x6e, 0x70, 0x62, 0x2e, 0x74, 0x79, 0x70, 0x65,
 	0x73, 0x2e, 0x41, 0x6c, 0x6c, 0x6f, 0x77, 0x65, 0x64, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73,
 	0x52, 0x75, 0x6c, 0x65, 0x52, 0x10, 0x61, 0x6c, 0x6c, 0x6f, 0x77, 0x65, 0x64, 0x50, 0x72, 0x6f,
-	0x63, 0x65, 0x73, 0x73, 0x65, 0x73, 0x22, 0x46, 0x0a, 0x06, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
-	0x12, 0x3c, 0x0a, 0x0b, 0x63, 0x6f, 0x6e, 0x73, 0x74, 0x72, 0x61, 0x69, 0x6e, 0x74, 0x73, 0x18,
-	0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x74, 0x61, 0x72, 0x69, 0x61, 0x6e, 0x70, 0x62,
-	0x2e, 0x74, 0x79, 0x70, 0x65, 0x73, 0x2e, 0x43, 0x6f, 0x6e, 0x73, 0x74, 0x72, 0x61, 0x69, 0x6e,
-	0x74, 0x52, 0x0b, 0x63, 0x6f, 0x6e, 0x73, 0x74, 0x72, 0x61, 0x69, 0x6e, 0x74, 0x73, 0x42, 0x2e,
-	0x5a, 0x2c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x64, 0x65, 0x76,
-	0x6f, 0x70, 0x73, 0x74, 0x6f, 0x64, 0x61, 0x79, 0x31, 0x31, 0x2f, 0x74, 0x61, 0x72, 0x69, 0x61,
-	0x6e, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x74, 0x61, 0x72, 0x69, 0x61, 0x6e, 0x70, 0x62, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x63, 0x65, 0x73, 0x73, 0x65, 0x73, 0x42, 0x2e, 0x5a, 0x2c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
+	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x64, 0x65, 0x76, 0x6f, 0x70, 0x73, 0x74, 0x6f, 0x64, 0x61, 0x79,
+	0x31, 0x31, 0x2f, 0x74, 0x61, 0x72, 0x69, 0x61, 0x6e, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x74, 0x61,
+	0x72, 0x69, 0x61, 0x6e, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -330,24 +278,22 @@ func file_tarianpb_types_proto_rawDescGZIP() []byte {
 	return file_tarianpb_types_proto_rawDescData
 }
 
-var file_tarianpb_types_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_tarianpb_types_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_tarianpb_types_proto_goTypes = []interface{}{
 	(*MatchLabel)(nil),         // 0: tarianpb.types.MatchLabel
 	(*Selector)(nil),           // 1: tarianpb.types.Selector
 	(*AllowedProcessRule)(nil), // 2: tarianpb.types.AllowedProcessRule
 	(*Constraint)(nil),         // 3: tarianpb.types.Constraint
-	(*Config)(nil),             // 4: tarianpb.types.Config
 }
 var file_tarianpb_types_proto_depIdxs = []int32{
 	0, // 0: tarianpb.types.Selector.match_labels:type_name -> tarianpb.types.MatchLabel
 	1, // 1: tarianpb.types.Constraint.selector:type_name -> tarianpb.types.Selector
 	2, // 2: tarianpb.types.Constraint.allowed_processes:type_name -> tarianpb.types.AllowedProcessRule
-	3, // 3: tarianpb.types.Config.constraints:type_name -> tarianpb.types.Constraint
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_tarianpb_types_proto_init() }
@@ -404,18 +350,6 @@ func file_tarianpb_types_proto_init() {
 				return nil
 			}
 		}
-		file_tarianpb_types_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Config); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
 	}
 	file_tarianpb_types_proto_msgTypes[2].OneofWrappers = []interface{}{}
 	type x struct{}
@@ -424,7 +358,7 @@ func file_tarianpb_types_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_tarianpb_types_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

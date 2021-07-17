@@ -4,7 +4,6 @@ package tarianpb
 
 import (
 	context "context"
-	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -19,7 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigClient interface {
-	GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*GetConfigResponse, error)
+	GetConstraints(ctx context.Context, in *GetConstraintsRequest, opts ...grpc.CallOption) (*GetConstraintsResponse, error)
 }
 
 type configClient struct {
@@ -30,9 +29,9 @@ func NewConfigClient(cc grpc.ClientConnInterface) ConfigClient {
 	return &configClient{cc}
 }
 
-func (c *configClient) GetConfig(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*GetConfigResponse, error) {
-	out := new(GetConfigResponse)
-	err := c.cc.Invoke(ctx, "/tarianpb.api.Config/GetConfig", in, out, opts...)
+func (c *configClient) GetConstraints(ctx context.Context, in *GetConstraintsRequest, opts ...grpc.CallOption) (*GetConstraintsResponse, error) {
+	out := new(GetConstraintsResponse)
+	err := c.cc.Invoke(ctx, "/tarianpb.api.Config/GetConstraints", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +42,7 @@ func (c *configClient) GetConfig(ctx context.Context, in *empty.Empty, opts ...g
 // All implementations must embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
-	GetConfig(context.Context, *empty.Empty) (*GetConfigResponse, error)
+	GetConstraints(context.Context, *GetConstraintsRequest) (*GetConstraintsResponse, error)
 	mustEmbedUnimplementedConfigServer()
 }
 
@@ -51,8 +50,8 @@ type ConfigServer interface {
 type UnimplementedConfigServer struct {
 }
 
-func (UnimplementedConfigServer) GetConfig(context.Context, *empty.Empty) (*GetConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
+func (UnimplementedConfigServer) GetConstraints(context.Context, *GetConstraintsRequest) (*GetConstraintsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConstraints not implemented")
 }
 func (UnimplementedConfigServer) mustEmbedUnimplementedConfigServer() {}
 
@@ -67,20 +66,20 @@ func RegisterConfigServer(s grpc.ServiceRegistrar, srv ConfigServer) {
 	s.RegisterService(&Config_ServiceDesc, srv)
 }
 
-func _Config_GetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(empty.Empty)
+func _Config_GetConstraints_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConstraintsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConfigServer).GetConfig(ctx, in)
+		return srv.(ConfigServer).GetConstraints(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/tarianpb.api.Config/GetConfig",
+		FullMethod: "/tarianpb.api.Config/GetConstraints",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConfigServer).GetConfig(ctx, req.(*empty.Empty))
+		return srv.(ConfigServer).GetConstraints(ctx, req.(*GetConstraintsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -93,8 +92,8 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ConfigServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetConfig",
-			Handler:    _Config_GetConfig_Handler,
+			MethodName: "GetConstraints",
+			Handler:    _Config_GetConstraints_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

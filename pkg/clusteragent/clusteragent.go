@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 )
 
@@ -26,13 +25,13 @@ func NewServer(tarianServerAddress string) *Server {
 	return &Server{grpcConn: grpcConn, configClient: tarianpb.NewConfigClient(grpcConn)}
 }
 
-func (s *Server) GetConfig(context.Context, *empty.Empty) (*tarianpb.GetConfigResponse, error) {
+func (s *Server) GetConstraints(reqCtx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
 	log.Printf("Received get config RPC")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	r, err := s.configClient.GetConfig(ctx, &empty.Empty{})
+	r, err := s.configClient.GetConstraints(ctx, request)
 
 	return r, err
 }

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 )
 
@@ -30,7 +29,7 @@ func main() {
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 
-		r, err := c.GetConfig(ctx, &empty.Empty{})
+		r, err := c.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{})
 
 		if err != nil {
 			log.Fatalf("error while getting config: %v", err)
