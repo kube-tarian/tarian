@@ -89,7 +89,9 @@ func (p *PodAgent) loopWatchProcesses() {
 
 		p.constraintsLock.RLock()
 
-		violations := []*process.Process{}
+		// map[pid]*process
+		violations := make(map[int32]*process.Process)
+		allowedProcesses := make(map[int32]*process.Process)
 
 		for _, constraint := range p.constraints {
 			if constraint.GetAllowedProcesses() == nil {
@@ -121,7 +123,9 @@ func (p *PodAgent) loopWatchProcesses() {
 					}
 
 					if !rgx.MatchString(name) {
-						violations = append(violations, process)
+						violations[process.Pid] = process
+					} else {
+						allowedProcesses[process.Pid] = process
 					}
 				}
 			}
@@ -129,9 +133,15 @@ func (p *PodAgent) loopWatchProcesses() {
 
 		p.constraintsLock.RUnlock()
 
+		for pid := range allowedProcesses {
+			delete(violations, pid)
+		}
+
 		// Currently limit the result to 5
+		count := 0
+
 		// TODO: make it configurable
-		for _, violation := range violations[:5] {
+		for _, violation := range violations {
 			name, err := violation.Name()
 
 			if err != nil {
@@ -140,6 +150,11 @@ func (p *PodAgent) loopWatchProcesses() {
 			}
 
 			logger.Infow("found process that violate regex", "process", name)
+
+			count++
+			if count > 5 {
+				break
+			}
 		}
 
 		time.Sleep(3 * time.Second)
