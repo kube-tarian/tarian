@@ -5,6 +5,7 @@ import "github.com/devopstoday11/tarian/pkg/tarianpb"
 type ConstraintStore interface {
 	GetAll() ([]*tarianpb.Constraint, error)
 	FindByNamespace(namespace string) ([]*tarianpb.Constraint, error)
+	Add(*tarianpb.Constraint) error
 }
 
 type MemoryConstraintStore struct {
@@ -18,7 +19,7 @@ func NewMemoryConstraintStore() *MemoryConstraintStore {
 	allowedProcessRegex := "nginx"
 	exampleConstraint.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
 
-	m.data["default"] = append(m.data["default"], &exampleConstraint)
+	m.Add(&exampleConstraint)
 
 	return m
 }
@@ -38,4 +39,10 @@ func (m *MemoryConstraintStore) FindByNamespace(namespace string) ([]*tarianpb.C
 	allConstraints = append(allConstraints, m.data[namespace]...)
 
 	return allConstraints, nil
+}
+
+func (m *MemoryConstraintStore) Add(constraint *tarianpb.Constraint) error {
+	m.data[constraint.GetNamespace()] = append(m.data[constraint.GetNamespace()], constraint)
+
+	return nil
 }

@@ -7,6 +7,7 @@ import "tarianpb/types.proto";
 
 service Config {
 	rpc GetConstraints(GetConstraintsRequest) returns (GetConstraintsResponse) {}
+	rpc AddConstraint(AddConstraintRequest) returns (AddConstraintResponse) {}
 }
 
 message GetConstraintsRequest {
@@ -15,4 +16,12 @@ message GetConstraintsRequest {
 
 message GetConstraintsResponse {
 	repeated tarianpb.types.Constraint constraints = 1;
+}
+
+message AddConstraintRequest {
+	tarianpb.types.Constraint constraint = 1;
+}
+
+message AddConstraintResponse {
+	bool success = 1;
 }

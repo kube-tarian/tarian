@@ -32,3 +32,9 @@ func (s *Server) GetConstraints(ctx context.Context, request *tarianpb.GetConstr
 		Constraints: constraints,
 	}, nil
 }
+
+func (s *Server) AddConstraint(ctx context.Context, request *tarianpb.AddConstraintRequest) (*tarianpb.AddConstraintResponse, error) {
+	s.constraintStore.Add(request.GetConstraint())
+
+	return &tarianpb.AddConstraintResponse{Success: true}, nil
+}

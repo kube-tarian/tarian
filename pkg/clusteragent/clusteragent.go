@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"github.com/gogo/status"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type Server struct {
@@ -34,6 +36,10 @@ func (s *Server) GetConstraints(reqCtx context.Context, request *tarianpb.GetCon
 	r, err := s.configClient.GetConstraints(ctx, request)
 
 	return r, err
+}
+
+func (s *Server) AddConstraint(ctx context.Context, request *tarianpb.AddConstraintRequest) (*tarianpb.AddConstraintResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "Method AddConstraint is not supported in tarian-cluster-agent, send it to tarian-server instead.")
 }
 
 func (s *Server) Close() {
