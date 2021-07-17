@@ -2,11 +2,27 @@ package server
 
 import (
 	"context"
-	"log"
 
 	"github.com/devopstoday11/tarian/pkg/store"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"go.uber.org/zap"
 )
+
+var logger *zap.SugaredLogger
+
+func init() {
+	l, err := zap.NewProduction()
+
+	if err != nil {
+		panic("Can not create logger")
+	}
+
+	logger = l.Sugar()
+}
+
+func SetLogger(l *zap.SugaredLogger) {
+	logger = l
+}
 
 type Server struct {
 	tarianpb.UnimplementedConfigServer
@@ -18,7 +34,7 @@ func NewServer() *Server {
 }
 
 func (s *Server) GetConstraints(ctx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
-	log.Printf("Received get config RPC")
+	logger.Info("Received get config RPC")
 
 	var constraints []*tarianpb.Constraint
 
