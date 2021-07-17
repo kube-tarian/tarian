@@ -17,10 +17,16 @@ func NewServer() *Server {
 	return &Server{constraintStore: store.NewMemoryConstraintStore()}
 }
 
-func (s *Server) GetConstraints(context.Context, *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
+func (s *Server) GetConstraints(ctx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
 	log.Printf("Received get config RPC")
 
-	constraints, _ := s.constraintStore.FindByNamespace("default")
+	var constraints []*tarianpb.Constraint
+
+	if request.GetNamespace() == "" {
+		constraints, _ = s.constraintStore.GetAll()
+	} else {
+		constraints, _ = s.constraintStore.FindByNamespace(request.GetNamespace())
+	}
 
 	return &tarianpb.GetConstraintsResponse{
 		Constraints: constraints,

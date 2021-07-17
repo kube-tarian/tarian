@@ -29,7 +29,7 @@ func main() {
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 
-		r, err := c.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{})
+		r, err := c.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{Namespace: "default"})
 
 		if err != nil {
 			log.Fatalf("error while getting config: %v", err)
