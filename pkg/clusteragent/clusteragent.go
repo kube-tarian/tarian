@@ -35,10 +35,14 @@ type Server struct {
 }
 
 func NewServer(tarianServerAddress string) *Server {
+	logger.Infow("connecting to the tarian server", "address", tarianServerAddress)
 	grpcConn, err := grpc.Dial(tarianServerAddress, grpc.WithInsecure(), grpc.WithBlock())
+
 	if err != nil {
 		logger.Fatalw("couldn't not connect to tarian-server", "err", err)
 	}
+
+	logger.Info("connected to the tarian server")
 
 	return &Server{grpcConn: grpcConn, configClient: tarianpb.NewConfigClient(grpcConn)}
 }
