@@ -62,6 +62,17 @@ func (p *PodAgent) Run() {
 	wg.Wait()
 }
 
+func (p *PodAgent) SetConstraints(constraints []*tarianpb.Constraint) {
+	p.constraintsLock.Lock()
+	defer p.constraintsLock.Unlock()
+
+	p.constraints = constraints
+}
+
+func (p *PodAgent) GetConstraints() []*tarianpb.Constraint {
+	return p.constraints
+}
+
 func (p *PodAgent) loopSyncConstraints() {
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -75,9 +86,7 @@ func (p *PodAgent) loopSyncConstraints() {
 		logger.Infow("received constraints from the cluster agent", "constraint", r.GetConstraints())
 		cancel()
 
-		p.constraintsLock.Lock()
-		p.constraints = r.GetConstraints()
-		p.constraintsLock.Unlock()
+		p.SetConstraints(r.GetConstraints())
 
 		time.Sleep(3 * time.Second)
 	}
