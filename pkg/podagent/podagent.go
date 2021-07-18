@@ -95,77 +95,80 @@ func (p *PodAgent) loopSyncConstraints() {
 func (p *PodAgent) loopWatchProcesses() {
 	for {
 		processes, _ := process.Processes()
-
-		p.constraintsLock.RLock()
-
-		// map[pid]*process
-		violations := make(map[int32]*process.Process)
-		allowedProcesses := make(map[int32]*process.Process)
-
-		for _, constraint := range p.constraints {
-			if constraint.GetAllowedProcesses() == nil {
-				continue
-			}
-
-			for _, allowedProcess := range constraint.GetAllowedProcesses() {
-				// matched, err := regexp.MatchString(`foo.*`, "seafood")
-
-				if allowedProcess.GetRegex() == "" {
-					continue
-				}
-
-				rgx, err := regexp.Compile(allowedProcess.GetRegex())
-
-				if err != nil {
-					logger.Errorw("can not compile regex", "err", err)
-					continue
-				}
-
-				logger.Infow("looking for running processes that violate regex", "expr", rgx.String())
-
-				for _, process := range processes {
-					name, err := process.Name()
-
-					if err != nil {
-						logger.Errorw("can not read process name", "err", err)
-						continue
-					}
-
-					if !rgx.MatchString(name) {
-						violations[process.Pid] = process
-					} else {
-						allowedProcesses[process.Pid] = process
-					}
-				}
-			}
-		}
-
-		p.constraintsLock.RUnlock()
-
-		for pid := range allowedProcesses {
-			delete(violations, pid)
-		}
-
-		// Currently limit the result to 5
-		count := 0
-
-		// TODO: make it configurable
-		for _, violation := range violations {
-			name, err := violation.Name()
-
-			if err != nil {
-				logger.Errorw("can not read process name", "err", err)
-				continue
-			}
-
-			logger.Infow("found process that violate regex", "process", name)
-
-			count++
-			if count > 5 {
-				break
-			}
-		}
+		p.ValidateProcesses(processes)
 
 		time.Sleep(3 * time.Second)
+	}
+}
+
+func (p *PodAgent) ValidateProcesses(processes []*process.Process) {
+	p.constraintsLock.RLock()
+
+	// map[pid]*process
+	violations := make(map[int32]*process.Process)
+	allowedProcesses := make(map[int32]*process.Process)
+
+	for _, constraint := range p.constraints {
+		if constraint.GetAllowedProcesses() == nil {
+			continue
+		}
+
+		for _, allowedProcess := range constraint.GetAllowedProcesses() {
+			// matched, err := regexp.MatchString(`foo.*`, "seafood")
+
+			if allowedProcess.GetRegex() == "" {
+				continue
+			}
+
+			rgx, err := regexp.Compile(allowedProcess.GetRegex())
+
+			if err != nil {
+				logger.Errorw("can not compile regex", "err", err)
+				continue
+			}
+
+			logger.Infow("looking for running processes that violate regex", "expr", rgx.String())
+
+			for _, process := range processes {
+				name, err := process.Name()
+
+				if err != nil {
+					logger.Errorw("can not read process name", "err", err)
+					continue
+				}
+
+				if !rgx.MatchString(name) {
+					violations[process.Pid] = process
+				} else {
+					allowedProcesses[process.Pid] = process
+				}
+			}
+		}
+	}
+
+	p.constraintsLock.RUnlock()
+
+	for pid := range allowedProcesses {
+		delete(violations, pid)
+	}
+
+	// Currently limit the result to 5
+	count := 0
+
+	// TODO: make it configurable
+	for _, violation := range violations {
+		name, err := violation.Name()
+
+		if err != nil {
+			logger.Errorw("can not read process name", "err", err)
+			continue
+		}
+
+		logger.Infow("found process that violate regex", "process", name)
+
+		count++
+		if count > 5 {
+			break
+		}
 	}
 }
