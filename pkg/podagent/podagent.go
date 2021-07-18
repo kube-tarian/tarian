@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
-	"github.com/shirou/gopsutil/process"
+	psutil "github.com/shirou/gopsutil/process"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -98,7 +98,9 @@ func (p *PodAgent) SyncConstraints() {
 
 func (p *PodAgent) loopValidateProcesses() {
 	for {
-		processes, _ := process.Processes()
+		ps, _ := psutil.Processes()
+		processes := NewProcessesFromPsutil(ps)
+
 		violations := p.ValidateProcesses(processes)
 
 		// Currently limit the result to 5
@@ -106,12 +108,7 @@ func (p *PodAgent) loopValidateProcesses() {
 		count := 0
 
 		for _, violation := range violations {
-			name, err := violation.Name()
-
-			if err != nil {
-				logger.Errorw("can not read process name", "err", err)
-				continue
-			}
+			name := violation.GetName()
 
 			logger.Infow("found process that violate regex", "process", name)
 
@@ -125,12 +122,12 @@ func (p *PodAgent) loopValidateProcesses() {
 	}
 }
 
-func (p *PodAgent) ValidateProcesses(processes []*process.Process) map[int32]*process.Process {
+func (p *PodAgent) ValidateProcesses(processes []*Process) map[int32]*Process {
 	p.constraintsLock.RLock()
 
 	// map[pid]*process
-	violations := make(map[int32]*process.Process)
-	allowedProcesses := make(map[int32]*process.Process)
+	violations := make(map[int32]*Process)
+	allowedProcesses := make(map[int32]*Process)
 
 	for _, constraint := range p.constraints {
 		if constraint.GetAllowedProcesses() == nil {
@@ -152,7 +149,7 @@ func (p *PodAgent) ValidateProcesses(processes []*process.Process) map[int32]*pr
 			logger.Infow("looking for running processes that violate regex", "expr", rgx.String())
 
 			for _, process := range processes {
-				name, err := process.Name()
+				name := process.GetName()
 
 				if err != nil {
 					logger.Errorw("can not read process name", "err", err)
@@ -160,9 +157,9 @@ func (p *PodAgent) ValidateProcesses(processes []*process.Process) map[int32]*pr
 				}
 
 				if !rgx.MatchString(name) {
-					violations[process.Pid] = process
+					violations[process.GetPid()] = process
 				} else {
-					allowedProcesses[process.Pid] = process
+					allowedProcesses[process.GetPid()] = process
 				}
 			}
 		}
