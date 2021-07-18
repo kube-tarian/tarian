@@ -57,7 +57,7 @@ func (p *PodAgent) Run() {
 
 	// TODO: implement graceful shutdown
 	go p.loopSyncConstraints()
-	go p.loopWatchProcesses()
+	go p.loopValidateProcesses()
 
 	wg.Wait()
 }
@@ -75,33 +75,57 @@ func (p *PodAgent) GetConstraints() []*tarianpb.Constraint {
 
 func (p *PodAgent) loopSyncConstraints() {
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-
-		r, err := p.client.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{Namespace: "default"})
-
-		if err != nil {
-			logger.Errorw("error while getting constraints from the cluster agent", "err", err)
-		}
-
-		logger.Infow("received constraints from the cluster agent", "constraint", r.GetConstraints())
-		cancel()
-
-		p.SetConstraints(r.GetConstraints())
+		p.SyncConstraints()
 
 		time.Sleep(3 * time.Second)
 	}
 }
 
-func (p *PodAgent) loopWatchProcesses() {
+func (p *PodAgent) SyncConstraints() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+	r, err := p.client.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{Namespace: "default"})
+
+	if err != nil {
+		logger.Errorw("error while getting constraints from the cluster agent", "err", err)
+	}
+
+	logger.Infow("received constraints from the cluster agent", "constraint", r.GetConstraints())
+	cancel()
+
+	p.SetConstraints(r.GetConstraints())
+}
+
+func (p *PodAgent) loopValidateProcesses() {
 	for {
 		processes, _ := process.Processes()
-		p.ValidateProcesses(processes)
+		violations := p.ValidateProcesses(processes)
+
+		// Currently limit the result to 5
+		// TODO: make it configurable
+		count := 0
+
+		for _, violation := range violations {
+			name, err := violation.Name()
+
+			if err != nil {
+				logger.Errorw("can not read process name", "err", err)
+				continue
+			}
+
+			logger.Infow("found process that violate regex", "process", name)
+
+			count++
+			if count > 5 {
+				break
+			}
+		}
 
 		time.Sleep(3 * time.Second)
 	}
 }
 
-func (p *PodAgent) ValidateProcesses(processes []*process.Process) {
+func (p *PodAgent) ValidateProcesses(processes []*process.Process) map[int32]*process.Process {
 	p.constraintsLock.RLock()
 
 	// map[pid]*process
@@ -114,8 +138,6 @@ func (p *PodAgent) ValidateProcesses(processes []*process.Process) {
 		}
 
 		for _, allowedProcess := range constraint.GetAllowedProcesses() {
-			// matched, err := regexp.MatchString(`foo.*`, "seafood")
-
 			if allowedProcess.GetRegex() == "" {
 				continue
 			}
@@ -152,23 +174,5 @@ func (p *PodAgent) ValidateProcesses(processes []*process.Process) {
 		delete(violations, pid)
 	}
 
-	// Currently limit the result to 5
-	count := 0
-
-	// TODO: make it configurable
-	for _, violation := range violations {
-		name, err := violation.Name()
-
-		if err != nil {
-			logger.Errorw("can not read process name", "err", err)
-			continue
-		}
-
-		logger.Infow("found process that violate regex", "process", name)
-
-		count++
-		if count > 5 {
-			break
-		}
-	}
+	return violations
 }
