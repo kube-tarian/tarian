@@ -1,0 +1,13 @@
+version: '3.7'
+
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: tarian
+    shm_size: '256mb'
+  adminer:
+    image: adminer
+    ports:
+      - 8090:8080
+
