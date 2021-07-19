@@ -15,6 +15,12 @@ type MemoryConstraintStore struct {
 func NewMemoryConstraintStore() *MemoryConstraintStore {
 	m := &MemoryConstraintStore{data: make(map[string][]*tarianpb.Constraint)}
 
+	return m
+}
+
+func NewDummyMemoryConstraintStore() *MemoryConstraintStore {
+	m := &MemoryConstraintStore{data: make(map[string][]*tarianpb.Constraint)}
+
 	regexes := []string{"ssh", "worker", "swap", "scsi", "loop", "gvfs", "idle", "injection", "nvme", "jbd", "snap", "cpu", "soft", "bash", "integrity", "kcryptd", "krfcommd", "kcompactd0", "wpa_supplican", "oom_reaper", "registryd", "migration", "kblockd", "gsd-", "kdevtmpfs", "pipewire"}
 
 	for _, r := range regexes {

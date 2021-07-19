@@ -30,7 +30,7 @@ type Server struct {
 }
 
 func NewServer() *Server {
-	return &Server{constraintStore: store.NewMemoryConstraintStore()}
+	return &Server{constraintStore: store.NewDummyMemoryConstraintStore()}
 }
 
 func (s *Server) GetConstraints(ctx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
