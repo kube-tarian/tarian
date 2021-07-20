@@ -5,7 +5,10 @@ services:
     image: postgres
     environment:
       POSTGRES_PASSWORD: tarian
+      POSTGRES_DB: tarian
     shm_size: '256mb'
+    ports:
+      - 5432:5432
   adminer:
     image: adminer
     ports:

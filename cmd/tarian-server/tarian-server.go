@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -10,9 +11,12 @@ import (
 
 	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/devopstoday11/tarian/pkg/server"
+	"github.com/devopstoday11/tarian/pkg/server/dbstore"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	cli "github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
 const (
@@ -25,6 +29,19 @@ var (
 	version = "dev"
 	commit  = "main"
 )
+
+type PostgresqlConfig struct {
+	User     string `default:"postgres"`
+	Password string `default:"tarian"`
+	Name     string `default:"tarian"`
+	Host     string `default:"localhost"`
+	Port     string `default:"5432"`
+	SslMode  string `default:"disable"`
+}
+
+func (p *PostgresqlConfig) GetDsn() string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", p.User, p.Password, p.Host, p.Port, p.Name, p.SslMode)
+}
 
 func main() {
 	app := getCliApp()
@@ -69,6 +86,17 @@ func getCliApp() *cli.App {
 					},
 				},
 				Action: run,
+			},
+			{
+				Name:  "db",
+				Usage: "Command group related to database",
+				Subcommands: []*cli.Command{
+					{
+						Name:   "migrate",
+						Usage:  "Run database migration",
+						Action: dbmigrate,
+					},
+				},
 			},
 		},
 	}
@@ -117,6 +145,26 @@ func run(c *cli.Context) error {
 
 	wg.Wait()
 	logger.Info("tarian-server shutdown gracefully")
+
+	return nil
+}
+
+func dbmigrate(c *cli.Context) error {
+	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
+
+	var cfg PostgresqlConfig
+	err := envconfig.Process("Postgres", &cfg)
+	if err != nil {
+		logger.Fatalw("database config error", "err", err)
+	}
+
+	count, err := dbstore.RunMigration(cfg.GetDsn())
+
+	if err != nil {
+		logger.Errorw("error while running database migration", "err", err)
+	} else {
+		logger.Infow("completed database migration", "applied", count)
+	}
 
 	return nil
 }
