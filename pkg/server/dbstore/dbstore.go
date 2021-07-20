@@ -4,11 +4,11 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
-	"fmt"
 
 	"github.com/Boostport/migration"
 	"github.com/Boostport/migration/driver/postgres"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"github.com/driftprogramming/pgxpoolmock"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -37,7 +37,9 @@ func RunMigration(dsn string) (int, error) {
 
 // DbConstraintStore implements store.ConstraintStore
 type DbConstraintStore struct {
-	pool *pgxpool.Pool
+	// pool holds the connection pool. It uses a compatible interface with the real PgxPool.
+	// This is to make it mockable.
+	pool pgxpoolmock.PgxPool
 }
 
 func NewDbConstraintStore(dsn string) (*DbConstraintStore, error) {
@@ -53,6 +55,23 @@ func NewDbConstraintStore(dsn string) (*DbConstraintStore, error) {
 	return store, nil
 }
 
+// constraintRow represents a row of database table constraints
+type constraintRow struct {
+	id               int
+	namespace        string
+	selector         string
+	allowedProcesses string
+}
+
+func (c *constraintRow) toConstraint() *tarianpb.Constraint {
+	constraint := &tarianpb.Constraint{}
+	constraint.Namespace = c.namespace
+	json.Unmarshal([]byte(c.selector), &constraint.Selector)
+	json.Unmarshal([]byte(c.allowedProcesses), &constraint.AllowedProcesses)
+
+	return constraint
+}
+
 func (d *DbConstraintStore) GetAll() ([]*tarianpb.Constraint, error) {
 	rows, err := d.pool.Query(context.Background(), "SELECT * FROM constraints")
 	if err != nil {
@@ -64,19 +83,18 @@ func (d *DbConstraintStore) GetAll() ([]*tarianpb.Constraint, error) {
 	allConstraints := []*tarianpb.Constraint{}
 
 	for rows.Next() {
-		c := &tarianpb.Constraint{}
-		rows.Scan(c.Namespace)
+		r := constraintRow{}
 
-		var selectorJson string
-		var allowedProcessesJson string
+		err := rows.Scan(&r.id, &r.namespace, &r.selector, &r.allowedProcesses)
+		if err != nil {
+			// TODO: logger.Errorw()
 
-		rows.Scan(selectorJson)
-		rows.Scan(allowedProcessesJson)
+			continue
+		}
 
-		json.Unmarshal([]byte(selectorJson), c.Selector)
-		json.Unmarshal([]byte(allowedProcessesJson), &c.AllowedProcesses)
+		constraint := r.toConstraint()
 
-		fmt.Println("test")
+		allConstraints = append(allConstraints, constraint)
 	}
 
 	return allConstraints, nil
@@ -90,26 +108,24 @@ func (d *DbConstraintStore) FindByNamespace(namespace string) ([]*tarianpb.Const
 
 	defer rows.Close()
 
-	allConstraints := []*tarianpb.Constraint{}
+	constraints := []*tarianpb.Constraint{}
 
 	for rows.Next() {
-		constraint := &tarianpb.Constraint{}
+		r := constraintRow{}
 
-		var id int
-		var selectorJson string
-		var allowedProcessesJson string
-		err := rows.Scan(&id, &constraint.Namespace, &selectorJson, &allowedProcessesJson)
+		err := rows.Scan(&r.id, &r.namespace, &r.selector, &r.allowedProcesses)
 		if err != nil {
-			fmt.Println(err)
+			// TODO: logger.Errorw()
+
+			continue
 		}
 
-		json.Unmarshal([]byte(selectorJson), &constraint.Selector)
-		json.Unmarshal([]byte(allowedProcessesJson), &constraint.AllowedProcesses)
+		constraint := r.toConstraint()
 
-		allConstraints = append(allConstraints, constraint)
+		constraints = append(constraints, constraint)
 	}
 
-	return allConstraints, nil
+	return constraints, nil
 }
 
 func (d *DbConstraintStore) Add(constraint *tarianpb.Constraint) error {
