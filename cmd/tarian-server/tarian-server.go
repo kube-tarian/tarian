@@ -98,6 +98,17 @@ func getCliApp() *cli.App {
 					},
 				},
 			},
+			{
+				Name:  "dev",
+				Usage: "Command group for development environment. Do not do this on production.",
+				Subcommands: []*cli.Command{
+					{
+						Name:   "seed-data",
+						Usage:  "Add development data to the database",
+						Action: devSeedData,
+					},
+				},
+			},
 		},
 	}
 }
@@ -116,13 +127,24 @@ func run(c *cli.Context) error {
 	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
 	server.SetLogger(logger)
 
+	var cfg PostgresqlConfig
+	err := envconfig.Process("Postgres", &cfg)
+	if err != nil {
+		logger.Fatalw("database config error", "err", err)
+	}
+
 	listener, err := net.Listen("tcp", host+":"+port)
 	if err != nil {
 		logger.Fatalw("failed to listen", "err", err)
 	}
 
 	s := grpc.NewServer()
-	tarianpb.RegisterConfigServer(s, server.NewServer())
+	srv, err := server.NewServer(cfg.GetDsn())
+	if err != nil {
+		logger.Fatalw("failed to initiate server", "err", err)
+	}
+
+	tarianpb.RegisterConfigServer(s, srv)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
@@ -165,6 +187,38 @@ func dbmigrate(c *cli.Context) error {
 	} else {
 		logger.Infow("completed database migration", "applied", count)
 	}
+
+	return nil
+}
+
+func devSeedData(c *cli.Context) error {
+	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
+
+	var cfg PostgresqlConfig
+	err := envconfig.Process("Postgres", &cfg)
+	if err != nil {
+		logger.Fatalw("database config error", "err", err)
+	}
+
+	dbStore, err := dbstore.NewDbConstraintStore(cfg.GetDsn())
+	if err != nil {
+		logger.Fatalw("error creating database store", "err", err)
+	}
+
+	regexes := []string{"ssh", "worker", "swap", "scsi", "loop", "gvfs", "idle", "injection", "nvme", "jbd", "snap", "cpu", "soft", "bash", "integrity", "kcryptd", "krfcommd", "kcompactd0", "wpa_supplican", "oom_reaper", "registryd", "migration", "kblockd", "gsd-", "kdevtmpfs", "pipewire"}
+
+	for _, r := range regexes {
+		exampleConstraint := tarianpb.Constraint{Namespace: "default", Selector: &tarianpb.Selector{MatchLabels: []*tarianpb.MatchLabel{{Key: "app", Value: "nginx"}}}}
+		allowedProcessRegex := "(.*)" + r + "(.*)"
+		exampleConstraint.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
+		err := dbStore.Add(&exampleConstraint)
+		if err != nil {
+			logger.Errorw("error while adding seed data: constraint", "err", err)
+			return err
+		}
+	}
+
+	logger.Infow("finished adding seed data")
 
 	return nil
 }

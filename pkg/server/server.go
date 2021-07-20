@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 
+	"github.com/devopstoday11/tarian/pkg/server/dbstore"
 	"github.com/devopstoday11/tarian/pkg/store"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"go.uber.org/zap"
@@ -29,8 +30,14 @@ type Server struct {
 	constraintStore store.ConstraintStore
 }
 
-func NewServer() *Server {
-	return &Server{constraintStore: store.NewDummyMemoryConstraintStore()}
+func NewServer(dsn string) (*Server, error) {
+	dbStore, err := dbstore.NewDbConstraintStore(dsn)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Server{constraintStore: dbStore}, nil
 }
 
 func (s *Server) GetConstraints(ctx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
