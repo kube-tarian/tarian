@@ -29,11 +29,27 @@ message Process {
 	string name = 2;
 }
 
+message Label {
+	string key = 1;
+	string value = 2;
+}
+
+message Pod {
+	string uid = 1;
+	string namespace = 2;
+	repeated Label labels = 3;
+}
+
+message Target {
+	Pod pod = 1;
+	repeated Process violatingProcesses = 2;
+}
+
 message ViolationEvent {
 	string namespace = 1;
 	google.protobuf.Timestamp timestamp = 2;
 
 	// TODO: reference to the original constraint, probably by id?
 
-	repeated Process violatingProcesses = 3;
+	repeated Target targets = 3;
 }

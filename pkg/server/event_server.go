@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
-	"github.com/gogo/status"
-	"google.golang.org/grpc/codes"
 )
 
 type EventServer struct {
@@ -16,6 +14,8 @@ func NewEventServer() (*EventServer, error) {
 	return &EventServer{}, nil
 }
 
-func (es *EventServer) IngestViolationEvent(context.Context, *tarianpb.IngestViolationEventRequest) (*tarianpb.IngestViolationEventResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method IngestViolationEvent not implemented")
+func (es *EventServer) IngestViolationEvent(ctx context.Context, request *tarianpb.IngestViolationEventRequest) (*tarianpb.IngestViolationEventResponse, error) {
+	logger.Infow("ingest event", "request", request)
+
+	return nil, nil
 }
