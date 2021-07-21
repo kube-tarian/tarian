@@ -1,4 +1,4 @@
-package store
+package memorystore
 
 import (
 	"testing"

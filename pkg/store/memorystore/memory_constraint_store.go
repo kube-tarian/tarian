@@ -1,4 +1,4 @@
-package store
+package memorystore
 
 import "github.com/devopstoday11/tarian/pkg/tarianpb"
 
