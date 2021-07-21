@@ -139,12 +139,12 @@ func run(c *cli.Context) error {
 	}
 
 	s := grpc.NewServer()
-	srv, err := server.NewServer(cfg.GetDsn())
+	configServer, err := server.NewConfigServer(cfg.GetDsn())
 	if err != nil {
 		logger.Fatalw("failed to initiate server", "err", err)
 	}
 
-	tarianpb.RegisterConfigServer(s, srv)
+	tarianpb.RegisterConfigServer(s, configServer)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
