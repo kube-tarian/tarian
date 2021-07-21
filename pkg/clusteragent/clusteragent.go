@@ -86,10 +86,15 @@ func NewEventServer(tarianServerAddress string) *EventServer {
 	return &EventServer{grpcConn: grpcConn, eventClient: tarianpb.NewEventClient(grpcConn)}
 }
 
-func (es *EventServer) IngestViolationEvent(ctx context.Context, request *tarianpb.IngestViolationEventRequest) (*tarianpb.IngestViolationEventResponse, error) {
-	logger.Infow("ingest event", "request", request)
+func (es *EventServer) IngestViolationEvent(requestContext context.Context, request *tarianpb.IngestViolationEventRequest) (*tarianpb.IngestViolationEventResponse, error) {
+	logger.Info("Received ingest violation event RPC")
 
-	return nil, nil
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	r, err := es.eventClient.IngestViolationEvent(ctx, request)
+
+	return r, err
 }
 
 func (es *EventServer) Close() {
