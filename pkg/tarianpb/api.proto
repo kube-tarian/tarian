@@ -10,6 +10,10 @@ service Config {
 	rpc AddConstraint(AddConstraintRequest) returns (AddConstraintResponse) {}
 }
 
+service Event {
+	rpc IngestViolationEvent(IngestViolationEventRequest) returns (IngestViolationEventResponse) {}
+}
+
 message GetConstraintsRequest {
 	string namespace = 1;
 }
@@ -23,5 +27,13 @@ message AddConstraintRequest {
 }
 
 message AddConstraintResponse {
+	bool success = 1;
+}
+
+message IngestViolationEventRequest {
+	tarianpb.types.ViolationEvent violation = 1;
+}
+
+message IngestViolationEventResponse {
 	bool success = 1;
 }

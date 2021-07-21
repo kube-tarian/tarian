@@ -135,3 +135,89 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "tarianpb/api.proto",
 }
+
+// EventClient is the client API for Event service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type EventClient interface {
+	IngestViolationEvent(ctx context.Context, in *IngestViolationEventRequest, opts ...grpc.CallOption) (*IngestViolationEventResponse, error)
+}
+
+type eventClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewEventClient(cc grpc.ClientConnInterface) EventClient {
+	return &eventClient{cc}
+}
+
+func (c *eventClient) IngestViolationEvent(ctx context.Context, in *IngestViolationEventRequest, opts ...grpc.CallOption) (*IngestViolationEventResponse, error) {
+	out := new(IngestViolationEventResponse)
+	err := c.cc.Invoke(ctx, "/tarianpb.api.Event/IngestViolationEvent", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// EventServer is the server API for Event service.
+// All implementations must embed UnimplementedEventServer
+// for forward compatibility
+type EventServer interface {
+	IngestViolationEvent(context.Context, *IngestViolationEventRequest) (*IngestViolationEventResponse, error)
+	mustEmbedUnimplementedEventServer()
+}
+
+// UnimplementedEventServer must be embedded to have forward compatible implementations.
+type UnimplementedEventServer struct {
+}
+
+func (UnimplementedEventServer) IngestViolationEvent(context.Context, *IngestViolationEventRequest) (*IngestViolationEventResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IngestViolationEvent not implemented")
+}
+func (UnimplementedEventServer) mustEmbedUnimplementedEventServer() {}
+
+// UnsafeEventServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to EventServer will
+// result in compilation errors.
+type UnsafeEventServer interface {
+	mustEmbedUnimplementedEventServer()
+}
+
+func RegisterEventServer(s grpc.ServiceRegistrar, srv EventServer) {
+	s.RegisterService(&Event_ServiceDesc, srv)
+}
+
+func _Event_IngestViolationEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IngestViolationEventRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EventServer).IngestViolationEvent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tarianpb.api.Event/IngestViolationEvent",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EventServer).IngestViolationEvent(ctx, req.(*IngestViolationEventRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Event_ServiceDesc is the grpc.ServiceDesc for Event service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Event_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "tarianpb.api.Event",
+	HandlerType: (*EventServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "IngestViolationEvent",
+			Handler:    _Event_IngestViolationEvent_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "tarianpb/api.proto",
+}

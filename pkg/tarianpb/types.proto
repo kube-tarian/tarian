@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package tarianpb.types;
 option go_package = "github.com/devopstoday11/tarian/pkg/tarianpb";
+import "google/protobuf/timestamp.proto";
 
 message MatchLabel {
 	string key = 1;
@@ -23,4 +24,16 @@ message Constraint {
 	repeated AllowedProcessRule allowed_processes = 3;
 }
 
+message Process {
+	int32 id = 1;
+	string name = 2;
+}
 
+message ViolationEvent {
+	string namespace = 1;
+	google.protobuf.Timestamp timestamp = 2;
+
+	// TODO: reference to the original constraint, probably by id?
+
+	repeated Process violatingProcesses = 3;
+}
