@@ -105,11 +105,15 @@ func run(c *cli.Context) error {
 		logger.Fatalw("failed to listen", "err", err)
 	}
 
-	clusterAgentServer := clusteragent.NewServer(serverAddress)
-	defer clusterAgentServer.Close()
+	configServer := clusteragent.NewConfigServer(serverAddress)
+	defer configServer.Close()
+
+	eventServer := clusteragent.NewEventServer(serverAddress)
+	defer eventServer.Close()
 
 	s := grpc.NewServer()
-	tarianpb.RegisterConfigServer(s, clusterAgentServer)
+	tarianpb.RegisterConfigServer(s, configServer)
+	tarianpb.RegisterEventServer(s, eventServer)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)

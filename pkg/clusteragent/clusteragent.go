@@ -27,14 +27,14 @@ func SetLogger(l *zap.SugaredLogger) {
 	logger = l
 }
 
-type Server struct {
+type ConfigServer struct {
 	tarianpb.UnimplementedConfigServer
 
 	grpcConn     *grpc.ClientConn
 	configClient tarianpb.ConfigClient
 }
 
-func NewServer(tarianServerAddress string) *Server {
+func NewConfigServer(tarianServerAddress string) *ConfigServer {
 	logger.Infow("connecting to the tarian server", "address", tarianServerAddress)
 	grpcConn, err := grpc.Dial(tarianServerAddress, grpc.WithInsecure(), grpc.WithBlock())
 
@@ -44,24 +44,54 @@ func NewServer(tarianServerAddress string) *Server {
 
 	logger.Info("connected to the tarian server")
 
-	return &Server{grpcConn: grpcConn, configClient: tarianpb.NewConfigClient(grpcConn)}
+	return &ConfigServer{grpcConn: grpcConn, configClient: tarianpb.NewConfigClient(grpcConn)}
 }
 
-func (s *Server) GetConstraints(reqCtx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
+func (cs *ConfigServer) GetConstraints(reqCtx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
 	logger.Info("Received get config RPC")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	r, err := s.configClient.GetConstraints(ctx, request)
+	r, err := cs.configClient.GetConstraints(ctx, request)
 
 	return r, err
 }
 
-func (s *Server) AddConstraint(ctx context.Context, request *tarianpb.AddConstraintRequest) (*tarianpb.AddConstraintResponse, error) {
+func (cs *ConfigServer) AddConstraint(ctx context.Context, request *tarianpb.AddConstraintRequest) (*tarianpb.AddConstraintResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "Method AddConstraint is not supported in tarian-cluster-agent, send it to tarian-server instead.")
 }
 
-func (s *Server) Close() {
-	s.grpcConn.Close()
+func (cs *ConfigServer) Close() {
+	cs.grpcConn.Close()
+}
+
+type EventServer struct {
+	tarianpb.UnimplementedEventServer
+
+	grpcConn    *grpc.ClientConn
+	eventClient tarianpb.EventClient
+}
+
+func NewEventServer(tarianServerAddress string) *EventServer {
+	logger.Infow("connecting to the tarian server", "address", tarianServerAddress)
+	grpcConn, err := grpc.Dial(tarianServerAddress, grpc.WithInsecure(), grpc.WithBlock())
+
+	if err != nil {
+		logger.Fatalw("couldn't not connect to tarian-server", "err", err)
+	}
+
+	logger.Info("connected to the tarian server")
+
+	return &EventServer{grpcConn: grpcConn, eventClient: tarianpb.NewEventClient(grpcConn)}
+}
+
+func (es *EventServer) IngestViolationEvent(ctx context.Context, request *tarianpb.IngestViolationEventRequest) (*tarianpb.IngestViolationEventResponse, error) {
+	logger.Infow("ingest event", "request", request)
+
+	return nil, nil
+}
+
+func (es *EventServer) Close() {
+	es.grpcConn.Close()
 }
