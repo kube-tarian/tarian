@@ -10,6 +10,7 @@ import (
 	psutil "github.com/shirou/gopsutil/process"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var logger *zap.SugaredLogger
@@ -46,6 +47,8 @@ func (p *PodAgent) Run() {
 	p.grpcConn, err = grpc.Dial(p.clusterAgentAddress, grpc.WithInsecure(), grpc.WithBlock())
 	p.client = tarianpb.NewConfigClient(p.grpcConn)
 
+	eventClient := tarianpb.NewEventClient(p.grpcConn)
+
 	if err != nil {
 		logger.Fatalw("couldn't connect to the cluster agent", "err", err)
 	}
@@ -58,6 +61,38 @@ func (p *PodAgent) Run() {
 	// TODO: implement graceful shutdown
 	go p.loopSyncConstraints()
 	go p.loopValidateProcesses()
+
+	go func() {
+		req := &tarianpb.IngestEventRequest{
+			Event: &tarianpb.Event{
+				Type:            "violation",
+				ClientTimestamp: timestamppb.Now(),
+				Targets: []*tarianpb.Target{
+					{
+						Pod: &tarianpb.Pod{
+							Uid:       "abc-def-ghe",
+							Namespace: "default",
+							Labels: []*tarianpb.Label{
+								{
+									Key:   "app",
+									Value: "nginx",
+								},
+							},
+						},
+						ViolatingProcesses: []*tarianpb.Process{
+							{
+								Id:   1,
+								Name: "unknown_process",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		resp, _ := eventClient.IngestEvent(context.Background(), req)
+		logger.Infow("event response", "resp", resp)
+	}()
 
 	wg.Wait()
 }

@@ -45,11 +45,12 @@ message Target {
 	repeated Process violatingProcesses = 2;
 }
 
-message ViolationEvent {
-	string namespace = 1;
-	google.protobuf.Timestamp timestamp = 2;
+message Event {
+	string type = 1;
+	google.protobuf.Timestamp serverTimestamp = 2;
+	google.protobuf.Timestamp clientTimestamp = 3;
 
 	// TODO: reference to the original constraint, probably by id?
 
-	repeated Target targets = 3;
+	repeated Target targets = 4;
 }

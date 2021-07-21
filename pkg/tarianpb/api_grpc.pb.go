@@ -140,7 +140,7 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EventClient interface {
-	IngestViolationEvent(ctx context.Context, in *IngestViolationEventRequest, opts ...grpc.CallOption) (*IngestViolationEventResponse, error)
+	IngestEvent(ctx context.Context, in *IngestEventRequest, opts ...grpc.CallOption) (*IngestEventResponse, error)
 }
 
 type eventClient struct {
@@ -151,9 +151,9 @@ func NewEventClient(cc grpc.ClientConnInterface) EventClient {
 	return &eventClient{cc}
 }
 
-func (c *eventClient) IngestViolationEvent(ctx context.Context, in *IngestViolationEventRequest, opts ...grpc.CallOption) (*IngestViolationEventResponse, error) {
-	out := new(IngestViolationEventResponse)
-	err := c.cc.Invoke(ctx, "/tarianpb.api.Event/IngestViolationEvent", in, out, opts...)
+func (c *eventClient) IngestEvent(ctx context.Context, in *IngestEventRequest, opts ...grpc.CallOption) (*IngestEventResponse, error) {
+	out := new(IngestEventResponse)
+	err := c.cc.Invoke(ctx, "/tarianpb.api.Event/IngestEvent", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (c *eventClient) IngestViolationEvent(ctx context.Context, in *IngestViolat
 // All implementations must embed UnimplementedEventServer
 // for forward compatibility
 type EventServer interface {
-	IngestViolationEvent(context.Context, *IngestViolationEventRequest) (*IngestViolationEventResponse, error)
+	IngestEvent(context.Context, *IngestEventRequest) (*IngestEventResponse, error)
 	mustEmbedUnimplementedEventServer()
 }
 
@@ -172,8 +172,8 @@ type EventServer interface {
 type UnimplementedEventServer struct {
 }
 
-func (UnimplementedEventServer) IngestViolationEvent(context.Context, *IngestViolationEventRequest) (*IngestViolationEventResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method IngestViolationEvent not implemented")
+func (UnimplementedEventServer) IngestEvent(context.Context, *IngestEventRequest) (*IngestEventResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IngestEvent not implemented")
 }
 func (UnimplementedEventServer) mustEmbedUnimplementedEventServer() {}
 
@@ -188,20 +188,20 @@ func RegisterEventServer(s grpc.ServiceRegistrar, srv EventServer) {
 	s.RegisterService(&Event_ServiceDesc, srv)
 }
 
-func _Event_IngestViolationEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IngestViolationEventRequest)
+func _Event_IngestEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IngestEventRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(EventServer).IngestViolationEvent(ctx, in)
+		return srv.(EventServer).IngestEvent(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/tarianpb.api.Event/IngestViolationEvent",
+		FullMethod: "/tarianpb.api.Event/IngestEvent",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EventServer).IngestViolationEvent(ctx, req.(*IngestViolationEventRequest))
+		return srv.(EventServer).IngestEvent(ctx, req.(*IngestEventRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -214,8 +214,8 @@ var Event_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*EventServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "IngestViolationEvent",
-			Handler:    _Event_IngestViolationEvent_Handler,
+			MethodName: "IngestEvent",
+			Handler:    _Event_IngestEvent_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

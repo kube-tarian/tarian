@@ -14,7 +14,7 @@ func NewEventServer() (*EventServer, error) {
 	return &EventServer{}, nil
 }
 
-func (es *EventServer) IngestViolationEvent(ctx context.Context, request *tarianpb.IngestViolationEventRequest) (*tarianpb.IngestViolationEventResponse, error) {
+func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.IngestEventRequest) (*tarianpb.IngestEventResponse, error) {
 	logger.Infow("ingest event", "request", request)
 
 	return nil, nil
