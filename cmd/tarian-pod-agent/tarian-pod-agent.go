@@ -7,7 +7,6 @@ import (
 	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/devopstoday11/tarian/pkg/podagent"
 	cli "github.com/urfave/cli/v2"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -20,8 +19,6 @@ var (
 	version = "dev"
 	commit  = "main"
 )
-
-var grpcConn *grpc.ClientConn
 
 func main() {
 	app := getCliApp()
