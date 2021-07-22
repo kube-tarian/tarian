@@ -33,6 +33,7 @@ type PodAgent struct {
 	clusterAgentAddress string
 	grpcConn            *grpc.ClientConn
 	client              tarianpb.ConfigClient
+	eventClient         tarianpb.EventClient
 
 	constraints     []*tarianpb.Constraint
 	constraintsLock sync.RWMutex
@@ -46,8 +47,7 @@ func (p *PodAgent) Run() {
 	var err error
 	p.grpcConn, err = grpc.Dial(p.clusterAgentAddress, grpc.WithInsecure(), grpc.WithBlock())
 	p.client = tarianpb.NewConfigClient(p.grpcConn)
-
-	eventClient := tarianpb.NewEventClient(p.grpcConn)
+	p.eventClient = tarianpb.NewEventClient(p.grpcConn)
 
 	if err != nil {
 		logger.Fatalw("couldn't connect to the cluster agent", "err", err)
@@ -63,35 +63,6 @@ func (p *PodAgent) Run() {
 	go p.loopValidateProcesses()
 
 	go func() {
-		req := &tarianpb.IngestEventRequest{
-			Event: &tarianpb.Event{
-				Type:            "violation",
-				ClientTimestamp: timestamppb.Now(),
-				Targets: []*tarianpb.Target{
-					{
-						Pod: &tarianpb.Pod{
-							Uid:       "abc-def-ghe",
-							Namespace: "default",
-							Labels: []*tarianpb.Label{
-								{
-									Key:   "app",
-									Value: "nginx",
-								},
-							},
-						},
-						ViolatingProcesses: []*tarianpb.Process{
-							{
-								Id:   1,
-								Name: "unknown_process",
-							},
-						},
-					},
-				},
-			},
-		}
-
-		resp, _ := eventClient.IngestEvent(context.Background(), req)
-		logger.Infow("event response", "resp", resp)
 	}()
 
 	wg.Wait()
@@ -153,7 +124,51 @@ func (p *PodAgent) loopValidateProcesses() {
 			}
 		}
 
+		if len(violations) > 0 {
+			p.ReportViolationsToClusterAgent(violations)
+		}
+
 		time.Sleep(3 * time.Second)
+	}
+}
+
+func (p *PodAgent) ReportViolationsToClusterAgent(processes map[int32]*Process) {
+	violatingProcesses := make([]*tarianpb.Process, len(processes))
+
+	i := 0
+	for _, p := range processes {
+		violatingProcesses[i] = &tarianpb.Process{Id: p.Pid, Name: p.Name}
+		i++
+	}
+
+	req := &tarianpb.IngestEventRequest{
+		Event: &tarianpb.Event{
+			Type:            "violation",
+			ClientTimestamp: timestamppb.Now(),
+			Targets: []*tarianpb.Target{
+				{
+					Pod: &tarianpb.Pod{
+						Uid:       "abc-def-ghe",
+						Namespace: "default",
+						Labels: []*tarianpb.Label{
+							{
+								Key:   "app",
+								Value: "nginx",
+							},
+						},
+					},
+					ViolatingProcesses: violatingProcesses,
+				},
+			},
+		},
+	}
+
+	response, err := p.eventClient.IngestEvent(context.Background(), req)
+
+	if err != nil {
+		logger.Infow("error while reporting violation events", "err", err)
+	} else {
+		logger.Infow("ingest event response", "response", response)
 	}
 }
 

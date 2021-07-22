@@ -144,7 +144,7 @@ func run(c *cli.Context) error {
 		logger.Fatalw("failed to initiate config server", "err", err)
 	}
 
-	eventServer, err := server.NewEventServer()
+	eventServer, err := server.NewEventServer(cfg.GetDsn())
 	if err != nil {
 		logger.Fatalw("failed to initiate event server", "err", err)
 	}
