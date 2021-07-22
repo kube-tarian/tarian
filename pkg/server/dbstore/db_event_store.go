@@ -36,7 +36,7 @@ func NewDbEventStore(dsn string) (*DbEventStore, error) {
 // Fields are exported because to work around type
 // being a reserved name.
 type eventRow struct {
-	Id              int
+	ID              int
 	Type            string
 	ServerTimestamp time.Time
 	ClientTimestamp time.Time
@@ -66,7 +66,7 @@ func (d *DbEventStore) GetAll() ([]*tarianpb.Event, error) {
 	for rows.Next() {
 		e := eventRow{}
 
-		err := rows.Scan(&e.Id, &e.Type, &e.ServerTimestamp, &e.ClientTimestamp, &e.Targets)
+		err := rows.Scan(&e.ID, &e.Type, &e.ServerTimestamp, &e.ClientTimestamp, &e.Targets)
 		if err != nil {
 			// TODO: logger.Errorw()
 
@@ -81,7 +81,7 @@ func (d *DbEventStore) GetAll() ([]*tarianpb.Event, error) {
 
 func (d *DbEventStore) Add(event *tarianpb.Event) error {
 	var id int
-	targetsJson, err := json.Marshal(event.GetTargets())
+	targetsJSON, err := json.Marshal(event.GetTargets())
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (d *DbEventStore) Add(event *tarianpb.Event) error {
 		QueryRow(
 			context.Background(),
 			"INSERT INTO events(type, server_timestamp, client_timestamp, targets) VALUES($1, $2, $3, $4) RETURNING id",
-			event.GetType(), event.GetServerTimestamp().AsTime(), event.GetClientTimestamp().AsTime(), targetsJson).
+			event.GetType(), event.GetServerTimestamp().AsTime(), event.GetClientTimestamp().AsTime(), targetsJSON).
 		Scan(&id)
 	if err != nil {
 		return err

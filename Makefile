@@ -10,3 +10,7 @@ proto:
 
 test:
 	go test -v ./pkg/...
+
+lint:
+	revive -formatter stylish -config .revive.toml ./pkg/...
+

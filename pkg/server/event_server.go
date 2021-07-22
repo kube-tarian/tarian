@@ -31,8 +31,7 @@ func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.Ingest
 	if err != nil {
 		fmt.Println(err)
 		return &tarianpb.IngestEventResponse{Success: false}, nil
-	} else {
-		return &tarianpb.IngestEventResponse{Success: true}, nil
 	}
 
+	return &tarianpb.IngestEventResponse{Success: true}, nil
 }

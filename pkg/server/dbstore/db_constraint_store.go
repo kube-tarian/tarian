@@ -105,12 +105,12 @@ func (d *DbConstraintStore) FindByNamespace(namespace string) ([]*tarianpb.Const
 
 func (d *DbConstraintStore) Add(constraint *tarianpb.Constraint) error {
 	var id int
-	selectorJson, err := json.Marshal(constraint.GetSelector())
+	selectorJSON, err := json.Marshal(constraint.GetSelector())
 	if err != nil {
 		return err
 	}
 
-	allowedProcessesJson, err := json.Marshal(constraint.GetAllowedProcesses())
+	allowedProcessesJSON, err := json.Marshal(constraint.GetAllowedProcesses())
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (d *DbConstraintStore) Add(constraint *tarianpb.Constraint) error {
 		QueryRow(
 			context.Background(),
 			"INSERT INTO constraints(namespace, selector, allowed_processes) VALUES($1, $2, $3) RETURNING id",
-			constraint.GetNamespace(), selectorJson, allowedProcessesJson).
+			constraint.GetNamespace(), selectorJSON, allowedProcessesJSON).
 		Scan(&id)
 	if err != nil {
 		return err
