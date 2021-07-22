@@ -143,7 +143,7 @@ func (p *PodAgent) ReportViolationsToClusterAgent(processes map[int32]*Process) 
 
 	req := &tarianpb.IngestEventRequest{
 		Event: &tarianpb.Event{
-			Type:            "violation",
+			Type:            tarianpb.EventTypeViolation,
 			ClientTimestamp: timestamppb.Now(),
 			Targets: []*tarianpb.Target{
 				{
