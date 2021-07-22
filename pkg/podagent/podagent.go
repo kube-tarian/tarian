@@ -32,7 +32,7 @@ func SetLogger(l *zap.SugaredLogger) {
 type PodAgent struct {
 	clusterAgentAddress string
 	grpcConn            *grpc.ClientConn
-	client              tarianpb.ConfigClient
+	configClient        tarianpb.ConfigClient
 	eventClient         tarianpb.EventClient
 
 	constraints     []*tarianpb.Constraint
@@ -46,7 +46,7 @@ func NewPodAgent(clusterAgentAddress string) *PodAgent {
 func (p *PodAgent) Run() {
 	var err error
 	p.grpcConn, err = grpc.Dial(p.clusterAgentAddress, grpc.WithInsecure(), grpc.WithBlock())
-	p.client = tarianpb.NewConfigClient(p.grpcConn)
+	p.configClient = tarianpb.NewConfigClient(p.grpcConn)
 	p.eventClient = tarianpb.NewEventClient(p.grpcConn)
 
 	if err != nil {
@@ -90,7 +90,7 @@ func (p *PodAgent) loopSyncConstraints() {
 func (p *PodAgent) SyncConstraints() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
-	r, err := p.client.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{Namespace: "default"})
+	r, err := p.configClient.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{Namespace: "default"})
 
 	if err != nil {
 		logger.Errorw("error while getting constraints from the cluster agent", "err", err)
