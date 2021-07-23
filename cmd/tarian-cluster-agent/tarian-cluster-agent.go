@@ -10,9 +10,7 @@ import (
 
 	"github.com/devopstoday11/tarian/pkg/clusteragent"
 	"github.com/devopstoday11/tarian/pkg/logger"
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	cli "github.com/urfave/cli/v2"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -105,15 +103,10 @@ func run(c *cli.Context) error {
 		logger.Fatalw("failed to listen", "err", err)
 	}
 
-	configServer := clusteragent.NewConfigServer(serverAddress)
-	defer configServer.Close()
+	clusterAgent := clusteragent.NewClusterAgent(serverAddress)
+	defer clusterAgent.Close()
 
-	eventServer := clusteragent.NewEventServer(serverAddress)
-	defer eventServer.Close()
-
-	s := grpc.NewServer()
-	tarianpb.RegisterConfigServer(s, configServer)
-	tarianpb.RegisterEventServer(s, eventServer)
+	grpcServer := clusterAgent.GetGrpcServer()
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
@@ -124,13 +117,13 @@ func run(c *cli.Context) error {
 		sig := <-sigCh
 		logger.Infow("got sigterm signal, attempting graceful shutdown", "signal", sig)
 
-		s.GracefulStop()
+		grpcServer.GracefulStop()
 		wg.Done()
 	}()
 
 	logger.Infow("tarian-cluster-agent is listening at", "address", listener.Addr())
 
-	if err := s.Serve(listener); err != nil {
+	if err := grpcServer.Serve(listener); err != nil {
 		logger.Fatalw("failed to serve", "err", err)
 	}
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -14,7 +13,6 @@ import (
 	"github.com/devopstoday11/tarian/pkg/server/dbstore"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	cli "github.com/urfave/cli/v2"
-	"google.golang.org/grpc"
 
 	"github.com/kelseyhightower/envconfig"
 )
@@ -29,19 +27,6 @@ var (
 	version = "dev"
 	commit  = "main"
 )
-
-type PostgresqlConfig struct {
-	User     string `default:"postgres"`
-	Password string `default:"tarian"`
-	Name     string `default:"tarian"`
-	Host     string `default:"localhost"`
-	Port     string `default:"5432"`
-	SslMode  string `default:"disable"`
-}
-
-func (p *PostgresqlConfig) GetDsn() string {
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", p.User, p.Password, p.Host, p.Port, p.Name, p.SslMode)
-}
 
 func main() {
 	app := getCliApp()
@@ -114,6 +99,10 @@ func getCliApp() *cli.App {
 }
 
 func run(c *cli.Context) error {
+	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
+	server.SetLogger(logger)
+
+	// Create server
 	host := c.String("host")
 	if host == "" {
 		host = defaultHost
@@ -124,33 +113,16 @@ func run(c *cli.Context) error {
 		port = defaultPort
 	}
 
-	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
-	server.SetLogger(logger)
-
-	var cfg PostgresqlConfig
+	var cfg server.PostgresqlConfig
 	err := envconfig.Process("Postgres", &cfg)
 	if err != nil {
 		logger.Fatalw("database config error", "err", err)
 	}
 
-	listener, err := net.Listen("tcp", host+":"+port)
+	grpcServer, err := server.NewGrpcServer(cfg.GetDsn())
 	if err != nil {
-		logger.Fatalw("failed to listen", "err", err)
+		return err
 	}
-
-	s := grpc.NewServer()
-	configServer, err := server.NewConfigServer(cfg.GetDsn())
-	if err != nil {
-		logger.Fatalw("failed to initiate config server", "err", err)
-	}
-
-	eventServer, err := server.NewEventServer(cfg.GetDsn())
-	if err != nil {
-		logger.Fatalw("failed to initiate event server", "err", err)
-	}
-
-	tarianpb.RegisterConfigServer(s, configServer)
-	tarianpb.RegisterEventServer(s, eventServer)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
@@ -161,13 +133,19 @@ func run(c *cli.Context) error {
 		sig := <-sigCh
 		logger.Infow("got sigterm signal, attempting graceful shutdown", "signal", sig)
 
-		s.GracefulStop()
+		grpcServer.GracefulStop()
 		wg.Done()
 	}()
 
+	// Run server
+	listener, err := net.Listen("tcp", host+":"+port)
+	if err != nil {
+		logger.Fatalw("failed to listen", "err", err)
+	}
+
 	logger.Infow("tarian-server is listening at", "address", listener.Addr())
 
-	if err := s.Serve(listener); err != nil {
+	if err := grpcServer.Serve(listener); err != nil {
 		logger.Fatalw("failed to serve", "err", err)
 	}
 
@@ -180,7 +158,7 @@ func run(c *cli.Context) error {
 func dbmigrate(c *cli.Context) error {
 	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
 
-	var cfg PostgresqlConfig
+	var cfg server.PostgresqlConfig
 	err := envconfig.Process("Postgres", &cfg)
 	if err != nil {
 		logger.Fatalw("database config error", "err", err)
@@ -200,7 +178,7 @@ func dbmigrate(c *cli.Context) error {
 func devSeedData(c *cli.Context) error {
 	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
 
-	var cfg PostgresqlConfig
+	var cfg server.PostgresqlConfig
 	err := envconfig.Process("Postgres", &cfg)
 	if err != nil {
 		logger.Fatalw("database config error", "err", err)

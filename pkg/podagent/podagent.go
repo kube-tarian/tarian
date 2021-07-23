@@ -43,7 +43,7 @@ func NewPodAgent(clusterAgentAddress string) *PodAgent {
 	return &PodAgent{clusterAgentAddress: clusterAgentAddress}
 }
 
-func (p *PodAgent) Run() {
+func (p *PodAgent) Dial() {
 	var err error
 	p.grpcConn, err = grpc.Dial(p.clusterAgentAddress, grpc.WithInsecure(), grpc.WithBlock())
 	p.configClient = tarianpb.NewConfigClient(p.grpcConn)
@@ -52,7 +52,16 @@ func (p *PodAgent) Run() {
 	if err != nil {
 		logger.Fatalw("couldn't connect to the cluster agent", "err", err)
 	}
+}
 
+func (p *PodAgent) Close() {
+	if p.grpcConn != nil {
+		p.grpcConn.Close()
+	}
+}
+
+func (p *PodAgent) Run() {
+	p.Dial()
 	defer p.grpcConn.Close()
 
 	wg := sync.WaitGroup{}

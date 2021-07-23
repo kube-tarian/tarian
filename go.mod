@@ -7,7 +7,7 @@ require (
 	github.com/driftprogramming/pgxpoolmock v1.1.0
 	github.com/gogo/status v1.1.0
 	github.com/golang/mock v1.5.0
-	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/protobuf v1.5.2
 	github.com/jackc/pgx/v4 v4.12.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/shirou/gopsutil v3.21.6+incompatible
