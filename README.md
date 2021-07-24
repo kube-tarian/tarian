@@ -4,6 +4,11 @@
 
 
 ##### Protech your Applications running on Kubernetes from malicious attacks by pre-registering your source code signatures, runtime processes monitoring, runtime source code monitoring, change detection, alerting, pre-configured & instant respond actions based on detections and also sharing detections with community. Save your K8s environment from Ransomware! 
+
+#
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/devopstoday11/tarian)](https://goreportcard.com/report/github.com/devopstoday11/tarian)
+
 #
 
 How does Tarian works?
