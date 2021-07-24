@@ -79,6 +79,33 @@ func (d *DbEventStore) GetAll() ([]*tarianpb.Event, error) {
 	return allEvents, nil
 }
 
+func (d *DbEventStore) FindByNamespace(namespace string) ([]*tarianpb.Event, error) {
+	rows, err := d.pool.Query(context.Background(), "SELECT * FROM events WHERE namespace = $1", namespace)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	allEvents := []*tarianpb.Event{}
+
+	for rows.Next() {
+		e := eventRow{}
+
+		err := rows.Scan(&e.ID, &e.Type, &e.ServerTimestamp, &e.ClientTimestamp, &e.Targets)
+		if err != nil {
+			// TODO: logger.Errorw()
+
+			continue
+		}
+
+		allEvents = append(allEvents, e.toEvent())
+	}
+
+	return allEvents, nil
+}
+
 func (d *DbEventStore) Add(event *tarianpb.Event) error {
 	var id int
 	targetsJSON, err := json.Marshal(event.GetTargets())

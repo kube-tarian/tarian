@@ -12,6 +12,7 @@ service Config {
 
 service Event {
 	rpc IngestEvent(IngestEventRequest) returns (IngestEventResponse) {}
+	rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {}
 }
 
 message GetConstraintsRequest {
@@ -36,4 +37,12 @@ message IngestEventRequest {
 
 message IngestEventResponse {
 	bool success = 1;
+}
+
+message GetEventsRequest {
+	string namespace = 1;
+}
+
+message GetEventsResponse {
+	repeated tarianpb.types.Event events = 1;
 }

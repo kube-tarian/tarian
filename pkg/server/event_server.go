@@ -35,3 +35,17 @@ func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.Ingest
 
 	return &tarianpb.IngestEventResponse{Success: true}, nil
 }
+
+func (es *EventServer) GetEvents(ctxt context.Context, request *tarianpb.GetEventsRequest) (*tarianpb.GetEventsResponse, error) {
+	var events []*tarianpb.Event
+
+	if request.GetNamespace() == "" {
+		events, _ = es.eventStore.GetAll()
+	} else {
+		events, _ = es.eventStore.FindByNamespace(request.GetNamespace())
+	}
+
+	return &tarianpb.GetEventsResponse{
+		Events: events,
+	}, nil
+}
