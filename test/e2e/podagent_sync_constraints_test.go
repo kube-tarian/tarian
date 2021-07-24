@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -53,7 +52,4 @@ func TestPodAgentSyncConstraints(t *testing.T) {
 	assert.Equal(t, "app", constraint.GetSelector().GetMatchLabels()[0].GetKey())
 	assert.Equal(t, "nginx", constraint.GetSelector().GetMatchLabels()[0].GetValue())
 	assert.Equal(t, "nginx.*", constraint.GetAllowedProcesses()[0].GetRegex())
-
-	fmt.Printf("%v\n", podAgent.GetConstraints())
-
 }
