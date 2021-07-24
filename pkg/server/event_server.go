@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/devopstoday11/tarian/pkg/server/dbstore"
 	"github.com/devopstoday11/tarian/pkg/store"
@@ -37,7 +36,7 @@ func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.Ingest
 	err := es.eventStore.Add(request.GetEvent())
 
 	if err != nil {
-		fmt.Println(err)
+		logger.Errorw("error while handling ingest event", "err", err)
 		return &tarianpb.IngestEventResponse{Success: false}, nil
 	}
 
