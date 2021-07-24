@@ -7,6 +7,7 @@ import (
 	"github.com/devopstoday11/tarian/pkg/server/dbstore"
 	"github.com/devopstoday11/tarian/pkg/store"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type EventServer struct {
@@ -25,6 +26,13 @@ func NewEventServer(dsn string) (*EventServer, error) {
 
 func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.IngestEventRequest) (*tarianpb.IngestEventResponse, error) {
 	logger.Infow("ingest event", "request", request)
+
+	event := request.GetEvent()
+	if event == nil {
+		return &tarianpb.IngestEventResponse{Success: false}, nil
+	}
+
+	event.ServerTimestamp = timestamppb.Now()
 
 	err := es.eventStore.Add(request.GetEvent())
 
