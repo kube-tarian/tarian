@@ -1,9 +1,14 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 )
 
 func TestPodAgentSyncConstraints(t *testing.T) {
@@ -11,8 +16,22 @@ func TestPodAgentSyncConstraints(t *testing.T) {
 	e2eHelper := NewE2eHelper(t)
 	e2eHelper.PrepareDatabase()
 	e2eHelper.Run()
-	defer e2eHelper.Stop()
 	defer e2eHelper.DropDatabase()
+	defer e2eHelper.Stop()
+
+	// Add constraints
+	grpcConn, err := grpc.Dial(":"+e2eServerPort, grpc.WithInsecure())
+	require.Nil(t, err)
+	configClient := tarianpb.NewConfigClient(grpcConn)
+
+	allowedProcessRegex := "nginx.*"
+	constraint1 := &tarianpb.Constraint{Namespace: "default", Selector: &tarianpb.Selector{MatchLabels: []*tarianpb.MatchLabel{{Key: "app", Value: "nginx"}}}}
+	constraint1.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
+
+	addConstraintRequest := &tarianpb.AddConstraintRequest{Constraint: constraint1}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	configClient.AddConstraint(ctx, addConstraintRequest)
 
 	podAgent := e2eHelper.podAgent
 	podAgent.SyncConstraints()
@@ -26,7 +45,8 @@ func TestPodAgentSyncConstraints(t *testing.T) {
 		time.Sleep(2 * time.Second)
 	}
 
-	// Wait for response
+	// Verify constraints
 
 	fmt.Printf("%v\n", podAgent.GetConstraints())
+
 }

@@ -22,7 +22,7 @@ import (
 var cfg server.PostgresqlConfig = server.PostgresqlConfig{
 	User:     "postgres",
 	Password: "tarian",
-	Name:     "tarian",
+	Name:     "tarian", // only used to connect, it will create its own db
 	Host:     "localhost",
 	Port:     "5432",
 	SslMode:  "disable",
@@ -46,16 +46,19 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	dbPool, err := pgxpool.Connect(context.Background(), cfg.GetDsn())
 	require.Nil(t, err)
 
-	grpcServer, err := server.NewGrpcServer(cfg.GetDsn())
+	dbConfig := cfg
+	dbConfig.Name += "_test_" + uuid.NewV4().String()[:8]
+
+	_, err = dbPool.Exec(context.Background(), "CREATE DATABASE "+dbConfig.Name)
+	require.Nil(t, err)
+
+	grpcServer, err := server.NewGrpcServer(dbConfig.GetDsn())
 	require.Nil(t, err)
 
 	clusterAgent := clusteragent.NewClusterAgent("localhost:" + e2eServerPort)
 	podAgent := podagent.NewPodAgent("localhost:" + e2eClusterAgentPort)
 
-	dbConfig := cfg
-	dbConfig.Name += "_test_" + uuid.NewV4().String()[:8]
-
-	return &TestHelper{server: grpcServer, t: t, clusterAgent: clusterAgent, podAgent: podAgent, dbPool: dbPool, dbConfig: dbConfig}
+	return &TestHelper{t: t, dbPool: dbPool, dbConfig: dbConfig, server: grpcServer, clusterAgent: clusterAgent, podAgent: podAgent}
 }
 
 func (th *TestHelper) RunServer() {
@@ -90,28 +93,13 @@ func (th *TestHelper) Run() {
 	th.podAgent.Dial()
 }
 
-func (th *TestHelper) CreateDatabase() error {
-	_, err := th.dbPool.Exec(context.Background(), "CREATE DATABASE "+th.dbConfig.Name)
-
-	return err
-}
-
-func (th *TestHelper) RunDbMigration() error {
-	_, err := dbstore.RunMigration(th.dbConfig.GetDsn())
-
-	return err
-}
-
 func (th *TestHelper) PrepareDatabase() {
-	err := th.CreateDatabase()
-	require.Nil(th.t, err)
-
-	err = th.RunDbMigration()
+	_, err := dbstore.RunMigration(th.dbConfig.GetDsn())
 	require.Nil(th.t, err)
 }
 
 func (th *TestHelper) DropDatabase() {
-	_, err := th.dbPool.Exec(context.Background(), "DROP DATABASE "+th.dbConfig.Name)
+	_, err := th.dbPool.Exec(context.Background(), "DROP DATABASE "+th.dbConfig.Name+" WITH (FORCE)")
 
 	require.Nil(th.t, err)
 }
