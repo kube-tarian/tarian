@@ -37,10 +37,15 @@ type PodAgent struct {
 
 	constraints     []*tarianpb.Constraint
 	constraintsLock sync.RWMutex
+
+	cancelFunc context.CancelFunc
+	cancelCtx  context.Context
 }
 
 func NewPodAgent(clusterAgentAddress string) *PodAgent {
-	return &PodAgent{clusterAgentAddress: clusterAgentAddress}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	return &PodAgent{clusterAgentAddress: clusterAgentAddress, cancelCtx: ctx, cancelFunc: cancel}
 }
 
 func (p *PodAgent) Dial() {
@@ -54,7 +59,9 @@ func (p *PodAgent) Dial() {
 	}
 }
 
-func (p *PodAgent) Close() {
+func (p *PodAgent) GracefulStop() {
+	p.cancelFunc()
+
 	if p.grpcConn != nil {
 		p.grpcConn.Close()
 	}
@@ -67,11 +74,14 @@ func (p *PodAgent) Run() {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 
-	// TODO: implement graceful shutdown
-	go p.loopSyncConstraints()
-	go p.loopValidateProcesses()
+	go func() {
+		p.loopSyncConstraints(p.cancelCtx)
+		wg.Done()
+	}()
 
 	go func() {
+		p.loopValidateProcesses(p.cancelCtx)
+		wg.Done()
 	}()
 
 	wg.Wait()
@@ -88,11 +98,15 @@ func (p *PodAgent) GetConstraints() []*tarianpb.Constraint {
 	return p.constraints
 }
 
-func (p *PodAgent) loopSyncConstraints() {
+func (p *PodAgent) loopSyncConstraints(ctx context.Context) error {
 	for {
 		p.SyncConstraints()
 
-		time.Sleep(3 * time.Second)
+		select {
+		case <-time.After(3 * time.Second):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 }
 
@@ -111,7 +125,7 @@ func (p *PodAgent) SyncConstraints() {
 	p.SetConstraints(r.GetConstraints())
 }
 
-func (p *PodAgent) loopValidateProcesses() {
+func (p *PodAgent) loopValidateProcesses(ctx context.Context) error {
 	for {
 		ps, _ := psutil.Processes()
 		processes := NewProcessesFromPsutil(ps)
@@ -137,7 +151,11 @@ func (p *PodAgent) loopValidateProcesses() {
 			p.ReportViolationsToClusterAgent(violations)
 		}
 
-		time.Sleep(3 * time.Second)
+		select {
+		case <-time.After(3 * time.Second):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 }
 

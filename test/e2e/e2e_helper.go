@@ -82,7 +82,7 @@ func (th *TestHelper) RunClusterAgent() {
 func (th *TestHelper) Stop() {
 	th.server.GracefulStop()
 	th.clusterAgent.GetGrpcServer().GracefulStop()
-	th.podAgent.Close()
+	th.podAgent.GracefulStop()
 }
 
 func (th *TestHelper) Run() {

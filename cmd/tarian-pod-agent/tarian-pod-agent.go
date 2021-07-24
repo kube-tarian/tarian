@@ -3,6 +3,9 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/devopstoday11/tarian/pkg/podagent"
@@ -85,7 +88,22 @@ func run(c *cli.Context) error {
 	logger.Infow("tarian-pod-agent is running")
 
 	agent := podagent.NewPodAgent(host + ":" + port)
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		sig := <-sigCh
+		logger.Infow("got sigterm signal, attempting graceful shutdown", "signal", sig)
+
+		agent.GracefulStop()
+		wg.Done()
+	}()
+
 	agent.Run()
+	wg.Wait()
 
 	return nil
 }
