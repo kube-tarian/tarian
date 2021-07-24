@@ -20,7 +20,7 @@ func TestGetAll(t *testing.T) {
 		AddRow(1, "default", `{"match_labels": [{"key": "app", "value": "nginx"}]}`, `[{"regex": "(.*)nginx(.*)"}]`).
 		AddRow(2, "default2", `{"match_labels": [{"key": "app", "value": "worker"}]}`, `[{"regex": "(.*)worker(.*)"}]`).
 		ToPgxRows()
-	mockPool.EXPECT().Query(gomock.Any(), "SELECT * FROM constraints", gomock.Any()).Return(pgxRows, nil)
+	mockPool.EXPECT().Query(gomock.Any(), "SELECT * FROM constraints ORDER BY id ASC", gomock.Any()).Return(pgxRows, nil)
 
 	s := DbConstraintStore{pool: mockPool}
 	constraints, err := s.GetAll()
@@ -55,7 +55,7 @@ func TestFindByNamespace(t *testing.T) {
 	pgxRows := pgxpoolmock.NewRows(columns).
 		AddRow(1, "default", `{"match_labels": [{"key": "app", "value": "nginx"}]}`, `[{"regex": "(.*)nginx(.*)"}]`).
 		ToPgxRows()
-	mockPool.EXPECT().Query(gomock.Any(), "SELECT * FROM constraints WHERE namespace = $1", "default").Return(pgxRows, nil)
+	mockPool.EXPECT().Query(gomock.Any(), "SELECT * FROM constraints WHERE namespace = $1 ORDER BY id ASC", "default").Return(pgxRows, nil)
 
 	s := DbConstraintStore{pool: mockPool}
 	constraints, err := s.FindByNamespace("default")

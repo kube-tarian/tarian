@@ -28,8 +28,14 @@ func TestMemoryStoreGetAll(t *testing.T) {
 	constraints, _ := store.GetAll()
 	require.Len(t, constraints, 2)
 
-	assert.Equal(t, "default", constraints[0].Namespace)
-	assert.Equal(t, "ns2", constraints[1].Namespace)
+	// Order is not guaranteed. So, need to use contains.
+	namespaces := []string{}
+	for _, constraint := range constraints {
+		namespaces = append(namespaces, constraint.Namespace)
+	}
+
+	assert.Contains(t, namespaces, "default")
+	assert.Contains(t, namespaces, "ns2")
 }
 
 func TestMemoryStoreFindByNamespace(t *testing.T) {
