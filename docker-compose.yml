@@ -9,8 +9,12 @@ services:
     shm_size: '256mb'
     ports:
       - 5432:5432
-  adminer:
-    image: adminer
+  phppgadmin:
+    depends_on:
+    - db
+    image: bitnami/phppgadmin
     ports:
       - 8090:8080
-
+    environment:
+    - DATABASE_HOST=db
+    - DATABASE_SSL_MODE=disable
