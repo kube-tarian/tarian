@@ -1,0 +1,42 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-20.04
+    services:
+      postgres:
+        image: postgres
+        ports:
+         - 5432:5432
+        env:
+          POSTGRES_PASSWORD: tarian
+          POSTGRES_DB: tarian
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      # setup
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.16.6'
+
+      # prepare
+      - run: GO111MODULE=off go get -u github.com/mgechev/revive
+
+      # build
+      - run: make
+
+      # lint
+      - run: make lint
+
+      # unit-test
+      - run: make unit-test
+
+      # e2e-test
+      - run: make e2e-test
+
