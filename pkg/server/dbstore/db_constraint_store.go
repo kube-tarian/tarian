@@ -48,7 +48,7 @@ func (c *constraintRow) toConstraint() *tarianpb.Constraint {
 }
 
 func (d *DbConstraintStore) GetAll() ([]*tarianpb.Constraint, error) {
-	rows, err := d.pool.Query(context.Background(), "SELECT * FROM constraints")
+	rows, err := d.pool.Query(context.Background(), "SELECT * FROM constraints ORDER BY id ASC")
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (d *DbConstraintStore) GetAll() ([]*tarianpb.Constraint, error) {
 }
 
 func (d *DbConstraintStore) FindByNamespace(namespace string) ([]*tarianpb.Constraint, error) {
-	rows, err := d.pool.Query(context.Background(), "SELECT * FROM constraints WHERE namespace = $1", namespace)
+	rows, err := d.pool.Query(context.Background(), "SELECT * FROM constraints WHERE namespace = $1 ORDER BY id ASC", namespace)
 	if err != nil {
 		return nil, err
 	}

@@ -47,7 +47,7 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	require.Nil(t, err)
 
 	dbConfig := cfg
-	dbConfig.Name += "_test_" + uuid.NewV4().String()[:8]
+	dbConfig.Name += "_test_" + fmt.Sprintf("%d", time.Now().Unix()) + "_" + uuid.NewV4().String()[:8]
 
 	_, err = dbPool.Exec(context.Background(), "CREATE DATABASE "+dbConfig.Name)
 	require.Nil(t, err)

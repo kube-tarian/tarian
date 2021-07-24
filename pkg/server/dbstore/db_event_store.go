@@ -54,7 +54,7 @@ func (e *eventRow) toEvent() *tarianpb.Event {
 }
 
 func (d *DbEventStore) GetAll() ([]*tarianpb.Event, error) {
-	rows, err := d.pool.Query(context.Background(), "SELECT * FROM events")
+	rows, err := d.pool.Query(context.Background(), "SELECT * FROM events ORDER BY id ASC")
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (d *DbEventStore) GetAll() ([]*tarianpb.Event, error) {
 }
 
 func (d *DbEventStore) FindByNamespace(namespace string) ([]*tarianpb.Event, error) {
-	rows, err := d.pool.Query(context.Background(), "SELECT * FROM events WHERE namespace = $1", namespace)
+	rows, err := d.pool.Query(context.Background(), "SELECT * FROM events WHERE namespace = $1 ORDER BY id ASC", namespace)
 
 	if err != nil {
 		return nil, err
