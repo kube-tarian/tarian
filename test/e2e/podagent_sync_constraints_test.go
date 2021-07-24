@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
@@ -46,6 +47,12 @@ func TestPodAgentSyncConstraints(t *testing.T) {
 	}
 
 	// Verify constraints
+	assert.Len(t, podAgent.GetConstraints(), 1)
+	constraint := podAgent.GetConstraints()[0]
+	assert.Equal(t, "default", constraint.GetNamespace())
+	assert.Equal(t, "app", constraint.GetSelector().GetMatchLabels()[0].GetKey())
+	assert.Equal(t, "nginx", constraint.GetSelector().GetMatchLabels()[0].GetValue())
+	assert.Equal(t, "nginx.*", constraint.GetAllowedProcesses()[0].GetRegex())
 
 	fmt.Printf("%v\n", podAgent.GetConstraints())
 
