@@ -1,15 +1,22 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/devopstoday11/tarian/pkg/clusteragent"
 	"github.com/devopstoday11/tarian/pkg/podagent"
 	"github.com/devopstoday11/tarian/pkg/server"
+	"github.com/devopstoday11/tarian/pkg/server/dbstore"
+	"github.com/driftprogramming/pgxpoolmock"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 var cfg server.PostgresqlConfig = server.PostgresqlConfig{
@@ -26,50 +33,85 @@ const (
 	e2eClusterAgentPort = "60052"
 )
 
-type E2eHelper struct {
+type TestHelper struct {
 	server       *grpc.Server
 	clusterAgent *clusteragent.ClusterAgent
 	podAgent     *podagent.PodAgent
 	t            *testing.T
+	dbPool       pgxpoolmock.PgxPool
+	dbConfig     server.PostgresqlConfig
 }
 
-func NewE2eHelper(t *testing.T) *E2eHelper {
+func NewE2eHelper(t *testing.T) *TestHelper {
+	dbPool, err := pgxpool.Connect(context.Background(), cfg.GetDsn())
+	require.Nil(t, err)
+
 	grpcServer, err := server.NewGrpcServer(cfg.GetDsn())
 	require.Nil(t, err)
 
 	clusterAgent := clusteragent.NewClusterAgent("localhost:" + e2eServerPort)
 	podAgent := podagent.NewPodAgent("localhost:" + e2eClusterAgentPort)
 
-	return &E2eHelper{server: grpcServer, t: t, clusterAgent: clusterAgent, podAgent: podAgent}
+	dbConfig := cfg
+	dbConfig.Name += "_test_" + uuid.NewV4().String()[:8]
+
+	return &TestHelper{server: grpcServer, t: t, clusterAgent: clusterAgent, podAgent: podAgent, dbPool: dbPool, dbConfig: dbConfig}
 }
 
-func (e *E2eHelper) RunServer() {
+func (th *TestHelper) RunServer() {
 	listener, err := net.Listen("tcp", ":"+e2eServerPort)
-	require.Nil(e.t, err)
+	require.Nil(th.t, err)
 
 	fmt.Println("tarian-server is serving")
-	err = e.server.Serve(listener)
-	require.Nil(e.t, err)
+	err = th.server.Serve(listener)
+	require.Nil(th.t, err)
 }
 
-func (e *E2eHelper) RunClusterAgent() {
+func (th *TestHelper) RunClusterAgent() {
 	caListener, err := net.Listen("tcp", ":"+e2eClusterAgentPort)
-	require.Nil(e.t, err)
+	require.Nil(th.t, err)
 
 	fmt.Println("tarian-cluster-agent is serving")
-	err = e.clusterAgent.GetGrpcServer().Serve(caListener)
-	require.Nil(e.t, err)
+	err = th.clusterAgent.GetGrpcServer().Serve(caListener)
+	require.Nil(th.t, err)
 }
 
-func (e *E2eHelper) Stop() {
-	e.server.GracefulStop()
-	e.clusterAgent.GetGrpcServer().GracefulStop()
-	e.podAgent.Close()
+func (th *TestHelper) Stop() {
+	th.server.GracefulStop()
+	th.clusterAgent.GetGrpcServer().GracefulStop()
+	th.podAgent.Close()
 }
 
-func (e *E2eHelper) Run() {
-	go e.RunServer()
-	go e.RunClusterAgent()
+func (th *TestHelper) Run() {
+	go th.RunServer()
+	go th.RunClusterAgent()
 
-	e.podAgent.Dial()
+	time.Sleep(2 * time.Second)
+	th.podAgent.Dial()
+}
+
+func (th *TestHelper) CreateDatabase() error {
+	_, err := th.dbPool.Exec(context.Background(), "CREATE DATABASE "+th.dbConfig.Name)
+
+	return err
+}
+
+func (th *TestHelper) RunDbMigration() error {
+	_, err := dbstore.RunMigration(th.dbConfig.GetDsn())
+
+	return err
+}
+
+func (th *TestHelper) PrepareDatabase() {
+	err := th.CreateDatabase()
+	require.Nil(th.t, err)
+
+	err = th.RunDbMigration()
+	require.Nil(th.t, err)
+}
+
+func (th *TestHelper) DropDatabase() {
+	_, err := th.dbPool.Exec(context.Background(), "DROP DATABASE "+th.dbConfig.Name)
+
+	require.Nil(th.t, err)
 }
