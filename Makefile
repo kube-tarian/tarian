@@ -11,6 +11,9 @@ proto:
 test:
 	go test -v ./pkg/...
 
+e2e-test:
+	go test -v ./test/e2e/...
+
 lint:
 	revive -formatter stylish -config .revive.toml ./pkg/...
 
