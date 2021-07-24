@@ -7,6 +7,7 @@
 
 #
 
+[![Build status](https://img.shields.io/github/workflow/status/devopstoday11/tarian/CI?style=flat)](https://github.com/devopstoday11/tarian/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/devopstoday11/tarian)](https://goreportcard.com/report/github.com/devopstoday11/tarian)
 
 #
