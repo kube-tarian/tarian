@@ -35,7 +35,7 @@ spec:
   - port: 80
     targetPort: 50052
     nodePort: 31052
-    name: tarian-cluster-agent
+    name: grpc
   selector:
     app: tarian-cluster-agent
 ---

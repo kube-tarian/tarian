@@ -47,7 +47,7 @@ spec:
   - port: 80
     targetPort: 50051
     nodePort: 31051
-    name: tarian-server
+    name: grpc
   selector:
     app: tarian-server
 ---
