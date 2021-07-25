@@ -161,13 +161,15 @@ func dbmigrate(c *cli.Context) error {
 	var cfg server.PostgresqlConfig
 	err := envconfig.Process("Postgres", &cfg)
 	if err != nil {
-		logger.Fatalw("database config error", "err", err)
+		logger.Errorw("database config error", "err", err)
+		return err
 	}
 
 	count, err := dbstore.RunMigration(cfg.GetDsn())
 
 	if err != nil {
 		logger.Errorw("error while running database migration", "err", err)
+		return err
 	} else {
 		logger.Infow("completed database migration", "applied", count)
 	}
@@ -181,12 +183,14 @@ func devSeedData(c *cli.Context) error {
 	var cfg server.PostgresqlConfig
 	err := envconfig.Process("Postgres", &cfg)
 	if err != nil {
-		logger.Fatalw("database config error", "err", err)
+		logger.Errorw("database config error", "err", err)
+		return err
 	}
 
 	dbStore, err := dbstore.NewDbConstraintStore(cfg.GetDsn())
 	if err != nil {
-		logger.Fatalw("error creating database store", "err", err)
+		logger.Errorw("error creating database store", "err", err)
+		return err
 	}
 
 	regexes := []string{"ssh", "worker", "swap", "scsi", "loop", "gvfs", "idle", "injection", "nvme", "jbd", "snap", "cpu", "soft", "bash", "integrity", "kcryptd", "krfcommd", "kcompactd0", "wpa_supplican", "oom_reaper", "registryd", "migration", "kblockd", "gsd-", "kdevtmpfs", "pipewire"}
