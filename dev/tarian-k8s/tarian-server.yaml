@@ -14,9 +14,9 @@ spec:
     spec:
       containers:
       - name: tarian-server
-        image: localhost:5000/tarian-server:latest
+        image: "localhost:5000/tarian-server:latest"
         args:
-        - --log-encoding=json
+        - "--log-encoding=json"
         - run
         ports:
         - containerPort: 50051
