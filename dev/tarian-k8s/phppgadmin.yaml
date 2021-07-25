@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phppgadmin
+spec:
+  selector:
+    matchLabels:
+      app: phppgadmin
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: phppgadmin
+    spec:
+      containers:
+      - name: phppgadmin
+        image: bitnami/phppgadmin
+        ports:
+        - containerPort: 8080
+          name: phppgadmin
+        env:
+        - name: DATABASE_HOST
+          value: postgresql
+        - name: DATABASE_SSL_MODE
+          value: disable
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phppgadmin
+  labels:
+    app: phppgadmin
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 31433
+    name: phppgadmin
+  selector:
+    app: phppgadmin
+---
+

@@ -17,3 +17,7 @@ e2e-test:
 lint:
 	revive -formatter stylish -config .revive.toml ./pkg/...
 
+local-images:
+	docker build -f Dockerfile-server -t localhost:5000/tarian-server . && docker push localhost:5000/tarian-server
+	docker build -f Dockerfile-cluster-agent -t localhost:5000/tarian-cluster-agent . && docker push localhost:5000/tarian-cluster-agent
+	docker build -f Dockerfile-pod-agent -t localhost:5000/tarian-pod-agent . && docker push localhost:5000/tarian-pod-agent

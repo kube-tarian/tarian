@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tarian-cluster-agent
+spec:
+  selector:
+    matchLabels:
+      app: tarian-cluster-agent
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: tarian-cluster-agent
+    spec:
+      containers:
+      - name: tarian-cluster-agent
+        image: localhost:5000/tarian-cluster-agent:latest
+        args:
+        - --log-encoding=json
+        - run
+        - "--server-address=tarian-server:80"
+        ports:
+        - containerPort: 50052
+          name: grpc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tarian-cluster-agent
+  labels:
+    app: tarian-cluster-agent
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 50052
+    nodePort: 31052
+    name: tarian-cluster-agent
+  selector:
+    app: tarian-cluster-agent
+---
+

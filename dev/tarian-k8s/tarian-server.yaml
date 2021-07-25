@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tarian-server
+spec:
+  selector:
+    matchLabels:
+      app: tarian-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: tarian-server
+    spec:
+      containers:
+      - name: tarian-server
+        image: localhost:5000/tarian-server:latest
+        args:
+        - --log-encoding=json
+        - run
+        ports:
+        - containerPort: 50051
+          name: grpc
+        env:
+        - name: POSTGRES_HOST
+          value: postgresql
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: tarian
+        - name: POSTGRES_NAME
+          value: tarian
+        - name: POSTGRES_SSL_MODE
+          value: disable
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tarian-server
+  labels:
+    app: tarian-server
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 50051
+    nodePort: 31051
+    name: tarian-server
+  selector:
+    app: tarian-server
+---
+

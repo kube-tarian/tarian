@@ -1,0 +1,7 @@
+FROM alpine:3.14
+
+RUN apk --no-cache add ca-certificates
+COPY ./bin/tarian-pod-agent .
+
+ENTRYPOINT ["./tarian-pod-agent"]
+
