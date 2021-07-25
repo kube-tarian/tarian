@@ -50,7 +50,7 @@ func NewPodAgent(clusterAgentAddress string) *PodAgent {
 
 func (p *PodAgent) Dial() {
 	var err error
-	p.grpcConn, err = grpc.Dial(p.clusterAgentAddress, grpc.WithInsecure(), grpc.WithBlock())
+	p.grpcConn, err = grpc.Dial(p.clusterAgentAddress, grpc.WithInsecure())
 	p.configClient = tarianpb.NewConfigClient(p.grpcConn)
 	p.eventClient = tarianpb.NewEventClient(p.grpcConn)
 
