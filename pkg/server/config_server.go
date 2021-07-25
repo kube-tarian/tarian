@@ -27,11 +27,16 @@ func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.Ge
 	logger.Info("Received get config RPC")
 
 	var constraints []*tarianpb.Constraint
+	var err error
 
 	if request.GetNamespace() == "" {
-		constraints, _ = cs.constraintStore.GetAll()
+		constraints, err = cs.constraintStore.GetAll()
 	} else {
-		constraints, _ = cs.constraintStore.FindByNamespace(request.GetNamespace())
+		constraints, err = cs.constraintStore.FindByNamespace(request.GetNamespace())
+	}
+
+	if err != nil {
+		logger.Errorw("error while handling get constraints RPC", "error", err)
 	}
 
 	return &tarianpb.GetConstraintsResponse{
@@ -40,7 +45,11 @@ func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.Ge
 }
 
 func (cs *ConfigServer) AddConstraint(ctx context.Context, request *tarianpb.AddConstraintRequest) (*tarianpb.AddConstraintResponse, error) {
-	cs.constraintStore.Add(request.GetConstraint())
+	err := cs.constraintStore.Add(request.GetConstraint())
+	if err != nil {
+		logger.Errorw("error while handling add constraint RPC", "error", err)
+		return &tarianpb.AddConstraintResponse{Success: false}, nil
+	}
 
 	return &tarianpb.AddConstraintResponse{Success: true}, nil
 }

@@ -45,11 +45,16 @@ func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.Ingest
 
 func (es *EventServer) GetEvents(ctxt context.Context, request *tarianpb.GetEventsRequest) (*tarianpb.GetEventsResponse, error) {
 	var events []*tarianpb.Event
+	var err error
 
 	if request.GetNamespace() == "" {
-		events, _ = es.eventStore.GetAll()
+		events, err = es.eventStore.GetAll()
 	} else {
-		events, _ = es.eventStore.FindByNamespace(request.GetNamespace())
+		events, err = es.eventStore.FindByNamespace(request.GetNamespace())
+	}
+
+	if err != nil {
+		logger.Errorw("error while handling get events RPC", "error", err)
 	}
 
 	return &tarianpb.GetEventsResponse{

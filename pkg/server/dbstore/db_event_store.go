@@ -21,7 +21,15 @@ type DbEventStore struct {
 
 func NewDbEventStore(dsn string) (*DbEventStore, error) {
 	// TODO: pass context from param?
-	dbpool, err := pgxpool.Connect(context.Background(), dsn)
+
+	poolConfig, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	poolConfig.LazyConnect = true
+
+	dbpool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
 
 	if err != nil {
 		return nil, err
