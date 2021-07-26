@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      shareProcessNamespace: true
+      containers:
+      - name: nginx
+        image: bitnami/nginx
+        ports:
+        - containerPort: 8080
+          name: http
+      - name: tarian-pod-agent
+        image: localhost:5000/tarian-pod-agent:latest
+        args:
+        - "--log-encoding=json"
+        - run
+        - "--host=tarian-cluster-agent"
+        - "--port=80"
+
