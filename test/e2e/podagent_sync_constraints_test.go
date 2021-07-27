@@ -24,16 +24,15 @@ func TestPodAgentSyncConstraints(t *testing.T) {
 	require.Nil(t, err)
 	configClient := tarianpb.NewConfigClient(grpcConn)
 
-	allowedProcessRegex := "nginx.*"
-	constraint1 := &tarianpb.Constraint{Namespace: "default", Selector: &tarianpb.Selector{MatchLabels: []*tarianpb.MatchLabel{{Key: "app", Value: "nginx"}}}}
-	constraint1.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
-
-	addConstraintRequest := &tarianpb.AddConstraintRequest{Constraint: constraint1}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	configClient.AddConstraint(ctx, addConstraintRequest)
+
+	configClient.AddConstraint(ctx, createConstraintRequest("default", "nginx.*", []*tarianpb.MatchLabel{{Key: "app", Value: "nginx"}}))
+	configClient.AddConstraint(ctx, createConstraintRequest("default2", "nginx.*", []*tarianpb.MatchLabel{{Key: "app2", Value: "nginx2"}}))
 
 	podAgent := e2eHelper.podAgent
+	podAgent.SetNamespace("default")
+	podAgent.SetPodLabels([]*tarianpb.Label{{Key: "app", Value: "nginx"}, {Key: "pod-template-hash", Value: "abcdef"}})
 	podAgent.SyncConstraints()
 
 	// Retry up to 3 times if intermittent network error occurs
@@ -52,4 +51,11 @@ func TestPodAgentSyncConstraints(t *testing.T) {
 	assert.Equal(t, "app", constraint.GetSelector().GetMatchLabels()[0].GetKey())
 	assert.Equal(t, "nginx", constraint.GetSelector().GetMatchLabels()[0].GetValue())
 	assert.Equal(t, "nginx.*", constraint.GetAllowedProcesses()[0].GetRegex())
+}
+
+func createConstraintRequest(namespace string, allowedProcessRegex string, labels []*tarianpb.MatchLabel) *tarianpb.AddConstraintRequest {
+	constraint := &tarianpb.Constraint{Namespace: namespace, Selector: &tarianpb.Selector{MatchLabels: labels}}
+	constraint.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
+
+	return &tarianpb.AddConstraintRequest{Constraint: constraint}
 }
