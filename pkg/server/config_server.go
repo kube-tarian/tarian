@@ -26,7 +26,7 @@ func NewConfigServer(dsn string) (*ConfigServer, error) {
 }
 
 func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
-	logger.Info("Received get config RPC")
+	logger.Infow("Received get config RPC", "namespace", request.GetNamespace(), "labels", request.GetLabels())
 
 	var constraints []*tarianpb.Constraint
 	var err error
@@ -56,7 +56,7 @@ func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.Ge
 				constraintSelectorLabelSet.Add(l.GetKey() + "=" + l.GetValue())
 			}
 
-			if constraintSelectorLabelSet.IsSubset(requestLabelSet) {
+			if requestLabelSet.IsSubset(constraintSelectorLabelSet) {
 				matchedConstraints = append(matchedConstraints, constraint)
 			}
 		}

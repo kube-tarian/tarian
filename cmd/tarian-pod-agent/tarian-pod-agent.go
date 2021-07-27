@@ -72,6 +72,11 @@ func getCliApp() *cli.App {
 						Usage: "File path containing pod labels. This is intended to be a file from Kubernetes DownwardAPIVolumeFile",
 						Value: "",
 					},
+					&cli.StringFlag{
+						Name:  "namespace",
+						Usage: "Kubernetes namespace where it is running",
+						Value: "tarian-system",
+					},
 				},
 				Action: run,
 			},
@@ -106,6 +111,11 @@ func run(c *cli.Context) error {
 		}
 
 		agent.SetPodLabels(podLabels)
+	}
+
+	namespace := c.String("namespace")
+	if namespace != "" {
+		agent.SetNamespace(namespace)
 	}
 
 	sigCh := make(chan os.Signal, 1)

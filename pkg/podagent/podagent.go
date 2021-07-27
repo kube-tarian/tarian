@@ -35,6 +35,7 @@ type PodAgent struct {
 	configClient        tarianpb.ConfigClient
 	eventClient         tarianpb.EventClient
 	podLabels           []*tarianpb.Label
+	namespace           string
 
 	constraints     []*tarianpb.Constraint
 	constraintsLock sync.RWMutex
@@ -51,6 +52,10 @@ func NewPodAgent(clusterAgentAddress string) *PodAgent {
 
 func (p *PodAgent) SetPodLabels(labels []*tarianpb.Label) {
 	p.podLabels = labels
+}
+
+func (p *PodAgent) SetNamespace(namespace string) {
+	p.namespace = namespace
 }
 
 func (p *PodAgent) Dial() {
@@ -118,7 +123,7 @@ func (p *PodAgent) loopSyncConstraints(ctx context.Context) error {
 func (p *PodAgent) SyncConstraints() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
-	r, err := p.configClient.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{Namespace: "default", Labels: p.podLabels})
+	r, err := p.configClient.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{Namespace: p.namespace, Labels: p.podLabels})
 
 	if err != nil {
 		logger.Errorw("error while getting constraints from the cluster agent", "err", err)
@@ -181,7 +186,7 @@ func (p *PodAgent) ReportViolationsToClusterAgent(processes map[int32]*Process) 
 				{
 					Pod: &tarianpb.Pod{
 						Uid:       "abc-def-ghe",
-						Namespace: "default",
+						Namespace: "tarian-system",
 						Labels: []*tarianpb.Label{
 							{
 								Key:   "app",

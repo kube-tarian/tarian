@@ -196,7 +196,7 @@ func devSeedData(c *cli.Context) error {
 	regexes := []string{"ssh", "worker", "swap", "scsi", "loop", "gvfs", "idle", "injection", "nvme", "jbd", "snap", "cpu", "soft", "bash", "integrity", "kcryptd", "krfcommd", "kcompactd0", "wpa_supplican", "oom_reaper", "registryd", "migration", "kblockd", "gsd-", "kdevtmpfs", "pipewire"}
 
 	for _, r := range regexes {
-		exampleConstraint := tarianpb.Constraint{Namespace: "default", Selector: &tarianpb.Selector{MatchLabels: []*tarianpb.MatchLabel{{Key: "app", Value: "nginx"}}}}
+		exampleConstraint := tarianpb.Constraint{Namespace: "tarian-system", Selector: &tarianpb.Selector{MatchLabels: []*tarianpb.MatchLabel{{Key: "app", Value: "nginx"}}}}
 		allowedProcessRegex := "(.*)" + r + "(.*)"
 		exampleConstraint.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
 		err := dbStore.Add(&exampleConstraint)
@@ -209,7 +209,7 @@ func devSeedData(c *cli.Context) error {
 	regexes2 := []string{"sleep"}
 
 	for _, r := range regexes2 {
-		exampleConstraint := tarianpb.Constraint{Namespace: "default", Selector: &tarianpb.Selector{MatchLabels: []*tarianpb.MatchLabel{{Key: "app", Value: "nginx2"}, {Key: "app2", Value: "nginx3"}}}}
+		exampleConstraint := tarianpb.Constraint{Namespace: "tarian-system", Selector: &tarianpb.Selector{MatchLabels: []*tarianpb.MatchLabel{{Key: "app", Value: "nginx2"}, {Key: "app2", Value: "nginx3"}}}}
 		allowedProcessRegex := "(.*)" + r + "(.*)"
 		exampleConstraint.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
 		err := dbStore.Add(&exampleConstraint)
