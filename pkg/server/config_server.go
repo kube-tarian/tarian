@@ -60,6 +60,8 @@ func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.Ge
 				matchedConstraints = append(matchedConstraints, constraint)
 			}
 		}
+	} else {
+		matchedConstraints = constraints
 	}
 
 	if err != nil {
