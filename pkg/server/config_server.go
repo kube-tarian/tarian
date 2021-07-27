@@ -6,6 +6,8 @@ import (
 	"github.com/devopstoday11/tarian/pkg/server/dbstore"
 	"github.com/devopstoday11/tarian/pkg/store"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
+
+	"github.com/scylladb/go-set/strset"
 )
 
 type ConfigServer struct {
@@ -35,12 +37,37 @@ func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.Ge
 		constraints, err = cs.constraintStore.FindByNamespace(request.GetNamespace())
 	}
 
+	matchedConstraints := []*tarianpb.Constraint{}
+
+	// filter matchLabels
+	if request.GetLabels() != nil {
+		requestLabelSet := strset.New()
+		for _, l := range request.GetLabels() {
+			requestLabelSet.Add(l.GetKey() + "=" + l.GetValue())
+		}
+
+		for _, constraint := range constraints {
+			if constraint.GetSelector() == nil || constraint.GetSelector().GetMatchLabels() == nil {
+				continue
+			}
+
+			constraintSelectorLabelSet := strset.New()
+			for _, l := range constraint.GetSelector().GetMatchLabels() {
+				constraintSelectorLabelSet.Add(l.GetKey() + "=" + l.GetValue())
+			}
+
+			if constraintSelectorLabelSet.IsSubset(requestLabelSet) {
+				matchedConstraints = append(matchedConstraints, constraint)
+			}
+		}
+	}
+
 	if err != nil {
 		logger.Errorw("error while handling get constraints RPC", "error", err)
 	}
 
 	return &tarianpb.GetConstraintsResponse{
-		Constraints: constraints,
+		Constraints: matchedConstraints,
 	}, nil
 }
 

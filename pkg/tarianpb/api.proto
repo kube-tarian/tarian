@@ -17,6 +17,8 @@ service Event {
 
 message GetConstraintsRequest {
 	string namespace = 1;
+
+	repeated tarianpb.types.Label labels = 2;
 }
 
 message GetConstraintsResponse {

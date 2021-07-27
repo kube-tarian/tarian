@@ -34,6 +34,7 @@ type PodAgent struct {
 	grpcConn            *grpc.ClientConn
 	configClient        tarianpb.ConfigClient
 	eventClient         tarianpb.EventClient
+	podLabels           []*tarianpb.Label
 
 	constraints     []*tarianpb.Constraint
 	constraintsLock sync.RWMutex
@@ -46,6 +47,10 @@ func NewPodAgent(clusterAgentAddress string) *PodAgent {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &PodAgent{clusterAgentAddress: clusterAgentAddress, cancelCtx: ctx, cancelFunc: cancel}
+}
+
+func (p *PodAgent) SetPodLabels(labels []*tarianpb.Label) {
+	p.podLabels = labels
 }
 
 func (p *PodAgent) Dial() {
@@ -113,7 +118,7 @@ func (p *PodAgent) loopSyncConstraints(ctx context.Context) error {
 func (p *PodAgent) SyncConstraints() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
-	r, err := p.configClient.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{Namespace: "default"})
+	r, err := p.configClient.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{Namespace: "default", Labels: p.podLabels})
 
 	if err != nil {
 		logger.Errorw("error while getting constraints from the cluster agent", "err", err)

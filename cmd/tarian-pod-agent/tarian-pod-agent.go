@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bufio"
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 
 	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/devopstoday11/tarian/pkg/podagent"
+	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -64,6 +67,11 @@ func getCliApp() *cli.App {
 						Usage: "Host port of the cluster agent to communicate with",
 						Value: defaultClusterAgentPort,
 					},
+					&cli.StringFlag{
+						Name:  "pod-labels-file",
+						Usage: "File path containing pod labels. This is intended to be a file from Kubernetes DownwardAPIVolumeFile",
+						Value: "",
+					},
 				},
 				Action: run,
 			},
@@ -89,6 +97,17 @@ func run(c *cli.Context) error {
 
 	agent := podagent.NewPodAgent(host + ":" + port)
 
+	podLabelsFile := c.String("pod-labels-file")
+	if podLabelsFile != "" {
+		podLabels, err := readLabelsFromFile(podLabelsFile)
+
+		if err != nil {
+			logger.Errorw("failed reading pod-labels-file", "err", err)
+		}
+
+		agent.SetPodLabels(podLabels)
+	}
+
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 	wg := sync.WaitGroup{}
@@ -106,4 +125,33 @@ func run(c *cli.Context) error {
 	wg.Wait()
 
 	return nil
+}
+
+func readLabelsFromFile(path string) ([]*tarianpb.Label, error) {
+	labels := []*tarianpb.Label{}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		idx := strings.Index(line, "=")
+
+		if idx < 0 {
+			continue
+		}
+
+		key := line[:idx]
+		value := strings.Trim(line[idx+1:], "\"")
+
+		labels = append(labels, &tarianpb.Label{Key: key, Value: value})
+	}
+
+	return labels, nil
 }

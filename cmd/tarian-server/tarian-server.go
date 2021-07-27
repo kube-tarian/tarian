@@ -206,6 +206,19 @@ func devSeedData(c *cli.Context) error {
 		}
 	}
 
+	regexes2 := []string{"sleep"}
+
+	for _, r := range regexes2 {
+		exampleConstraint := tarianpb.Constraint{Namespace: "default", Selector: &tarianpb.Selector{MatchLabels: []*tarianpb.MatchLabel{{Key: "app", Value: "nginx2"}, {Key: "app2", Value: "nginx3"}}}}
+		allowedProcessRegex := "(.*)" + r + "(.*)"
+		exampleConstraint.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
+		err := dbStore.Add(&exampleConstraint)
+		if err != nil {
+			logger.Errorw("error while adding seed data: constraint", "err", err)
+			return err
+		}
+	}
+
 	logger.Infow("finished adding seed data")
 
 	return nil
