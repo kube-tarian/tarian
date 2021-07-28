@@ -10,6 +10,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/jackc/pgx/v4 v4.12.0
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/olekukonko/tablewriter v0.0.5
 	github.com/satori/go.uuid v1.2.0
 	github.com/scylladb/go-set v1.0.2
 	github.com/shirou/gopsutil v3.21.6+incompatible
