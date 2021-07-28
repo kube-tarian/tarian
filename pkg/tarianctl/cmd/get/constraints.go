@@ -17,7 +17,7 @@ func NewGetConstraintsCommand() *cli.Command {
 		Name:  "constraints",
 		Usage: "Get constraints from the Tarian Server.",
 		Action: func(c *cli.Context) error {
-			client, _ := client.NewConfigServer(c.String("server-address"))
+			client, _ := client.NewConfigClient(c.String("server-address"))
 			response, err := client.GetConstraints(context.Background(), &tarianpb.GetConstraintsRequest{})
 
 			if err != nil {
