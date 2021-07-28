@@ -11,6 +11,7 @@ func NewGetCommand() *cli.Command {
 		Flags: []cli.Flag{},
 		Subcommands: []*cli.Command{
 			NewGetConstraintsCommand(),
+			NewGetEventsCommand(),
 		},
 	}
 }

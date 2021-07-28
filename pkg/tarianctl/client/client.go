@@ -10,3 +10,9 @@ func NewConfigClient(serverAddress string) (tarianpb.ConfigClient, error) {
 
 	return tarianpb.NewConfigClient(grpcConn), err
 }
+
+func NewEventClient(serverAddress string) (tarianpb.EventClient, error) {
+	grpcConn, err := grpc.Dial(serverAddress, grpc.WithInsecure())
+
+	return tarianpb.NewEventClient(grpcConn), err
+}

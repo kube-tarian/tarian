@@ -30,6 +30,7 @@ func NewGetConstraintsCommand() *cli.Command {
 			table.SetColumnSeparator(" ")
 			table.SetCenterSeparator("-")
 			table.SetAlignment(tablewriter.ALIGN_LEFT)
+
 			for _, c := range response.GetConstraints() {
 				table.Append([]string{c.GetNamespace(), matchLabelsToString(c.GetSelector().GetMatchLabels()), allowedProcessesToString(c.GetAllowedProcesses())})
 			}
