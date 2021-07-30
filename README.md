@@ -3,7 +3,7 @@
 > ###### We want to maintain this as open-source to fight against the attacks on our favorite Kubernetes ecosystem. We can fight threats together as a community, by continuous contribution.   
 
 
-##### Protech your Applications running on Kubernetes from malicious attacks by pre-registering your source code signatures, runtime processes monitoring, runtime source code monitoring, change detection, alerting, pre-configured & instant respond actions based on detections and also sharing detections with community. Save your K8s environment from Ransomware! 
+##### Protect your Applications running on Kubernetes from malicious attacks by pre-registering your source code signatures, runtime processes monitoring, runtime source code monitoring, change detection, alerting, pre-configured & instant respond actions based on detections and also sharing detections with community. Save your K8s environment from Ransomware! 
 
 #
 
