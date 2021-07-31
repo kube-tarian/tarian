@@ -27,10 +27,13 @@ func (a *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 	}
 
 	if pod.Annotations == nil {
-		pod.Annotations = map[string]string{}
+		return admission.Allowed("no annotation found")
 	}
 
-	pod.Annotations["example-mutating-admission-webhook"] = "foo23"
+	if _, ok := pod.Annotations["pod-agent.k8s.tarian.io/inject"]; !ok {
+		return admission.Allowed("annotation pod-agent.k8s.tarian.io/inject not found")
+	}
+
 	sidecarContainer := corev1.Container{
 		Name:         "tarian-pod-agent",
 		Image:        "localhost:5000/tarian-pod-agent:latest",
