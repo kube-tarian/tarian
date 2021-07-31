@@ -49,7 +49,7 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
-// +kubebuilder:webhook:path=/mutate-v1-pod,mutating=true,sideEffects=none,failurePolicy=fail,groups="",resources=pods,verbs=create;update,versions=v1,admissionReviewVersions=v1,name=mpod.kb.io
+// +kubebuilder:webhook:path=/inject-pod-agent,mutating=true,sideEffects=none,failurePolicy=ignore,groups="",resources=pods,verbs=create,versions=v1,admissionReviewVersions=v1,name=pod-agent.k8s.tarian.io
 
 // podAnnotator annotates Pods
 type podAnnotator struct {
@@ -231,7 +231,7 @@ func runWebhookServer(c *cli.Context) error {
 		os.Exit(1)
 	}
 
-	mgr.GetWebhookServer().Register("/mutate-v1-pod", &webhook.Admission{Handler: &podAnnotator{Client: mgr.GetClient()}})
+	mgr.GetWebhookServer().Register("/inject-pod-agent", &webhook.Admission{Handler: &podAnnotator{Client: mgr.GetClient()}})
 
 	//+kubebuilder:scaffold:builder
 
