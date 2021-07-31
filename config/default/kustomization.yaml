@@ -8,6 +8,7 @@ bases:
 - ../webhook
 
 patchesStrategicMerge:
+- manager_patch.yaml
 - webhook_patch.yaml
 
 resources:

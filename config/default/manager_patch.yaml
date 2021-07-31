@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: system
+spec:
+  template:
+    spec:
+      securityContext:
+        runAsNonRoot: false
+      containers:
+      - command: null
+        args:
+        - --log-encoding=json
+        - run-webhook-server
+        name: manager
+        securityContext:
+          allowPrivilegeEscalation: true
+        volumeMounts:
+        - mountPath: "/tmp/k8s-webhook-server/serving-certs"
+          name: webhook-tls
+          readOnly: true
+      volumes:
+      - name: webhook-tls
+        secret:
+          secretName: webhook-tls
