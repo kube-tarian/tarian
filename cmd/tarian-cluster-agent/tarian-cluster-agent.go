@@ -1,30 +1,19 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 
 	"github.com/devopstoday11/tarian/pkg/clusteragent"
+	"github.com/devopstoday11/tarian/pkg/clusteragent/webhookserver"
 	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/go-logr/zapr"
 	cli "github.com/urfave/cli/v2"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 const (
@@ -38,65 +27,7 @@ const (
 var (
 	version = "dev"
 	commit  = "main"
-
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
 )
-
-func init() {
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
-	//+kubebuilder:scaffold:scheme
-}
-
-// +kubebuilder:webhook:path=/inject-pod-agent,mutating=true,sideEffects=none,failurePolicy=ignore,groups="",resources=pods,verbs=create,versions=v1,admissionReviewVersions=v1,name=pod-agent.k8s.tarian.io
-
-// podAnnotator annotates Pods
-type podAnnotator struct {
-	Client  client.Client
-	decoder *admission.Decoder
-}
-
-// podAnnotator adds an annotation to every incoming pods.
-func (a *podAnnotator) Handle(ctx context.Context, req admission.Request) admission.Response {
-	pod := &corev1.Pod{}
-
-	err := a.decoder.Decode(req, pod)
-	if err != nil {
-		return admission.Errored(http.StatusBadRequest, err)
-	}
-
-	if pod.Annotations == nil {
-		pod.Annotations = map[string]string{}
-	}
-
-	pod.Annotations["example-mutating-admission-webhook"] = "foo23"
-	sidecarContainer := corev1.Container{
-		Name:         "tarian-pod-agent",
-		Image:        "localhost:5000/tarian-pod-agent:latest",
-		Env:          []corev1.EnvVar{{Name: "NAMESPACE", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.namespace"}}}},
-		Args:         []string{"--log-encoding=json", "run", "--host=tarian-cluster-agent.tarian-system.svc", "--port=80", "--namespace=$(NAMESPACE)", "--pod-labels-file==/etc/podinfo/labels"},
-		VolumeMounts: []corev1.VolumeMount{{Name: "podinfo", MountPath: "/etc/podinfo"}},
-	}
-	pod.Spec.Containers = append(pod.Spec.Containers, sidecarContainer)
-	pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{Name: "podinfo", VolumeSource: corev1.VolumeSource{DownwardAPI: &corev1.DownwardAPIVolumeSource{Items: []corev1.DownwardAPIVolumeFile{{Path: "labels", FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.labels"}}}}}})
-
-	marshaledPod, err := json.Marshal(pod)
-	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, err)
-	}
-
-	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledPod)
-}
-
-// podAnnotator implements admission.DecoderInjector.
-// A decoder will be automatically injected.
-
-// InjectDecoder injects the decoder.
-func (a *podAnnotator) InjectDecoder(d *admission.Decoder) error {
-	a.decoder = d
-	return nil
-}
 
 func main() {
 	app := getCliApp()
@@ -218,38 +149,14 @@ func runWebhookServer(c *cli.Context) error {
 	ctrlLogger := zapr.NewLogger(logger.Desugar())
 	ctrl.SetLogger(ctrlLogger)
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     "0",
-		Port:                   9443,
-		HealthProbeBindAddress: ":8081", // TODO: extract to CLI flag
-		LeaderElection:         false,   // TODO: extract to CLI flag
-		LeaderElectionID:       "0f4c7cb2.k8s.tarian.io",
-	})
-	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
-	}
+	mgr := webhookserver.NewManager()
 
-	mgr.GetWebhookServer().Register("/inject-pod-agent", &webhook.Admission{Handler: &podAnnotator{Client: mgr.GetClient()}})
-
-	//+kubebuilder:scaffold:builder
-
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
-	}
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
-	}
-
-	setupLog.Info("starting manager")
+	logger.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
+		logger.Error(err, "problem running manager")
 		os.Exit(1)
 	}
 
-	setupLog.Info("manager shutdown gracefully")
+	logger.Info("manager shutdown gracefully")
 	return nil
 }
