@@ -29,7 +29,7 @@ jobs:
       - run: GO111MODULE=off go get -u github.com/mgechev/revive
 
       # build
-      - run: make
+      - run: make build
 
       # lint
       - run: make lint

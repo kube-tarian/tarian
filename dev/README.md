@@ -18,13 +18,13 @@
 
 ```bash
 cd ..
-make default local-images
+make build local-images
 ```
 
 3. Create a kind cluster with this config:
 
 ```bash
-kind create cluster --config=cluster-config.yaml
+make create-kind-cluster
 ```
 
 4. Apply registry config map:
@@ -36,7 +36,7 @@ kubectl apply -f registry-hosting-config-map.yaml
 5. Apply tarian-k8s manifests:
 
 ```bash
-kubectl create namespace tarian-system
+make deploy
 kubectl apply -f tarian-k8s -n tarian-system
 ```
 

@@ -9,39 +9,14 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 
-
-.PHONY: default
-default: generate fmt vet
-	CGO_ENABLED=0 go build -o ./bin/tarian-server ./cmd/tarian-server/
-	CGO_ENABLED=0 go build -o ./bin/tarian-cluster-agent ./cmd/tarian-cluster-agent/
-	CGO_ENABLED=0 go build -o ./bin/tarian-pod-agent ./cmd/tarian-pod-agent/
-	CGO_ENABLED=0 go build -o ./bin/tarianctl ./cmd/tarianctl/
-
-proto:
-	protoc --experimental_allow_proto3_optional -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/types.proto
-	protoc --experimental_allow_proto3_optional -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/api.proto
-
-unit-test:
-	go test -v ./pkg/...
-
-e2e-test:
-	go test -v ./test/e2e/...
-
-lint:
-	revive -formatter stylish -config .revive.toml ./pkg/...
-
-local-images:
-	docker build -f Dockerfile-server -t localhost:5000/tarian-server . && docker push localhost:5000/tarian-server
-	docker build -f Dockerfile-cluster-agent -t localhost:5000/tarian-cluster-agent . && docker push localhost:5000/tarian-cluster-agent
-	docker build -f Dockerfile-pod-agent -t localhost:5000/tarian-pod-agent . && docker push localhost:5000/tarian-pod-agent
-
-
-
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
+
+default: help
+
 
 ##@ General
 
@@ -61,9 +36,6 @@ help: ## Display this help.
 
 ##@ Development
 
-manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) webhook paths="./..."
-
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
@@ -73,6 +45,39 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+build: generate fmt vet lint # TODO: include proto, install proto in ci.yaml
+	CGO_ENABLED=0 go build -o ./bin/tarian-server ./cmd/tarian-server/
+	CGO_ENABLED=0 go build -o ./bin/tarian-cluster-agent ./cmd/tarian-cluster-agent/
+	CGO_ENABLED=0 go build -o ./bin/tarian-pod-agent ./cmd/tarian-pod-agent/
+	CGO_ENABLED=0 go build -o ./bin/tarianctl ./cmd/tarianctl/
+
+proto:
+	protoc --experimental_allow_proto3_optional -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/types.proto
+	protoc --experimental_allow_proto3_optional -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/api.proto
+
+lint:
+	revive -formatter stylish -config .revive.toml ./pkg/...
+
+local-images: build
+	docker build -f Dockerfile-server -t localhost:5000/tarian-server . && docker push localhost:5000/tarian-server
+	docker build -f Dockerfile-cluster-agent -t localhost:5000/tarian-cluster-agent . && docker push localhost:5000/tarian-cluster-agent
+	docker build -f Dockerfile-pod-agent -t localhost:5000/tarian-pod-agent . && docker push localhost:5000/tarian-pod-agent
+
+unit-test:
+	go test -v ./pkg/...
+
+e2e-test:
+	go test -v ./test/e2e/...
+
+manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+	$(CONTROLLER_GEN) webhook paths="./..."
+
+create-kind-cluster:
+	kind create cluster --config=dev/cluster-config.yaml
+
+delete-kind-cluster:
+	kind delete cluster
+
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 controller-test: manifests generate fmt vet ## Run tests.
 	mkdir -p ${ENVTEST_ASSETS_DIR}
@@ -81,12 +86,6 @@ controller-test: manifests generate fmt vet ## Run tests.
 
 
 ##@ Deployment
-
-install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl apply -f -
-
-uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
