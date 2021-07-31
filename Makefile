@@ -45,17 +45,17 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
-build: generate fmt vet lint # TODO: include proto, install proto in ci.yaml
+build: generate proto
 	CGO_ENABLED=0 go build -o ./bin/tarian-server ./cmd/tarian-server/
 	CGO_ENABLED=0 go build -o ./bin/tarian-cluster-agent ./cmd/tarian-cluster-agent/
 	CGO_ENABLED=0 go build -o ./bin/tarian-pod-agent ./cmd/tarian-pod-agent/
 	CGO_ENABLED=0 go build -o ./bin/tarianctl ./cmd/tarianctl/
 
 proto:
-	protoc --experimental_allow_proto3_optional -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/types.proto
-	protoc --experimental_allow_proto3_optional -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/api.proto
+	$(PROTOC) --experimental_allow_proto3_optional=true -I=./.local/include -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/types.proto
+	$(PROTOC) --experimental_allow_proto3_optional=true -I=./.local/include -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/api.proto
 
-lint:
+lint: fmt vet
 	revive -formatter stylish -config .revive.toml ./pkg/...
 
 local-images: build
@@ -102,6 +102,15 @@ controller-gen: ## Download controller-gen locally if necessary.
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.
 	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v3@v3.8.7)
+
+PROTOC = $(shell pwd)/bin/protoc
+PROTOC_ZIP = protoc-3.15.8-linux-x86_64.zip
+protoc:
+	curl -LO "https://github.com/protocolbuffers/protobuf/releases/download/v3.15.8/$(PROTOC_ZIP)" 
+	unzip -o $(PROTOC_ZIP) -d ./ bin/protoc
+	unzip -o $(PROTOC_ZIP) -d ./.local 'include/*'
+	rm -f $(PROTOC_ZIP)
+	chmod +x ./bin/protoc
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))

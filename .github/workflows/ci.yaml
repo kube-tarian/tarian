@@ -27,6 +27,9 @@ jobs:
 
       # prepare
       - run: GO111MODULE=off go get -u github.com/mgechev/revive
+      - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.26
+      - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
+      - run: make protoc
 
       # build
       - run: make build
