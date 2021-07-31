@@ -70,7 +70,7 @@ e2e-test:
 	go test -v ./test/e2e/...
 
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) webhook paths="./..."
+	$(CONTROLLER_GEN) webhook paths="./..." output:webhook:artifacts:config=dev/config/webhook
 
 create-kind-cluster:
 	kind create cluster --config=dev/cluster-config.yaml
@@ -88,11 +88,11 @@ controller-test: manifests generate fmt vet ## Run tests.
 ##@ Deployment
 
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	cd dev/config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build dev/config/default | kubectl apply -f -
 
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/default | kubectl delete -f -
+	$(KUSTOMIZE) build dev/config/default | kubectl delete -f -
 
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen

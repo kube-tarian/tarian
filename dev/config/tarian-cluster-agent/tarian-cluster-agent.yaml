@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tarian-cluster-agent
+  name: cluster-agent
 spec:
   selector:
     matchLabels:
@@ -26,9 +26,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: tarian-cluster-agent
+  name: cluster-agent
   labels:
-    app: tarian-cluster-agent
+    app: cluster-agent
 spec:
   type: NodePort
   ports:

@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tarian-server
+  name: server
 spec:
   selector:
     matchLabels:
@@ -23,7 +23,7 @@ spec:
           name: grpc
         env:
         - name: POSTGRES_HOST
-          value: postgresql
+          value: tarian-postgresql
         - name: POSTGRES_PORT
           value: "5432"
         - name: POSTGRES_USER
@@ -38,9 +38,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: tarian-server
+  name: server
   labels:
-    app: tarian-server
+    app: server
 spec:
   type: NodePort
   ports:

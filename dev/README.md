@@ -27,29 +27,22 @@ make build local-images
 make create-kind-cluster
 ```
 
-4. Apply registry config map:
-
-```bash
-kubectl apply -f registry-hosting-config-map.yaml
-```
-
-5. Apply tarian-k8s manifests:
+4. Apply tarian-k8s manifests:
 
 ```bash
 make deploy
-kubectl apply -f tarian-k8s -n tarian-system
 ```
+
 
 Once the pods are running,
 
-
-6. Run DB migration:
+5. Run DB migration:
 
 ```bash
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
 ```
 
-7. Install seed data:
+6. Install seed data:
 
 ```bash
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dev seed-data
