@@ -104,9 +104,9 @@ kustomize: ## Download kustomize locally if necessary.
 	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v3@v3.8.7)
 
 PROTOC = $(shell pwd)/bin/protoc
-PROTOC_ZIP = protoc-3.15.8-linux-x86_64.zip
+PROTOC_ZIP = protoc-3.17.3-linux-x86_64.zip
 protoc:
-	curl -LO "https://github.com/protocolbuffers/protobuf/releases/download/v3.15.8/$(PROTOC_ZIP)" 
+	curl -LO "https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/$(PROTOC_ZIP)" 
 	unzip -o $(PROTOC_ZIP) -d ./ bin/protoc
 	unzip -o $(PROTOC_ZIP) -d ./.local 'include/*'
 	rm -f $(PROTOC_ZIP)
