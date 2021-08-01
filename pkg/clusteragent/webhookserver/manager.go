@@ -27,7 +27,7 @@ func NewManager() manager.Manager {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     "0",
-		Port:                   9443,
+		Port:                   9443,    //  TODO: extract to CLI flag
 		HealthProbeBindAddress: ":8081", // TODO: extract to CLI flag
 		LeaderElection:         false,   // TODO: extract to CLI flag
 		LeaderElectionID:       "0f4c7cb2.k8s.tarian.io",
@@ -37,7 +37,23 @@ func NewManager() manager.Manager {
 		os.Exit(1)
 	}
 
-	mgr.GetWebhookServer().Register("/inject-pod-agent", &webhook.Admission{Handler: &PodAgentInjector{Client: mgr.GetClient()}})
+	// TODO: extract this to be passed from the caller
+	podAgentContainerConfig := PodAgentContainerConfig{
+		Name:        "tarian-pod-agent",
+		Image:       "localhost:5000/tarian-pod-agent:latest",
+		LogEncoding: "json",
+		Host:        "tarian-cluster-agent.tarian-system.svc",
+		Port:        "80",
+	}
+	mgr.GetWebhookServer().Register(
+		"/inject-pod-agent",
+		&webhook.Admission{
+			Handler: &PodAgentInjector{
+				Client: mgr.GetClient(),
+				config: podAgentContainerConfig,
+			},
+		},
+	)
 
 	//+kubebuilder:scaffold:builder
 

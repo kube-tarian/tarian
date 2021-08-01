@@ -8,7 +8,6 @@ require (
 	github.com/go-logr/zapr v0.4.0
 	github.com/gogo/status v1.1.0
 	github.com/golang/mock v1.5.0
-	github.com/golang/protobuf v1.5.2
 	github.com/jackc/pgx/v4 v4.12.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/olekukonko/tablewriter v0.0.5
@@ -25,5 +24,6 @@ require (
 	k8s.io/api v0.21.3
 	k8s.io/apimachinery v0.21.3
 	k8s.io/client-go v0.21.3
+	k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471
 	sigs.k8s.io/controller-runtime v0.9.5
 )

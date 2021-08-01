@@ -18,7 +18,7 @@
 
 ```bash
 cd ..
-make build local-images
+make local-images
 ```
 
 3. Create a kind cluster
@@ -57,3 +57,14 @@ kubectl run nginx --image=nginx --annotations=pod-agent.k8s.tarian.io/inject=tru
 
 There should be a container injected in nginx pod.
 
+7. Add constraint for that pod:
+
+```bash
+./bin/tarianctl --server-address=localhost:31051 add constraint --namespace default --match-labels run=nginx --allowed-processes=sleep
+```
+
+8. See there are violation events shortly:
+
+```bash
+./bin/tarianctl --server-address=localhost:31051 get events
+```
