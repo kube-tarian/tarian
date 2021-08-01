@@ -21,20 +21,19 @@ cd ..
 make build local-images
 ```
 
-3. Create a kind cluster with this config:
+3. Create a kind cluster
 
 ```bash
 make create-kind-cluster
 ```
 
-4. Apply tarian-k8s manifests:
+4. Apply tarian-k8s manifests
 
 ```bash
 make deploy
 ```
 
-
-Once the pods are running,
+Once the pods are running (`kubectl get pods -n tarian-system`),
 
 5. Run DB migration:
 
@@ -47,4 +46,14 @@ kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db mig
 ```bash
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dev seed-data
 ```
+
+To test that it's working:
+
+7. Run pod:
+
+```bash
+kubectl run nginx --image=nginx --annotations=pod-agent.k8s.tarian.io/inject=true
+```
+
+There should be a container injected in nginx pod.
 
