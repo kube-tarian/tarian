@@ -8,16 +8,18 @@
 
 ### Setup
 
+
+Go to the root directory of this project.
+
 1. Start local registry to be used with kind
 
 ```bash
-./run-kind-registry.sh
+./dev/run-kind-registry.sh
 ```
 
 2. Build local images
 
 ```bash
-cd ..
 make local-images
 ```
 
