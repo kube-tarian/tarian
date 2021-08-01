@@ -27,6 +27,10 @@ type PodAgentContainerConfig struct {
 	Port        string
 }
 
+const (
+	InjectionRequestAnnotation = "pod-agent.k8s.tarian.io/inject"
+)
+
 // podAnnotator adds an annotation to every incoming pods.
 func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) admission.Response {
 	pod := &corev1.Pod{}
@@ -40,8 +44,8 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 		return admission.Allowed("no annotation found")
 	}
 
-	if _, ok := pod.Annotations["pod-agent.k8s.tarian.io/inject"]; !ok {
-		return admission.Allowed("annotation pod-agent.k8s.tarian.io/inject not found")
+	if _, ok := pod.Annotations[InjectionRequestAnnotation]; !ok {
+		return admission.Allowed("annotation " + InjectionRequestAnnotation + " not found")
 	}
 
 	for _, c := range pod.Spec.Containers {

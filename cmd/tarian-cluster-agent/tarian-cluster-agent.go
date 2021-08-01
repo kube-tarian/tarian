@@ -79,9 +79,30 @@ func getCliApp() *cli.App {
 				Action: run,
 			},
 			{
-				Name:   "run-webhook-server",
-				Usage:  "Run kubernetes admission webhook server",
-				Flags:  []cli.Flag{},
+				Name:  "run-webhook-server",
+				Usage: "Run kubernetes admission webhook server",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "pod-agent-container-name",
+						Usage: "The name of pod-agent container that will be injected",
+						Value: "tarian-pod-agent",
+					},
+					&cli.StringFlag{
+						Name:  "pod-agent-container-image",
+						Usage: "The image of pod-agent container that will be injected",
+						Value: "localhost:5000/tarian-pod-agent:latest",
+					},
+					&cli.StringFlag{
+						Name:  "cluster-agent-host",
+						Usage: "Host address of cluster-agent",
+						Value: "tarian-cluster-agent.tarian-system.svc",
+					},
+					&cli.StringFlag{
+						Name:  "cluster-agent-port",
+						Usage: "Port of cluster-agent",
+						Value: "80",
+					},
+				},
 				Action: runWebhookServer,
 			},
 		},
@@ -149,7 +170,14 @@ func runWebhookServer(c *cli.Context) error {
 	ctrlLogger := zapr.NewLogger(logger.Desugar())
 	ctrl.SetLogger(ctrlLogger)
 
-	mgr := webhookserver.NewManager()
+	podAgentContainerConfig := webhookserver.PodAgentContainerConfig{
+		Name:        c.String("pod-agent-container-name"),
+		Image:       c.String("pod-agent-container-image"),
+		LogEncoding: c.String("log-encoding"),
+		Host:        c.String("cluster-agent-host"),
+		Port:        c.String("cluster-agent-port"),
+	}
+	mgr := webhookserver.NewManager(podAgentContainerConfig)
 
 	logger.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

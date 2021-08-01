@@ -23,7 +23,7 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
-func NewManager() manager.Manager {
+func NewManager(cfg PodAgentContainerConfig) manager.Manager {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     "0",
@@ -37,20 +37,12 @@ func NewManager() manager.Manager {
 		os.Exit(1)
 	}
 
-	// TODO: extract this to be passed from the caller
-	podAgentContainerConfig := PodAgentContainerConfig{
-		Name:        "tarian-pod-agent",
-		Image:       "localhost:5000/tarian-pod-agent:latest",
-		LogEncoding: "json",
-		Host:        "tarian-cluster-agent.tarian-system.svc",
-		Port:        "80",
-	}
 	mgr.GetWebhookServer().Register(
 		"/inject-pod-agent",
 		&webhook.Admission{
 			Handler: &PodAgentInjector{
 				Client: mgr.GetClient(),
-				config: podAgentContainerConfig,
+				config: cfg,
 			},
 		},
 	)
