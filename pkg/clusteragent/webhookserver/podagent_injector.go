@@ -44,6 +44,12 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 		return admission.Allowed("annotation pod-agent.k8s.tarian.io/inject not found")
 	}
 
+	for _, c := range pod.Spec.Containers {
+		if c.Name == p.config.Name {
+			return admission.Allowed("container with name " + p.config.Name + " already exists")
+		}
+	}
+
 	podAgentContainer := corev1.Container{
 		Name:  p.config.Name,
 		Image: p.config.Image,
