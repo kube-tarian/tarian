@@ -43,3 +43,38 @@ jobs:
       # e2e-test
       - run: make e2e-test
 
+  k8s-test:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.16.6'
+      - uses: helm/kind-action@v1.2.0
+        name: Create k8s cluster
+        with:
+          config: 'dev/cluster-config.yaml'
+
+      # prepare for build
+      - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.26
+      - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
+      - run: make protoc
+
+      # build images
+      - run: bash ./dev/run-kind-registry.sh
+      - run: make local-images
+
+      # deploy to k8s
+      - run: make deploy
+
+      # wait for deployment rollout
+      - run: kubectl rollout status statefulset/tarian-postgresql -n tarian-system --timeout=5m
+      - run: kubectl rollout status deployment/tarian-controller-manager -n tarian-system --timeout=5m
+      - run: kubectl rollout status deployment/tarian-cluster-agent -n tarian-system --timeout=5m
+      - run: kubectl rollout status deployment/tarian-server -n tarian-system --timeout=5m
+
+      # run db migration and seed data
+      - run: kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
+      - run: kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dev seed-data
+      - run: ./bin/tarianctl --server-address=localhost:31051 get constraints
+
