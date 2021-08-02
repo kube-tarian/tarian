@@ -56,6 +56,7 @@ jobs:
           config: 'dev/cluster-config.yaml'
 
       # prepare for build
+      - run: sudo apt update && sudo apt install -y jq
       - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.26
       - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
       - run: make protoc
@@ -76,5 +77,14 @@ jobs:
       # run db migration and seed data
       - run: kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
       - run: kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dev seed-data
+      - run: ./bin/tarianctl --server-address=localhost:31051 add constraint --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx
       - run: ./bin/tarianctl --server-address=localhost:31051 get constraints
+
+      # test pod-agent injection
+      - run: kubectl run nginx --image=nginx --annotations=pod-agent.k8s.tarian.io/inject=true
+      - run: kubectl wait --for=condition=ready pod/nginx
+      - run: test $(kubectl get pod nginx -o json | jq -r '.containers | length') -eq 2 || echo "expected container count 2"
+      - run: kubectl exec -ti nginx -c nginx -- sleep 15
+      - run: ./bin/tarianctl --server-address=localhost:31051 get events
+
 
