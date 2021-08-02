@@ -43,6 +43,10 @@ func NewGetConstraintsCommand() *cli.Command {
 }
 
 func matchLabelsToString(labels []*tarianpb.MatchLabel) string {
+	if len(labels) == 0 {
+		return ""
+	}
+
 	str := strings.Builder{}
 	str.WriteString("matchLabels:")
 

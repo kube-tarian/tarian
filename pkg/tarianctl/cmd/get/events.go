@@ -35,7 +35,14 @@ func NewGetEventsCommand() *cli.Command {
 
 			for _, e := range response.GetEvents() {
 				for _, t := range e.GetTargets() {
-					table.Append([]string{e.GetServerTimestamp().AsTime().Format(time.RFC3339), t.GetPod().GetNamespace(), t.GetPod().GetUid(), violatingProcessesToString(t.GetViolatingProcesses())})
+					table.Append(
+						[]string{
+							e.GetServerTimestamp().AsTime().Format(time.RFC3339),
+							t.GetPod().GetNamespace(),
+							t.GetPod().GetUid(),
+							violatingProcessesToString(t.GetViolatingProcesses()),
+						},
+					)
 				}
 			}
 
