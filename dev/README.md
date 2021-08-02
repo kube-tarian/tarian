@@ -62,10 +62,16 @@ There should be a container injected in nginx pod.
 7. Add constraint for that pod:
 
 ```bash
-./bin/tarianctl --server-address=localhost:31051 add constraint --namespace default --match-labels run=nginx --allowed-processes=sleep
+./bin/tarianctl --server-address=localhost:31051 add constraint --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx
 ```
 
-8. See there are violation events shortly:
+8. Test the violation event
+
+```bash
+kubectl exec -ti nginx -c nginx -- sleep 10
+```
+
+See there are violation events shortly:
 
 ```bash
 ./bin/tarianctl --server-address=localhost:31051 get events

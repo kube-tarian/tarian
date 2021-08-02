@@ -206,7 +206,7 @@ func devSeedData(c *cli.Context) error {
 		}
 	}
 
-	regexes2 := []string{"sleep"}
+	regexes2 := []string{"sleep", "pause", "tarian-pod-agent"}
 
 	for _, r := range regexes2 {
 		exampleConstraint := tarianpb.Constraint{Namespace: "tarian-system", Selector: &tarianpb.Selector{MatchLabels: []*tarianpb.MatchLabel{{Key: "app", Value: "nginx2"}, {Key: "app2", Value: "nginx3"}}}}

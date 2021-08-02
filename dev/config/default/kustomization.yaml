@@ -15,7 +15,6 @@ patchesStrategicMerge:
 
 resources:
 - manager_resources.yaml
-- nginx-monitored.yaml
 
 vars:
 #- name: SERVICE_NAMESPACE # namespace of the service
