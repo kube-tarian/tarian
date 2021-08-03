@@ -85,6 +85,9 @@ jobs:
       - run: kubectl wait --for=condition=ready pod/nginx
       - run: test $(kubectl get pod nginx -o json | jq -r '.containers | length') -eq 2 || echo "expected container count 2"
       - run: kubectl exec -ti nginx -c nginx -- sleep 15
+      # output for debugging
       - run: ./bin/tarianctl --server-address=localhost:31051 get events
+      # assert contains sleep
+      - run: ./bin/tarianctl --server-address=localhost:31051 get events | grep sleep
 
 
