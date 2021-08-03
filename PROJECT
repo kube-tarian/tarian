@@ -1,4 +1,4 @@
-domain: k8s.tarian.io
+domain: k8s.tarian.dev
 layout:
 - go.kubebuilder.io/v3
 projectName: tarian

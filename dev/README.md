@@ -54,7 +54,7 @@ To test that it's working:
 7. Run pod:
 
 ```bash
-kubectl run nginx --image=nginx --annotations=pod-agent.k8s.tarian.io/inject=true
+kubectl run nginx --image=nginx --annotations=pod-agent.k8s.tarian.dev/inject=true
 ```
 
 There should be a container injected in nginx pod.

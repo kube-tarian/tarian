@@ -5,7 +5,7 @@ metadata:
 webhooks:
 - admissionReviewVersions:
   - v1
-  name: pod-agent.k8s.tarian.io
+  name: pod-agent.k8s.tarian.dev
   clientConfig:
     service:
       name: tarian-controller-manager

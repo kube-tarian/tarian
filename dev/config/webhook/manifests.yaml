@@ -14,7 +14,7 @@ webhooks:
       namespace: system
       path: /inject-pod-agent
   failurePolicy: Ignore
-  name: pod-agent.k8s.tarian.io
+  name: pod-agent.k8s.tarian.dev
   rules:
   - apiGroups:
     - ""

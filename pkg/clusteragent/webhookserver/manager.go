@@ -39,7 +39,7 @@ func NewManager() manager.Manager {
 		Port:                   9443,    //  TODO: extract to CLI flag
 		HealthProbeBindAddress: ":8081", // TODO: extract to CLI flag
 		LeaderElection:         false,   // TODO: extract to CLI flag
-		LeaderElectionID:       "0f4c7cb2.k8s.tarian.io",
+		LeaderElectionID:       "0f4c7cb2.k8s.tarian.dev",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

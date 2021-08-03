@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// +kubebuilder:webhook:path=/inject-pod-agent,mutating=true,sideEffects=none,failurePolicy=ignore,groups="",resources=pods,verbs=create,versions=v1,admissionReviewVersions=v1,name=pod-agent.k8s.tarian.io
+// +kubebuilder:webhook:path=/inject-pod-agent,mutating=true,sideEffects=none,failurePolicy=ignore,groups="",resources=pods,verbs=create,versions=v1,admissionReviewVersions=v1,name=pod-agent.k8s.tarian.dev
 
 type PodAgentInjector struct {
 	Client  client.Client
@@ -28,7 +28,7 @@ type PodAgentContainerConfig struct {
 }
 
 const (
-	InjectionRequestAnnotation = "pod-agent.k8s.tarian.io/inject"
+	InjectionRequestAnnotation = "pod-agent.k8s.tarian.dev/inject"
 )
 
 // podAnnotator adds an annotation to every incoming pods.
