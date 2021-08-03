@@ -177,7 +177,19 @@ func runWebhookServer(c *cli.Context) error {
 		Host:        c.String("cluster-agent-host"),
 		Port:        c.String("cluster-agent-port"),
 	}
-	mgr := webhookserver.NewManager(podAgentContainerConfig)
+
+	mgr := webhookserver.NewManager()
+
+	isReady := make(chan struct{})
+
+	// TODO: an option to disable cert rotation
+	webhookserver.RegisterCertRotator(mgr, isReady)
+
+	go func() {
+		<-isReady
+		// register the rest of the controllers after cert is ready
+		webhookserver.RegisterControllers(mgr, podAgentContainerConfig)
+	}()
 
 	logger.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

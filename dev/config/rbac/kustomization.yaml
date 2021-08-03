@@ -2,3 +2,7 @@ resources:
 - service_account.yaml
 - leader_election_role.yaml
 - leader_election_role_binding.yaml
+- cert_rotator_role.yaml
+- cert_rotator_role_binding.yaml
+- cert_rotator_clusterrole.yaml
+- cert_rotator_clusterrole_binding.yaml

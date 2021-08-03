@@ -3,7 +3,9 @@ package webhookserver
 import (
 	"os"
 
+	"github.com/open-policy-agent/cert-controller/pkg/rotator"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -17,13 +19,20 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
+const (
+	managedSecretName = "tarian-webhook-server-cert"
+	serviceName       = "tarian-controller-manager"
+	caName            = "tarian-ca"
+	caOrganization    = "tarian"
+)
+
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	//+kubebuilder:scaffold:scheme
 }
 
-func NewManager(cfg PodAgentContainerConfig) manager.Manager {
+func NewManager() manager.Manager {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     "0",
@@ -36,16 +45,6 @@ func NewManager(cfg PodAgentContainerConfig) manager.Manager {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
-	mgr.GetWebhookServer().Register(
-		"/inject-pod-agent",
-		&webhook.Admission{
-			Handler: &PodAgentInjector{
-				Client: mgr.GetClient(),
-				config: cfg,
-			},
-		},
-	)
 
 	//+kubebuilder:scaffold:builder
 
@@ -60,4 +59,45 @@ func NewManager(cfg PodAgentContainerConfig) manager.Manager {
 
 	return mgr
 
+}
+
+func RegisterControllers(mgr manager.Manager, cfg PodAgentContainerConfig) {
+	mgr.GetWebhookServer().Register(
+		"/inject-pod-agent",
+		&webhook.Admission{
+			Handler: &PodAgentInjector{
+				Client: mgr.GetClient(),
+				config: cfg,
+			},
+		},
+	)
+}
+
+func RegisterCertRotator(mgr manager.Manager, isReady chan struct{}) {
+	dnsName := "*.tarian-system.svc"
+	certDir := "/tmp/k8s-webhook-server/serving-certs"
+
+	var webhooks = []rotator.WebhookInfo{
+		{
+			Name: "tarian-mutating-webhook-configuration",
+			Type: rotator.Mutating,
+		},
+	}
+
+	setupLog.Info("setting up cert rotation")
+	if err := rotator.AddRotator(mgr, &rotator.CertRotator{
+		SecretKey: types.NamespacedName{
+			Namespace: "tarian-system", // TODO: extract
+			Name:      managedSecretName,
+		},
+		CertDir:        certDir,
+		CAName:         caName,
+		CAOrganization: caOrganization,
+		DNSName:        dnsName,
+		IsReady:        isReady,
+		Webhooks:       webhooks,
+	}); err != nil {
+		setupLog.Error(err, "unable to set up cert rotation")
+		os.Exit(1)
+	}
 }

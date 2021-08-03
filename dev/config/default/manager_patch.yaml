@@ -18,9 +18,9 @@ spec:
           allowPrivilegeEscalation: true
         volumeMounts:
         - mountPath: "/tmp/k8s-webhook-server/serving-certs"
-          name: webhook-tls
+          name: webhook-server-cert
           readOnly: true
       volumes:
-      - name: webhook-tls
+      - name: webhook-server-cert
         secret:
-          secretName: webhook-tls
+          secretName: webhook-server-cert
