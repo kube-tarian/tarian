@@ -6,12 +6,15 @@ require (
 	github.com/Boostport/migration v0.21.2
 	github.com/driftprogramming/pgxpoolmock v1.1.0
 	github.com/go-logr/zapr v0.4.0
+	github.com/go-openapi/runtime v0.19.29
+	github.com/go-openapi/strfmt v0.20.1
 	github.com/gogo/status v1.1.0
 	github.com/golang/mock v1.5.0
 	github.com/jackc/pgx/v4 v4.12.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/open-policy-agent/cert-controller v0.2.0
+	github.com/prometheus/alertmanager v0.22.2
 	github.com/satori/go.uuid v1.2.0
 	github.com/scylladb/go-set v1.0.2
 	github.com/shirou/gopsutil v3.21.6+incompatible

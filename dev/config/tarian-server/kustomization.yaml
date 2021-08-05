@@ -2,3 +2,4 @@ resources:
 - tarian-server.yaml
 - postgresql.yaml
 - phppgadmin.yaml
+- alertmanager.yaml

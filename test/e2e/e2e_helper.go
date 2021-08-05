@@ -52,7 +52,8 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	_, err = dbPool.Exec(context.Background(), "CREATE DATABASE "+dbConfig.Name)
 	require.Nil(t, err)
 
-	grpcServer, err := server.NewGrpcServer(dbConfig.GetDsn())
+	srv, err := server.NewServer(dbConfig.GetDsn())
+	grpcServer := srv.GrpcServer
 	require.Nil(t, err)
 
 	clusterAgent := clusteragent.NewClusterAgent("localhost:" + e2eServerPort)

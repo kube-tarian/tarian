@@ -18,6 +18,7 @@ spec:
         args:
         - "--log-encoding=json"
         - run
+        - "--alertmanager-address=http://tarian-alertmanager:9093"
         ports:
         - containerPort: 50051
           name: grpc

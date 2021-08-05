@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	"net"
+	"net/url"
 	"os"
 	"os/signal"
 	"sync"
@@ -69,6 +69,11 @@ func getCliApp() *cli.App {
 						Usage: "Host port to listen at",
 						Value: defaultPort,
 					},
+					&cli.StringFlag{
+						Name:  "alertmanager-address",
+						Usage: "Alert manager address to send alerts to. For example: http://localhost:9093. Setting this enables alerting.",
+						Value: "",
+					},
 				},
 				Action: run,
 			},
@@ -119,8 +124,9 @@ func run(c *cli.Context) error {
 		logger.Fatalw("database config error", "err", err)
 	}
 
-	grpcServer, err := server.NewGrpcServer(cfg.GetDsn())
+	server, err := server.NewServer(cfg.GetDsn())
 	if err != nil {
+		logger.Fatalw("error while initiating tarian-server", "err", err)
 		return err
 	}
 
@@ -133,20 +139,24 @@ func run(c *cli.Context) error {
 		sig := <-sigCh
 		logger.Infow("got sigterm signal, attempting graceful shutdown", "signal", sig)
 
-		grpcServer.GracefulStop()
+		server.Stop()
 		wg.Done()
 	}()
 
-	// Run server
-	listener, err := net.Listen("tcp", host+":"+port)
-	if err != nil {
-		logger.Fatalw("failed to listen", "err", err)
+	if c.String("alertmanager-address") != "" {
+		url, err := url.Parse(c.String("alertmanager-address"))
+		if err != nil {
+			logger.Fatalw("invalid url in alertmanager-address", "err", err)
+		}
+
+		server.WithAlertDispatcher(url).StartAlertDispatcher()
 	}
 
-	logger.Infow("tarian-server is listening at", "address", listener.Addr())
+	// Run server
+	logger.Infow("tarian-server is listening at", "address", host+":"+port)
 
-	if err := grpcServer.Serve(listener); err != nil {
-		logger.Fatalw("failed to serve", "err", err)
+	if err := server.Start(host + ":" + port); err != nil {
+		logger.Fatalw("failed to start server", "err", err)
 	}
 
 	wg.Wait()
