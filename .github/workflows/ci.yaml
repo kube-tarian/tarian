@@ -75,6 +75,7 @@ jobs:
       - run: ./bin/tarianctl --server-address=localhost:31051 get constraints
       - run: kubectl get pods -n tarian-system
       - run: kubectl logs deploy/tarian-controller-manager -n tarian-system
+      - run: sleep 10s
 
       # test pod-agent injection
       - run: kubectl run nginx --image=nginx --annotations=pod-agent.k8s.tarian.dev/inject=true
