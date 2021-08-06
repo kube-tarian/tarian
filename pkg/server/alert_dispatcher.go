@@ -81,7 +81,7 @@ func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) {
 		if err != nil {
 			logger.Error("error while sending alerts", "err", err)
 		} else {
-			logger.Info("alerts send to alertmanager", "result", status.Error())
+			logger.Info("alerts sent to alertmanager", "result", status.Error())
 		}
 	}
 }
