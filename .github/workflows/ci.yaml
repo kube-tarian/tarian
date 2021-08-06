@@ -31,16 +31,9 @@ jobs:
       - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
       - run: make protoc
 
-      # build
       - run: make build
-
-      # lint
       - run: make lint
-
-      # unit-test
       - run: make unit-test
-
-      # e2e-test
       - run: make e2e-test
 
   k8s-test:
@@ -94,6 +87,6 @@ jobs:
       # output for debugging
       - run: kubectl run -ti --restart=Never get-alerts --image=curlimages/curl -- http://tarian-alertmanager.tarian-system.svc:9093/api/v2/alerts
       # assert alerts were sent
-      - run: test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- http://tarian-alertmanager.tarian-system.svc:9093/api/v2/alerts | jq '. | length') -gt 1 || echo "expected alerts created"
+      - run: test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- http://tarian-alertmanager.tarian-system.svc:9093/api/v2/alerts | jq '. | length') -gt 1 || (echo "expected alerts created" && false)
 
 
