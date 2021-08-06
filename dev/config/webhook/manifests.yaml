@@ -13,7 +13,7 @@ webhooks:
       name: webhook-service
       namespace: system
       path: /inject-pod-agent
-  failurePolicy: Ignore
+  failurePolicy: Fail
   name: pod-agent.k8s.tarian.dev
   rules:
   - apiGroups:
