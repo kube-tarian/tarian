@@ -6,6 +6,7 @@ import (
 
 	"github.com/devopstoday11/tarian/pkg/tarianctl/cmd/add"
 	"github.com/devopstoday11/tarian/pkg/tarianctl/cmd/get"
+	"github.com/devopstoday11/tarian/pkg/tarianctl/cmd/importcmd"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -52,6 +53,7 @@ func getCliApp() *cli.App {
 		Commands: []*cli.Command{
 			get.NewGetCommand(),
 			add.NewAddCommand(),
+			importcmd.NewImportCommand(),
 		},
 	}
 }
