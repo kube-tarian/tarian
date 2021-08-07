@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/devopstoday11/tarian/pkg/server"
@@ -71,8 +72,13 @@ func getCliApp() *cli.App {
 					},
 					&cli.StringFlag{
 						Name:  "alertmanager-address",
-						Usage: "Alert manager address to send alerts to. For example: http://localhost:9093. Setting this enables alerting.",
+						Usage: "Alert manager address to send alerts to. For example: http://localhost:9093. Setting this enables alerting",
 						Value: "",
+					},
+					&cli.DurationFlag{
+						Name:  "alert-evaluation-interval",
+						Usage: "The interval for evaluating and sending alerts",
+						Value: 30 * time.Second,
 					},
 				},
 				Action: run,
@@ -149,7 +155,7 @@ func run(c *cli.Context) error {
 			logger.Fatalw("invalid url in alertmanager-address", "err", err)
 		}
 
-		server.WithAlertDispatcher(url).StartAlertDispatcher()
+		server.WithAlertDispatcher(url, c.Duration("alert-evaluation-interval")).StartAlertDispatcher()
 	}
 
 	// Run server

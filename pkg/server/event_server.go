@@ -12,8 +12,6 @@ import (
 type EventServer struct {
 	tarianpb.UnimplementedEventServer
 	eventStore store.EventStore
-
-	eventStream chan *tarianpb.Event
 }
 
 func NewEventServer(dsn string) (*EventServer, error) {
@@ -40,10 +38,6 @@ func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.Ingest
 	if err != nil {
 		logger.Errorw("error while handling ingest event", "err", err)
 		return &tarianpb.IngestEventResponse{Success: false}, nil
-	}
-
-	if es.eventStream != nil {
-		es.eventStream <- event
 	}
 
 	return &tarianpb.IngestEventResponse{Success: true}, nil

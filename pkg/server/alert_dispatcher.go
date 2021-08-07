@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/devopstoday11/tarian/pkg/store"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"github.com/go-openapi/strfmt"
 	"github.com/prometheus/alertmanager/api/v2/client"
@@ -22,14 +23,15 @@ const (
 )
 
 type AlertDispatcher struct {
-	amClient *client.Alertmanager
+	amClient                *client.Alertmanager
+	alertEvaluationInterval time.Duration
 }
 
-func NewAlertDispatcher(amURL *url.URL) *AlertDispatcher {
+func NewAlertDispatcher(amURL *url.URL, alertEvaluationInterval time.Duration) *AlertDispatcher {
 	amClient := NewAlertmanagerClient(amURL)
 
 	return &AlertDispatcher{
-		amClient,
+		amClient, alertEvaluationInterval,
 	}
 }
 
@@ -44,12 +46,23 @@ func NewAlertmanagerClient(amURL *url.URL) *client.Alertmanager {
 	return client.New(cr, strfmt.Default)
 }
 
-func (a *AlertDispatcher) LoopSendAlerts(ctx context.Context, stream <-chan *tarianpb.Event) {
+func (a *AlertDispatcher) LoopSendAlerts(ctx context.Context, es store.EventStore) {
 	for {
-		var event *tarianpb.Event
+		events, err := es.FindWhereAlertNotSent()
+
+		if err != nil {
+			logger.Errorw("alertdispatcher: error while finding events to alert", "err", err)
+		}
+
+		for _, event := range events {
+			if event.GetType() == "violation" {
+				a.SendAlert(event)
+				es.UpdateAlertSent(event.GetUid())
+			}
+		}
+
 		select {
-		case event = <-stream:
-			a.SendAlert(event)
+		case <-time.After(a.alertEvaluationInterval):
 		case <-ctx.Done():
 			return
 		}
@@ -68,6 +81,7 @@ func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) {
 		labels["type"] = event.GetType()
 		labels["serverTimestamp"] = event.GetServerTimestamp().AsTime().Format(time.RFC3339)
 		labels["pod_namespace"] = target.GetPod().GetNamespace()
+		labels["pod_name"] = target.GetPod().GetName()
 		labels["pod_uid"] = target.GetPod().GetUid()
 		labels["violating_processes"] = violatingProcessesToString(target.GetViolatingProcesses())
 

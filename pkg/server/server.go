@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"time"
 
+	"github.com/devopstoday11/tarian/pkg/server/dbstore"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -49,6 +51,8 @@ type Server struct {
 	cancelCtx   context.Context
 	cancelFunc  context.CancelFunc
 	eventStream chan *tarianpb.Event
+
+	eventStore *dbstore.DbEventStore
 }
 
 func NewServer(dsn string) (*Server, error) {
@@ -66,6 +70,12 @@ func NewServer(dsn string) (*Server, error) {
 		return nil, err
 	}
 
+	eventStore, err := dbstore.NewDbEventStore(dsn)
+	if err != nil {
+		logger.Errorw("failed to initiate db store", "err", err)
+		return nil, err
+	}
+
 	tarianpb.RegisterConfigServer(grpcServer, configServer)
 	tarianpb.RegisterEventServer(grpcServer, eventServer)
 
@@ -77,6 +87,7 @@ func NewServer(dsn string) (*Server, error) {
 		ConfigServer: configServer,
 		cancelCtx:    cancelCtx,
 		cancelFunc:   cancelFunc,
+		eventStore:   eventStore,
 	}
 
 	return server, nil
@@ -99,17 +110,14 @@ func (s *Server) Start(grpcListenAddress string) error {
 	return nil
 }
 
-func (s *Server) WithAlertDispatcher(alertManagerAddress *url.URL) *Server {
-	s.AlertDispatcher = NewAlertDispatcher(alertManagerAddress)
-
-	s.eventStream = make(chan *tarianpb.Event)
-	s.EventServer.eventStream = s.eventStream
+func (s *Server) WithAlertDispatcher(alertManagerAddress *url.URL, alertEvaluationInterval time.Duration) *Server {
+	s.AlertDispatcher = NewAlertDispatcher(alertManagerAddress, alertEvaluationInterval)
 
 	return s
 }
 
 func (s *Server) StartAlertDispatcher() {
-	go s.AlertDispatcher.LoopSendAlerts(s.cancelCtx, s.eventStream)
+	go s.AlertDispatcher.LoopSendAlerts(s.cancelCtx, s.eventStore)
 }
 
 func (s *Server) Stop() {

@@ -1,13 +1,19 @@
 package dbstore
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
 	"github.com/driftprogramming/pgxpoolmock"
 	"github.com/golang/mock/gomock"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+var (
+	columns = []string{"id", "uid", "type", "server_timestamp", "client_timestamp", "alert_sent_at", "targets"}
 )
 
 func TestDbEventStoreGetAll(t *testing.T) {
@@ -16,14 +22,19 @@ func TestDbEventStoreGetAll(t *testing.T) {
 
 	// setup
 	mockPool := pgxpoolmock.NewMockPgxPool(ctrl)
-	columns := []string{"id", "type", "server_timestamp", "client_timestamp", "targets"}
 
 	timeNow := time.Now()
 	timeNow2 := time.Now().Add(1 * time.Hour)
 
+	uid1 := uuid.NewV4()
+	uid2 := uuid.NewV4()
+
+	nullTime := sql.NullTime{}
+	nullTime.Scan(timeNow.Add(2 * time.Second))
+
 	pgxRows := pgxpoolmock.NewRows(columns).
-		AddRow(1, "violation", timeNow, timeNow.Add(1*time.Second), "[{\"pod\":{\"namespace\":\"default\"}}]").
-		AddRow(2, "violation", timeNow2, timeNow2.Add(1*time.Second), "[{\"pod\":{\"namespace\":\"monitoring\"}}]").
+		AddRow(1, uid1.String(), "violation", timeNow, timeNow.Add(1*time.Second), nullTime, "[{\"pod\":{\"namespace\":\"default\"}}]").
+		AddRow(2, uid2.String(), "violation", timeNow2, timeNow2.Add(1*time.Second), nullTime, "[{\"pod\":{\"namespace\":\"monitoring\"}}]").
 		ToPgxRows()
 	mockPool.EXPECT().Query(gomock.Any(), "SELECT * FROM events ORDER BY id ASC", gomock.Any()).Return(pgxRows, nil)
 
@@ -52,12 +63,15 @@ func TestDbEventStoreFindByNamespace(t *testing.T) {
 
 	// setup
 	mockPool := pgxpoolmock.NewMockPgxPool(ctrl)
-	columns := []string{"id", "type", "server_timestamp", "client_timestamp", "targets"}
 
 	timeNow := time.Now()
+	uid1 := uuid.NewV4()
+
+	nullTime := sql.NullTime{}
+	nullTime.Scan(timeNow.Add(2 * time.Second))
 
 	pgxRows := pgxpoolmock.NewRows(columns).
-		AddRow(1, "violation", timeNow, timeNow.Add(1*time.Second), "[{\"pod\":{\"namespace\":\"monitoring\"}}]").
+		AddRow(1, uid1.String(), "violation", timeNow, timeNow.Add(1*time.Second), nullTime, "[{\"pod\":{\"namespace\":\"monitoring\"}}]").
 		ToPgxRows()
 	mockPool.EXPECT().Query(gomock.Any(), "SELECT * FROM events WHERE namespace = $1 ORDER BY id ASC", gomock.Any()).Return(pgxRows, nil)
 

@@ -12,6 +12,7 @@ webhooks:
       namespace: tarian-system
       path: /inject-pod-agent
       port: 9443
+  failurePolicy: Fail
   namespaceSelector:
     matchExpressions:
     - key: kubernetes.io/metadata.name

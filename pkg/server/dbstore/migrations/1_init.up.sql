@@ -11,9 +11,11 @@ CREATE UNIQUE INDEX constraints_namespace_name_idx ON constraints (namespace, na
 
 CREATE TABLE events (
   id BIGSERIAL PRIMARY KEY,
+  uid UUID NOT NULL,
   type CHARACTER VARYING(255) NOT NULL,
   server_timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
   client_timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+  alert_sent_at TIMESTAMP WITHOUT TIME ZONE NULL,
   targets JSONB
 );
 

@@ -2,13 +2,16 @@ package dbstore
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"time"
 
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"github.com/driftprogramming/pgxpoolmock"
+	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -45,17 +48,25 @@ func NewDbEventStore(dsn string) (*DbEventStore, error) {
 // being a reserved name.
 type eventRow struct {
 	ID              int
+	UID             string
 	Type            string
 	ServerTimestamp time.Time
 	ClientTimestamp time.Time
+	AlertSentAt     sql.NullTime
 	Targets         string
 }
 
 func (e *eventRow) toEvent() *tarianpb.Event {
 	event := tarianpb.NewEvent()
+	event.Uid = e.UID
 	event.Type = e.Type
 	event.ServerTimestamp = timestamppb.New(e.ServerTimestamp)
 	event.ClientTimestamp = timestamppb.New(e.ClientTimestamp)
+
+	if e.AlertSentAt.Valid {
+		event.AlertSentAt = timestamppb.New(e.AlertSentAt.Time)
+	}
+
 	json.Unmarshal([]byte(e.Targets), &event.Targets)
 
 	return event
@@ -63,26 +74,13 @@ func (e *eventRow) toEvent() *tarianpb.Event {
 
 func (d *DbEventStore) GetAll() ([]*tarianpb.Event, error) {
 	rows, err := d.pool.Query(context.Background(), "SELECT * FROM events ORDER BY id ASC")
+
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
-	allEvents := []*tarianpb.Event{}
-
-	for rows.Next() {
-		e := eventRow{}
-
-		err := rows.Scan(&e.ID, &e.Type, &e.ServerTimestamp, &e.ClientTimestamp, &e.Targets)
-		if err != nil {
-			return nil, err
-		}
-
-		allEvents = append(allEvents, e.toEvent())
-	}
-
-	return allEvents, nil
+	return rowsToPbEvents(rows)
 }
 
 func (d *DbEventStore) FindByNamespace(namespace string) ([]*tarianpb.Event, error) {
@@ -91,23 +89,38 @@ func (d *DbEventStore) FindByNamespace(namespace string) ([]*tarianpb.Event, err
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
-	allEvents := []*tarianpb.Event{}
+	return rowsToPbEvents(rows)
+}
+
+func (d *DbEventStore) FindWhereAlertNotSent() ([]*tarianpb.Event, error) {
+	oneDayAgo := time.Now().UTC().AddDate(0, 0, -1)
+
+	rows, err := d.pool.Query(context.Background(), "SELECT * FROM events WHERE server_timestamp > $1 AND alert_sent_at IS NULL ORDER BY id ASC", oneDayAgo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return rowsToPbEvents(rows)
+}
+
+func rowsToPbEvents(rows pgx.Rows) ([]*tarianpb.Event, error) {
+	events := []*tarianpb.Event{}
 
 	for rows.Next() {
 		e := eventRow{}
 
-		err := rows.Scan(&e.ID, &e.Type, &e.ServerTimestamp, &e.ClientTimestamp, &e.Targets)
+		err := rows.Scan(&e.ID, &e.UID, &e.Type, &e.ServerTimestamp, &e.ClientTimestamp, &e.AlertSentAt, &e.Targets)
 		if err != nil {
 			return nil, err
 		}
 
-		allEvents = append(allEvents, e.toEvent())
+		events = append(events, e.toEvent())
 	}
 
-	return allEvents, nil
+	return events, nil
 }
 
 func (d *DbEventStore) Add(event *tarianpb.Event) error {
@@ -117,15 +130,26 @@ func (d *DbEventStore) Add(event *tarianpb.Event) error {
 		return err
 	}
 
+	uid := uuid.NewV4()
+
 	err = d.pool.
 		QueryRow(
 			context.Background(),
-			"INSERT INTO events(type, server_timestamp, client_timestamp, targets) VALUES($1, $2, $3, $4) RETURNING id",
-			event.GetType(), event.GetServerTimestamp().AsTime(), event.GetClientTimestamp().AsTime(), targetsJSON).
+			"INSERT INTO events(uid, type, server_timestamp, client_timestamp, targets) VALUES($1, $2, $3, $4, $5) RETURNING id",
+			uid.String(), event.GetType(), event.GetServerTimestamp().AsTime(), event.GetClientTimestamp().AsTime(), targetsJSON).
 		Scan(&id)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (d *DbEventStore) UpdateAlertSent(uid string) error {
+	_, err := d.pool.Exec(
+		context.Background(),
+		"UPDATE events SET alert_sent_at = $1 WHERE uid = $2",
+		time.Now().UTC(), uid)
+
+	return err
 }

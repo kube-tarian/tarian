@@ -51,10 +51,13 @@ message Target {
 message Event {
 	string kind = 1;
 	string type = 2;
-	google.protobuf.Timestamp serverTimestamp = 3;
-	google.protobuf.Timestamp clientTimestamp = 4;
+
+	string uid = 3;
+	google.protobuf.Timestamp serverTimestamp = 4;
+	google.protobuf.Timestamp clientTimestamp = 5;
+	google.protobuf.Timestamp alertSentAt = 6;
 
 	// TODO: reference to the original constraint, probably by id?
 
-	repeated Target targets = 5;
+	repeated Target targets = 7;
 }
