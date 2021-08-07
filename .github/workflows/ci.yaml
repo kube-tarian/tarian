@@ -71,7 +71,7 @@ jobs:
       # run db migration and seed data
       - run: kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
       - run: kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dev seed-data
-      - run: ./bin/tarianctl --server-address=localhost:31051 add constraint --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx
+      - run: ./bin/tarianctl --server-address=localhost:31051 add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx 
       - run: ./bin/tarianctl --server-address=localhost:31051 get constraints
       - run: kubectl get pods -n tarian-system
       - run: kubectl logs deploy/tarian-controller-manager -n tarian-system

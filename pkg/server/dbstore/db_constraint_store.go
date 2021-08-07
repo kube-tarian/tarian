@@ -42,6 +42,7 @@ func NewDbConstraintStore(dsn string) (*DbConstraintStore, error) {
 type constraintRow struct {
 	id               int
 	namespace        string
+	name             string
 	selector         string
 	allowedProcesses string
 }
@@ -49,6 +50,7 @@ type constraintRow struct {
 func (c *constraintRow) toConstraint() *tarianpb.Constraint {
 	constraint := tarianpb.NewConstraint()
 	constraint.Namespace = c.namespace
+	constraint.Name = c.name
 	json.Unmarshal([]byte(c.selector), &constraint.Selector)
 	json.Unmarshal([]byte(c.allowedProcesses), &constraint.AllowedProcesses)
 
@@ -68,7 +70,7 @@ func (d *DbConstraintStore) GetAll() ([]*tarianpb.Constraint, error) {
 	for rows.Next() {
 		r := constraintRow{}
 
-		err := rows.Scan(&r.id, &r.namespace, &r.selector, &r.allowedProcesses)
+		err := rows.Scan(&r.id, &r.namespace, &r.name, &r.selector, &r.allowedProcesses)
 		if err != nil {
 			// TODO: logger.Errorw()
 
@@ -96,7 +98,7 @@ func (d *DbConstraintStore) FindByNamespace(namespace string) ([]*tarianpb.Const
 	for rows.Next() {
 		r := constraintRow{}
 
-		err := rows.Scan(&r.id, &r.namespace, &r.selector, &r.allowedProcesses)
+		err := rows.Scan(&r.id, &r.namespace, &r.name, &r.selector, &r.allowedProcesses)
 		if err != nil {
 			// TODO: logger.Errorw()
 
@@ -126,8 +128,8 @@ func (d *DbConstraintStore) Add(constraint *tarianpb.Constraint) error {
 	err = d.pool.
 		QueryRow(
 			context.Background(),
-			"INSERT INTO constraints(namespace, selector, allowed_processes) VALUES($1, $2, $3) RETURNING id",
-			constraint.GetNamespace(), selectorJSON, allowedProcessesJSON).
+			"INSERT INTO constraints(namespace, name, selector, allowed_processes) VALUES($1, $2, $3, $4) RETURNING id",
+			constraint.GetNamespace(), constraint.GetName(), selectorJSON, allowedProcessesJSON).
 		Scan(&id)
 	if err != nil {
 		return err

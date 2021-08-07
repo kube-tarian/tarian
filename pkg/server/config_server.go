@@ -6,6 +6,8 @@ import (
 	"github.com/devopstoday11/tarian/pkg/server/dbstore"
 	"github.com/devopstoday11/tarian/pkg/store"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"github.com/gogo/status"
+	"google.golang.org/grpc/codes"
 
 	"github.com/scylladb/go-set/strset"
 )
@@ -74,6 +76,10 @@ func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.Ge
 }
 
 func (cs *ConfigServer) AddConstraint(ctx context.Context, request *tarianpb.AddConstraintRequest) (*tarianpb.AddConstraintResponse, error) {
+	if request.GetConstraint() == nil || request.GetConstraint().GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "required field is empty: name")
+	}
+
 	err := cs.constraintStore.Add(request.GetConstraint())
 	if err != nil {
 		logger.Errorw("error while handling add constraint RPC", "error", err)

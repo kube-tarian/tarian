@@ -15,10 +15,10 @@ func TestGetAll(t *testing.T) {
 
 	// setup
 	mockPool := pgxpoolmock.NewMockPgxPool(ctrl)
-	columns := []string{"id", "namespace", "selector", "allowed_processes"}
+	columns := []string{"id", "namespace", "name", "selector", "allowed_processes"}
 	pgxRows := pgxpoolmock.NewRows(columns).
-		AddRow(1, "default", `{"match_labels": [{"key": "app", "value": "nginx"}]}`, `[{"regex": "(.*)nginx(.*)"}]`).
-		AddRow(2, "default2", `{"match_labels": [{"key": "app", "value": "worker"}]}`, `[{"regex": "(.*)worker(.*)"}]`).
+		AddRow(1, "default", "nginx", `{"match_labels": [{"key": "app", "value": "nginx"}]}`, `[{"regex": "(.*)nginx(.*)"}]`).
+		AddRow(2, "default2", "worker", `{"match_labels": [{"key": "app", "value": "worker"}]}`, `[{"regex": "(.*)worker(.*)"}]`).
 		ToPgxRows()
 	mockPool.EXPECT().Query(gomock.Any(), "SELECT * FROM constraints ORDER BY id ASC", gomock.Any()).Return(pgxRows, nil)
 
@@ -34,12 +34,14 @@ func TestGetAll(t *testing.T) {
 
 	constraint := constraints[0]
 	assert.Equal(t, "default", constraint.GetNamespace())
+	assert.Equal(t, "nginx", constraint.GetName())
 	assert.Equal(t, "app", constraint.GetSelector().GetMatchLabels()[0].GetKey())
 	assert.Equal(t, "nginx", constraint.GetSelector().GetMatchLabels()[0].GetValue())
 	assert.Equal(t, "(.*)nginx(.*)", constraint.GetAllowedProcesses()[0].GetRegex())
 
 	constraint = constraints[1]
 	assert.Equal(t, "default2", constraint.GetNamespace())
+	assert.Equal(t, "worker", constraint.GetName())
 	assert.Equal(t, "app", constraint.GetSelector().GetMatchLabels()[0].GetKey())
 	assert.Equal(t, "worker", constraint.GetSelector().GetMatchLabels()[0].GetValue())
 	assert.Equal(t, "(.*)worker(.*)", constraint.GetAllowedProcesses()[0].GetRegex())
@@ -51,9 +53,9 @@ func TestFindByNamespace(t *testing.T) {
 
 	// setup
 	mockPool := pgxpoolmock.NewMockPgxPool(ctrl)
-	columns := []string{"id", "namespace", "selector", "allowed_processes"}
+	columns := []string{"id", "namespace", "name", "selector", "allowed_processes"}
 	pgxRows := pgxpoolmock.NewRows(columns).
-		AddRow(1, "default", `{"match_labels": [{"key": "app", "value": "nginx"}]}`, `[{"regex": "(.*)nginx(.*)"}]`).
+		AddRow(1, "default", "nginx", `{"match_labels": [{"key": "app", "value": "nginx"}]}`, `[{"regex": "(.*)nginx(.*)"}]`).
 		ToPgxRows()
 	mockPool.EXPECT().Query(gomock.Any(), "SELECT * FROM constraints WHERE namespace = $1 ORDER BY id ASC", "default").Return(pgxRows, nil)
 
@@ -69,6 +71,7 @@ func TestFindByNamespace(t *testing.T) {
 
 	constraint := constraints[0]
 	assert.Equal(t, "default", constraint.GetNamespace())
+	assert.Equal(t, "nginx", constraint.GetName())
 	assert.Equal(t, "app", constraint.GetSelector().GetMatchLabels()[0].GetKey())
 	assert.Equal(t, "nginx", constraint.GetSelector().GetMatchLabels()[0].GetValue())
 	assert.Equal(t, "(.*)nginx(.*)", constraint.GetAllowedProcesses()[0].GetRegex())

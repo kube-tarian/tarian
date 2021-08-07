@@ -27,8 +27,8 @@ func TestPodAgentSyncConstraints(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	configClient.AddConstraint(ctx, createConstraintRequest("default", "nginx.*", []*tarianpb.MatchLabel{{Key: "app", Value: "nginx"}}))
-	configClient.AddConstraint(ctx, createConstraintRequest("default2", "nginx.*", []*tarianpb.MatchLabel{{Key: "app2", Value: "nginx2"}}))
+	configClient.AddConstraint(ctx, createConstraintRequest("default", "nginx", "nginx.*", []*tarianpb.MatchLabel{{Key: "app", Value: "nginx"}}))
+	configClient.AddConstraint(ctx, createConstraintRequest("default2", "nginx", "nginx.*", []*tarianpb.MatchLabel{{Key: "app2", Value: "nginx2"}}))
 
 	podAgent := e2eHelper.podAgent
 	podAgent.SetNamespace("default")
@@ -53,8 +53,8 @@ func TestPodAgentSyncConstraints(t *testing.T) {
 	assert.Equal(t, "nginx.*", constraint.GetAllowedProcesses()[0].GetRegex())
 }
 
-func createConstraintRequest(namespace string, allowedProcessRegex string, labels []*tarianpb.MatchLabel) *tarianpb.AddConstraintRequest {
-	constraint := &tarianpb.Constraint{Namespace: namespace, Selector: &tarianpb.Selector{MatchLabels: labels}}
+func createConstraintRequest(namespace string, name string, allowedProcessRegex string, labels []*tarianpb.MatchLabel) *tarianpb.AddConstraintRequest {
+	constraint := &tarianpb.Constraint{Namespace: namespace, Name: name, Selector: &tarianpb.Selector{MatchLabels: labels}}
 	constraint.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
 
 	return &tarianpb.AddConstraintRequest{Constraint: constraint}

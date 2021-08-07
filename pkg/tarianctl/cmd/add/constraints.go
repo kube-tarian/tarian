@@ -2,6 +2,7 @@ package add
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -14,12 +15,20 @@ func NewAddConstraintCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "constraint",
 		Usage: "Add a constraint to the Tarian Server.",
+		UsageText: `tarianctl add constraint --name NAME --namespace NAMESPACE --match-labels=KEY_1=VAL_1,... --allowed-processes=REGEX_1,...
+   tarianctl add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx nginx`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "namespace",
 				Aliases: []string{"n"},
 				Usage:   "The namespace scope for the constraint submitted",
 				Value:   "default",
+			},
+			&cli.StringFlag{
+				Name:     "name",
+				Usage:    "The name scope for the constraint submitted",
+				Value:    "",
+				Required: true,
 			},
 			&cli.StringFlag{
 				Name:     "match-labels",
@@ -38,6 +47,7 @@ func NewAddConstraintCommand() *cli.Command {
 			req := &tarianpb.AddConstraintRequest{
 				Constraint: &tarianpb.Constraint{
 					Namespace: c.String("namespace"),
+					Name:      c.String("name"),
 					Selector: &tarianpb.Selector{
 						MatchLabels: matchLabelsFromString(c.String("match-labels")),
 					},
@@ -52,9 +62,9 @@ func NewAddConstraintCommand() *cli.Command {
 			}
 
 			if response.GetSuccess() {
-				fmt.Println("Constraint was added successfully.")
+				fmt.Println("Constraint was added successfully")
 			} else {
-				fmt.Println("Failed to add Constraint.")
+				return errors.New("failed to add Constraint")
 			}
 
 			return nil

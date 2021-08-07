@@ -62,7 +62,7 @@ There should be a container injected in nginx pod.
 7. Add constraint for that pod:
 
 ```bash
-./bin/tarianctl --server-address=localhost:31051 add constraint --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx
+./bin/tarianctl --server-address=localhost:31051 add constraint --name=nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx
 ```
 
 8. Test the violation event

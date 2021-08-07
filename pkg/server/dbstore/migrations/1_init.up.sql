@@ -1,6 +1,7 @@
 CREATE TABLE constraints (
   id SERIAL PRIMARY KEY,
   namespace CHARACTER VARYING(255) NOT NULL,
+  name CHARACTER VARYING(255) NOT NULL,
   selector JSONB,
   allowed_processes JSONB
 );
