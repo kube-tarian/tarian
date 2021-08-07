@@ -118,9 +118,14 @@ func getCliApp() *cli.App {
 						Value: "tarian-system",
 					},
 					&cli.BoolFlag{
-						Name:  "leader-election",
+						Name:  "enable-leader-election",
 						Usage: "Enable leader election",
 						Value: false,
+					},
+					&cli.BoolFlag{
+						Name:  "enable-cert-rotator",
+						Usage: "Enable cert rotator",
+						Value: true,
 					},
 				},
 				Action: runWebhookServer,
@@ -198,14 +203,14 @@ func runWebhookServer(c *cli.Context) error {
 		Port:        c.String("cluster-agent-port"),
 	}
 
-	mgr := webhookserver.NewManager(c.Int("port"), c.String("health-probe-bind-address"), c.Bool("leader-election"))
+	mgr := webhookserver.NewManager(c.Int("port"), c.String("health-probe-bind-address"), c.Bool("enable-leader-election"))
 
 	isReady := make(chan struct{})
 
-	namespace := c.String("pod-namespace")
-
-	// TODO: an option to disable cert rotation
-	webhookserver.RegisterCertRotator(mgr, isReady, namespace)
+	if c.Bool("enable-cert-rotator") {
+		namespace := c.String("pod-namespace")
+		webhookserver.RegisterCertRotator(mgr, isReady, namespace)
+	}
 
 	go func() {
 		<-isReady
