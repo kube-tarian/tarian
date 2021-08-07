@@ -49,11 +49,12 @@ message Target {
 }
 
 message Event {
-	string type = 1;
-	google.protobuf.Timestamp serverTimestamp = 2;
-	google.protobuf.Timestamp clientTimestamp = 3;
+	string kind = 1;
+	string type = 2;
+	google.protobuf.Timestamp serverTimestamp = 3;
+	google.protobuf.Timestamp clientTimestamp = 4;
 
 	// TODO: reference to the original constraint, probably by id?
 
-	repeated Target targets = 4;
+	repeated Target targets = 5;
 }

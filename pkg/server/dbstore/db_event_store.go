@@ -52,7 +52,7 @@ type eventRow struct {
 }
 
 func (e *eventRow) toEvent() *tarianpb.Event {
-	event := &tarianpb.Event{}
+	event := tarianpb.NewEvent()
 	event.Type = e.Type
 	event.ServerTimestamp = timestamppb.New(e.ServerTimestamp)
 	event.ClientTimestamp = timestamppb.New(e.ClientTimestamp)
