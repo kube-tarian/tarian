@@ -72,9 +72,7 @@ func (d *DbConstraintStore) GetAll() ([]*tarianpb.Constraint, error) {
 
 		err := rows.Scan(&r.id, &r.namespace, &r.name, &r.selector, &r.allowedProcesses)
 		if err != nil {
-			// TODO: logger.Errorw()
-
-			continue
+			return nil, err
 		}
 
 		constraint := r.toConstraint()
@@ -100,9 +98,7 @@ func (d *DbConstraintStore) FindByNamespace(namespace string) ([]*tarianpb.Const
 
 		err := rows.Scan(&r.id, &r.namespace, &r.name, &r.selector, &r.allowedProcesses)
 		if err != nil {
-			// TODO: logger.Errorw()
-
-			continue
+			return nil, err
 		}
 
 		constraint := r.toConstraint()

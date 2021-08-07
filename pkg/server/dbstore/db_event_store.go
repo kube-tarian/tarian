@@ -76,9 +76,7 @@ func (d *DbEventStore) GetAll() ([]*tarianpb.Event, error) {
 
 		err := rows.Scan(&e.ID, &e.Type, &e.ServerTimestamp, &e.ClientTimestamp, &e.Targets)
 		if err != nil {
-			// TODO: logger.Errorw()
-
-			continue
+			return nil, err
 		}
 
 		allEvents = append(allEvents, e.toEvent())
@@ -103,9 +101,7 @@ func (d *DbEventStore) FindByNamespace(namespace string) ([]*tarianpb.Event, err
 
 		err := rows.Scan(&e.ID, &e.Type, &e.ServerTimestamp, &e.ClientTimestamp, &e.Targets)
 		if err != nil {
-			// TODO: logger.Errorw()
-
-			continue
+			return nil, err
 		}
 
 		allEvents = append(allEvents, e.toEvent())
