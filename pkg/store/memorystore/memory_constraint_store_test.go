@@ -60,3 +60,30 @@ func TestMemoryStoreFindByNamespace(t *testing.T) {
 
 	assert.Equal(t, "ns2", constraints[0].Namespace)
 }
+
+func TestMemoryStoreNamespaceAndNameExist(t *testing.T) {
+	store := NewMemoryConstraintStore()
+
+	{
+		exampleConstraint := tarianpb.Constraint{Namespace: "default", Name: "nginx", Selector: &tarianpb.Selector{MatchLabels: []*tarianpb.MatchLabel{{Key: "app", Value: "nginx"}}}}
+		allowedProcessRegex := "nginx"
+		exampleConstraint.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
+		store.Add(&exampleConstraint)
+	}
+
+	{
+		exampleConstraint := tarianpb.Constraint{Namespace: "ns2", Name: "nginx", Selector: &tarianpb.Selector{MatchLabels: []*tarianpb.MatchLabel{{Key: "app", Value: "nginx"}}}}
+		allowedProcessRegex := "nginx"
+		exampleConstraint.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
+		store.Add(&exampleConstraint)
+	}
+
+	exist, _ := store.NamespaceAndNameExist("ns2", "nginx")
+	require.Equal(t, true, exist)
+
+	exist, _ = store.NamespaceAndNameExist("ns2", "doesntexist")
+	require.Equal(t, false, exist)
+
+	exist, _ = store.NamespaceAndNameExist("ns3", "doesntexist")
+	require.Equal(t, false, exist)
+}

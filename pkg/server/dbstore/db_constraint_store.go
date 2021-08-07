@@ -137,3 +137,20 @@ func (d *DbConstraintStore) Add(constraint *tarianpb.Constraint) error {
 
 	return nil
 }
+
+func (d *DbConstraintStore) NamespaceAndNameExist(namespace, name string) (bool, error) {
+	exist := false
+
+	rows, err := d.pool.Query(context.Background(), "SELECT 1 FROM constraints WHERE namespace = $1 AND name = $2 LIMIT 1", namespace, name)
+	if err != nil {
+		return false, err
+	}
+
+	defer rows.Close()
+
+	if rows.Next() {
+		exist = true
+	}
+
+	return exist, nil
+}

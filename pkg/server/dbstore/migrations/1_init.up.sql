@@ -7,6 +7,7 @@ CREATE TABLE constraints (
 );
 
 CREATE INDEX constraints_namespace_idx ON constraints (namespace);
+CREATE UNIQUE INDEX constraints_namespace_name_idx ON constraints (namespace, name);
 
 CREATE TABLE events (
   id BIGSERIAL PRIMARY KEY,

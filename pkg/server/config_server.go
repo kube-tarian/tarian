@@ -76,11 +76,29 @@ func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.Ge
 }
 
 func (cs *ConfigServer) AddConstraint(ctx context.Context, request *tarianpb.AddConstraintRequest) (*tarianpb.AddConstraintResponse, error) {
-	if request.GetConstraint() == nil || request.GetConstraint().GetName() == "" {
+	if request.GetConstraint() == nil {
+		return nil, status.Error(codes.InvalidArgument, "required constraint is empty")
+	}
+
+	if request.GetConstraint().GetNamespace() == "" {
+		return nil, status.Error(codes.InvalidArgument, "required field is empty: namespace")
+	}
+
+	if request.GetConstraint().GetName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "required field is empty: name")
 	}
 
-	err := cs.constraintStore.Add(request.GetConstraint())
+	exist, err := cs.constraintStore.NamespaceAndNameExist(request.GetConstraint().GetNamespace(), request.GetConstraint().GetName())
+	if err != nil {
+		logger.Errorw("error while handling add constraint RPC", "error", err)
+		return nil, status.Error(codes.Internal, "internal server error")
+	}
+
+	if exist {
+		return nil, status.Error(codes.InvalidArgument, "namespace and name already exists")
+	}
+
+	err = cs.constraintStore.Add(request.GetConstraint())
 	if err != nil {
 		logger.Errorw("error while handling add constraint RPC", "error", err)
 		return &tarianpb.AddConstraintResponse{Success: false}, nil

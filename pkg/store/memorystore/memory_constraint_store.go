@@ -35,3 +35,16 @@ func (m *MemoryConstraintStore) Add(constraint *tarianpb.Constraint) error {
 
 	return nil
 }
+
+func (m *MemoryConstraintStore) NamespaceAndNameExist(namespace, name string) (bool, error) {
+	exist := false
+
+	for _, c := range m.data[namespace] {
+		if c.GetName() == name {
+			exist = true
+			break
+		}
+	}
+
+	return exist, nil
+}
