@@ -82,6 +82,11 @@ func getCliApp() *cli.App {
 				Name:  "run-webhook-server",
 				Usage: "Run kubernetes admission webhook server",
 				Flags: []cli.Flag{
+					&cli.IntFlag{
+						Name:  "port",
+						Usage: "Host port to listen at",
+						Value: 9443,
+					},
 					&cli.StringFlag{
 						Name:  "pod-agent-container-name",
 						Usage: "The name of pod-agent container that will be injected",
@@ -101,6 +106,16 @@ func getCliApp() *cli.App {
 						Name:  "cluster-agent-port",
 						Usage: "Port of cluster-agent",
 						Value: "80",
+					},
+					&cli.StringFlag{
+						Name:  "health-probe-bind-address",
+						Usage: "Health probe bind address",
+						Value: ":8081",
+					},
+					&cli.BoolFlag{
+						Name:  "leader-election",
+						Usage: "Enable leader election",
+						Value: false,
 					},
 				},
 				Action: runWebhookServer,
@@ -178,7 +193,7 @@ func runWebhookServer(c *cli.Context) error {
 		Port:        c.String("cluster-agent-port"),
 	}
 
-	mgr := webhookserver.NewManager()
+	mgr := webhookserver.NewManager(c.Int("port"), c.String("health-probe-bind-address"), c.Bool("leader-election"))
 
 	isReady := make(chan struct{})
 

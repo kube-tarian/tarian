@@ -24,6 +24,8 @@ const (
 	serviceName       = "tarian-controller-manager"
 	caName            = "tarian-ca"
 	caOrganization    = "tarian"
+
+	leaderElectionID = "0f4c7cb2.k8s.tarian.dev"
 )
 
 func init() {
@@ -32,14 +34,14 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
-func NewManager() manager.Manager {
+func NewManager(port int, healthProbeBindAddress string, leaderElection bool) manager.Manager {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     "0",
-		Port:                   9443,    //  TODO: extract to CLI flag
-		HealthProbeBindAddress: ":8081", // TODO: extract to CLI flag
-		LeaderElection:         false,   // TODO: extract to CLI flag
-		LeaderElectionID:       "0f4c7cb2.k8s.tarian.dev",
+		Port:                   port,
+		HealthProbeBindAddress: healthProbeBindAddress,
+		LeaderElection:         leaderElection,
+		LeaderElectionID:       leaderElectionID,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
