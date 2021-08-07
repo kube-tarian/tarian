@@ -18,8 +18,6 @@ type DbConstraintStore struct {
 }
 
 func NewDbConstraintStore(dsn string) (*DbConstraintStore, error) {
-	// TODO: pass context from param?
-
 	poolConfig, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
@@ -27,6 +25,8 @@ func NewDbConstraintStore(dsn string) (*DbConstraintStore, error) {
 
 	poolConfig.LazyConnect = true
 
+	// ctx is used to connect initially if it's not lazyConnect, which
+	// is not our case here. So, it's ok to use context.Background().
 	dbpool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
 
 	if err != nil {
