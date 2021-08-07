@@ -4,14 +4,11 @@ import (
 	"log"
 	"os"
 
+	"github.com/devopstoday11/tarian/pkg/tarianctl/cmd"
 	"github.com/devopstoday11/tarian/pkg/tarianctl/cmd/add"
 	"github.com/devopstoday11/tarian/pkg/tarianctl/cmd/get"
 	"github.com/devopstoday11/tarian/pkg/tarianctl/cmd/importcmd"
 	cli "github.com/urfave/cli/v2"
-)
-
-const (
-	defaultServerAddress = "localhost:50051"
 )
 
 // nolint: gochecknoglobals
@@ -33,23 +30,7 @@ func getCliApp() *cli.App {
 		Name:    "Tarianctl",
 		Usage:   "tarianctl is the CLI tool to control the Tarian Server.",
 		Version: version + " (" + commit + ")",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "log-level",
-				Usage: "Log level: debug, info, warn, error",
-				Value: "info",
-			},
-			&cli.StringFlag{
-				Name:  "log-encoding",
-				Usage: "log-encoding: json, console",
-				Value: "console",
-			},
-			&cli.StringFlag{
-				Name:  "server-address",
-				Usage: "Tarian server address to communicate with",
-				Value: defaultServerAddress,
-			},
-		},
+		Flags:   cmd.CmdFlags(),
 		Commands: []*cli.Command{
 			get.NewGetCommand(),
 			add.NewAddCommand(),
