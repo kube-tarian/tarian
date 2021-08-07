@@ -47,7 +47,7 @@ type constraintRow struct {
 }
 
 func (c *constraintRow) toConstraint() *tarianpb.Constraint {
-	constraint := &tarianpb.Constraint{}
+	constraint := tarianpb.NewConstraint()
 	constraint.Namespace = c.namespace
 	json.Unmarshal([]byte(c.selector), &constraint.Selector)
 	json.Unmarshal([]byte(c.allowedProcesses), &constraint.AllowedProcesses)

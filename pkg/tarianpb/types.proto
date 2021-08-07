@@ -18,10 +18,12 @@ message AllowedProcessRule {
 }
 
 message Constraint {
-	string namespace = 1;
+	string kind = 1;
+	string namespace = 2;
+	string name = 3;
 
-	Selector selector = 2;
-	repeated AllowedProcessRule allowed_processes = 3;
+	Selector selector = 4;
+	repeated AllowedProcessRule allowed_processes = 5;
 }
 
 message Process {
