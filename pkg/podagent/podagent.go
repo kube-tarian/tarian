@@ -142,19 +142,10 @@ func (p *PodAgent) loopValidateProcesses(ctx context.Context) error {
 
 		violations := p.ValidateProcesses(processes)
 
-		// Currently limit the result to 5
-		// TODO: make it configurable
-		count := 0
-
 		for _, violation := range violations {
 			name := violation.GetName()
 
 			logger.Infow("found process that violate regex", "process", name)
-
-			count++
-			if count > 5 {
-				break
-			}
 		}
 
 		if len(violations) > 0 {
