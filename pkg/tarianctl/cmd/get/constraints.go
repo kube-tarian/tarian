@@ -28,7 +28,6 @@ func NewGetConstraintsCommand() *cli.Command {
 			response, err := client.GetConstraints(context.Background(), &tarianpb.GetConstraintsRequest{})
 
 			if err != nil {
-				fmt.Println("error")
 				return err
 			}
 
@@ -49,7 +48,6 @@ func NewGetConstraintsCommand() *cli.Command {
 				for _, c := range response.GetConstraints() {
 					d, err := yaml.Marshal(c)
 					if err != nil {
-						fmt.Println("error", err)
 						return err
 					}
 

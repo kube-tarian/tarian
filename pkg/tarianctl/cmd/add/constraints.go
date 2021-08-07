@@ -48,7 +48,6 @@ func NewAddConstraintCommand() *cli.Command {
 			response, err := client.AddConstraint(context.Background(), req)
 
 			if err != nil {
-				fmt.Println("error")
 				return err
 			}
 

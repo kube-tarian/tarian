@@ -2,7 +2,6 @@ package get
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -23,7 +22,6 @@ func NewGetEventsCommand() *cli.Command {
 			response, err := client.GetEvents(context.Background(), &tarianpb.GetEventsRequest{})
 
 			if err != nil {
-				fmt.Println("error")
 				return err
 			}
 
