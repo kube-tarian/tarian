@@ -39,7 +39,8 @@ message Label {
 message Pod {
 	string uid = 1;
 	string namespace = 2;
-	repeated Label labels = 3;
+	string name = 3;
+	repeated Label labels = 4;
 }
 
 message Target {

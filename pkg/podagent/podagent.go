@@ -186,6 +186,7 @@ func (p *PodAgent) ReportViolationsToClusterAgent(processes map[int32]*Process) 
 				{
 					Pod: &tarianpb.Pod{
 						Uid:       "abc-def-ghe",
+						Name:      "pod-name-placeholder",
 						Namespace: "tarian-system",
 						Labels: []*tarianpb.Label{
 							{
