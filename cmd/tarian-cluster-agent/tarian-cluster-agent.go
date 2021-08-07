@@ -112,6 +112,11 @@ func getCliApp() *cli.App {
 						Usage: "Health probe bind address",
 						Value: ":8081",
 					},
+					&cli.StringFlag{
+						Name:  "pod-namespace",
+						Usage: "Pod namespace where it runs. This is intended to be set from a downward API.",
+						Value: "tarian-system",
+					},
 					&cli.BoolFlag{
 						Name:  "leader-election",
 						Usage: "Enable leader election",
@@ -197,8 +202,10 @@ func runWebhookServer(c *cli.Context) error {
 
 	isReady := make(chan struct{})
 
+	namespace := c.String("pod-namespace")
+
 	// TODO: an option to disable cert rotation
-	webhookserver.RegisterCertRotator(mgr, isReady)
+	webhookserver.RegisterCertRotator(mgr, isReady, namespace)
 
 	go func() {
 		<-isReady

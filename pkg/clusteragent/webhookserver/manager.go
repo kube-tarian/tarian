@@ -75,8 +75,8 @@ func RegisterControllers(mgr manager.Manager, cfg PodAgentContainerConfig) {
 	)
 }
 
-func RegisterCertRotator(mgr manager.Manager, isReady chan struct{}) {
-	dnsName := "*.tarian-system.svc"
+func RegisterCertRotator(mgr manager.Manager, isReady chan struct{}, namespace string) {
+	dnsName := "*." + namespace + ".svc"
 	certDir := "/tmp/k8s-webhook-server/serving-certs"
 
 	var webhooks = []rotator.WebhookInfo{
@@ -89,7 +89,7 @@ func RegisterCertRotator(mgr manager.Manager, isReady chan struct{}) {
 	setupLog.Info("setting up cert rotation")
 	if err := rotator.AddRotator(mgr, &rotator.CertRotator{
 		SecretKey: types.NamespacedName{
-			Namespace: "tarian-system", // TODO: extract
+			Namespace: namespace,
 			Name:      managedSecretName,
 		},
 		CertDir:        certDir,
