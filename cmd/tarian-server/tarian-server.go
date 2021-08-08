@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -133,15 +132,12 @@ func run(c *cli.Context) error {
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
 
 	go func() {
 		sig := <-sigCh
 		logger.Infow("got sigterm signal, attempting graceful shutdown", "signal", sig)
 
 		server.Stop()
-		wg.Done()
 	}()
 
 	if c.String("alertmanager-address") != "" {
@@ -160,7 +156,6 @@ func run(c *cli.Context) error {
 		logger.Fatalw("failed to start server", "err", err)
 	}
 
-	wg.Wait()
 	logger.Info("tarian-server shutdown gracefully")
 
 	return nil

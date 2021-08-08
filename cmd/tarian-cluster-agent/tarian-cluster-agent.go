@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"github.com/devopstoday11/tarian/pkg/clusteragent"
@@ -152,15 +151,12 @@ func run(c *cli.Context) error {
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
 
 	go func() {
 		sig := <-sigCh
 		logger.Infow("got sigterm signal, attempting graceful shutdown", "signal", sig)
 
 		grpcServer.GracefulStop()
-		wg.Done()
 	}()
 
 	logger.Infow("tarian-cluster-agent is listening at", "address", listener.Addr())
@@ -169,7 +165,6 @@ func run(c *cli.Context) error {
 		logger.Fatalw("failed to serve", "err", err)
 	}
 
-	wg.Wait()
 	logger.Info("tarian-cluster-agent shutdown gracefully")
 
 	return nil

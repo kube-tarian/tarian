@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 
 	"github.com/devopstoday11/tarian/pkg/logger"
@@ -111,19 +110,16 @@ func run(c *cli.Context) error {
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
 
 	go func() {
 		sig := <-sigCh
 		logger.Infow("got sigterm signal, attempting graceful shutdown", "signal", sig)
 
 		agent.GracefulStop()
-		wg.Done()
 	}()
 
 	agent.Run()
-	wg.Wait()
+	logger.Info("tarian-pod-agent shutdown gracefully")
 
 	return nil
 }
