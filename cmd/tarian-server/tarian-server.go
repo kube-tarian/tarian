@@ -54,7 +54,9 @@ func getCliApp() *cli.App {
 				Value: "console",
 			},
 		},
-		Action: run,
+		Action: func(ctx *cli.Context) error {
+			return ctx.App.Command("run").Run(ctx)
+		},
 		Commands: []*cli.Command{
 			{
 				Name:  "run",
@@ -115,14 +117,7 @@ func run(c *cli.Context) error {
 
 	// Create server
 	host := c.String("host")
-	if host == "" {
-		host = defaultHost
-	}
-
 	port := c.String("port")
-	if port == "" {
-		port = defaultPort
-	}
 
 	var cfg server.PostgresqlConfig
 	err := envconfig.Process("Postgres", &cfg)

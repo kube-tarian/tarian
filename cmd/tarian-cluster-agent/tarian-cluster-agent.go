@@ -54,7 +54,9 @@ func getCliApp() *cli.App {
 				Value: "console",
 			},
 		},
-		Action: run,
+		Action: func(ctx *cli.Context) error {
+			return ctx.App.Command("run").Run(ctx)
+		},
 		Commands: []*cli.Command{
 			{
 				Name:  "run",
@@ -135,30 +137,15 @@ func getCliApp() *cli.App {
 }
 
 func run(c *cli.Context) error {
-	host := c.String("host")
-	if host == "" {
-		host = defaultHost
-	}
-
-	port := c.String("port")
-	if port == "" {
-		port = defaultPort
-	}
-
-	serverAddress := c.String("server-address")
-	if serverAddress == "" {
-		serverAddress = defaultServerAddress
-	}
-
 	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
 	clusteragent.SetLogger(logger)
 
-	listener, err := net.Listen("tcp", host+":"+port)
+	listener, err := net.Listen("tcp", c.String("host")+":"+c.String("port"))
 	if err != nil {
 		logger.Fatalw("failed to listen", "err", err)
 	}
 
-	clusterAgent := clusteragent.NewClusterAgent(serverAddress)
+	clusterAgent := clusteragent.NewClusterAgent(c.String("server-address"))
 	defer clusterAgent.Close()
 
 	grpcServer := clusterAgent.GetGrpcServer()

@@ -51,7 +51,9 @@ func getCliApp() *cli.App {
 				Value: "console",
 			},
 		},
-		Action: run,
+		Action: func(ctx *cli.Context) error {
+			return ctx.App.Command("run").Run(ctx)
+		},
 		Commands: []*cli.Command{
 			{
 				Name:  "run",
@@ -85,22 +87,11 @@ func getCliApp() *cli.App {
 }
 
 func run(c *cli.Context) error {
-	host := c.String("host")
-	if host == "" {
-		host = defaultClusterAgentHost
-	}
-
-	port := c.String("port")
-	if port == "" {
-		port = defaultClusterAgentPort
-	}
-
 	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
 	podagent.SetLogger(logger)
-
 	logger.Infow("tarian-pod-agent is running")
 
-	agent := podagent.NewPodAgent(host + ":" + port)
+	agent := podagent.NewPodAgent(c.String("host") + ":" + c.String("port"))
 
 	podLabelsFile := c.String("pod-labels-file")
 	if podLabelsFile != "" {
