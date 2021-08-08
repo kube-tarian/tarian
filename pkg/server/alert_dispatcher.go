@@ -56,8 +56,11 @@ func (a *AlertDispatcher) LoopSendAlerts(ctx context.Context, es store.EventStor
 
 		for _, event := range events {
 			if event.GetType() == "violation" {
-				a.SendAlert(event)
-				es.UpdateAlertSent(event.GetUid())
+				err := a.SendAlert(event)
+
+				if err == nil {
+					es.UpdateAlertSent(event.GetUid())
+				}
 			}
 		}
 
@@ -69,7 +72,7 @@ func (a *AlertDispatcher) LoopSendAlerts(ctx context.Context, es store.EventStor
 	}
 }
 
-func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) {
+func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) error {
 	for _, target := range event.GetTargets() {
 		if target.GetPod() == nil {
 			continue
@@ -97,6 +100,8 @@ func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) {
 		} else {
 			logger.Info("alerts sent to alertmanager", "result", status.Error())
 		}
+
+		return err
 	}
 }
 
