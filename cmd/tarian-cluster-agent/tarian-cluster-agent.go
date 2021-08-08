@@ -192,6 +192,8 @@ func runWebhookServer(c *cli.Context) error {
 	if c.Bool("enable-cert-rotator") {
 		namespace := c.String("pod-namespace")
 		webhookserver.RegisterCertRotator(mgr, isReady, namespace)
+	} else {
+		close(isReady)
 	}
 
 	go func() {
@@ -202,8 +204,7 @@ func runWebhookServer(c *cli.Context) error {
 
 	logger.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		logger.Error(err, "problem running manager")
-		os.Exit(1)
+		logger.Fatal(err, "problem running manager")
 	}
 
 	logger.Info("manager shutdown gracefully")
