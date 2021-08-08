@@ -165,7 +165,7 @@ func (p *PodAgent) ReportViolationsToClusterAgent(processes map[int32]*Process) 
 
 	i := 0
 	for _, p := range processes {
-		violatingProcesses[i] = &tarianpb.Process{Id: p.Pid, Name: p.Name}
+		violatingProcesses[i] = &tarianpb.Process{Pid: p.GetPid(), Name: p.GetName()}
 		i++
 	}
 

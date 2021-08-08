@@ -27,7 +27,7 @@ message Constraint {
 }
 
 message Process {
-	int32 id = 1;
+	int32 pid = 1;
 	string name = 2;
 }
 

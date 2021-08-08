@@ -103,13 +103,15 @@ func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) error {
 
 		return err
 	}
+
+	return nil
 }
 
 func violatingProcessesToString(processes []*tarianpb.Process) string {
 	str := strings.Builder{}
 
 	for i, p := range processes {
-		str.WriteString(strconv.Itoa(int(p.GetId())))
+		str.WriteString(strconv.Itoa(int(p.GetPid())))
 		str.WriteString(":")
 		str.WriteString(p.GetName())
 
