@@ -145,7 +145,7 @@ func (p *PodAgent) loopValidateProcesses(ctx context.Context) error {
 		for _, violation := range violations {
 			name := violation.GetName()
 
-			logger.Infow("found process that violate regex", "process", name)
+			logger.Infow("found process that violates regex", "process", name)
 		}
 
 		if len(violations) > 0 {
@@ -195,7 +195,7 @@ func (p *PodAgent) ReportViolationsToClusterAgent(processes map[int32]*Process) 
 	response, err := p.eventClient.IngestEvent(context.Background(), req)
 
 	if err != nil {
-		logger.Infow("error while reporting violation events", "err", err)
+		logger.Errorw("error while reporting violation events", "err", err)
 	} else {
 		logger.Infow("ingest event response", "response", response)
 	}
