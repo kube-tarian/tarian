@@ -42,6 +42,7 @@ func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.Ge
 	matchedConstraints := []*tarianpb.Constraint{}
 
 	// filter matchLabels
+	// TODO: add unit test for this
 	if request.GetLabels() != nil {
 		requestLabelSet := strset.New()
 		for _, l := range request.GetLabels() {
@@ -90,7 +91,7 @@ func (cs *ConfigServer) AddConstraint(ctx context.Context, request *tarianpb.Add
 
 	exist, err := cs.constraintStore.NamespaceAndNameExist(request.GetConstraint().GetNamespace(), request.GetConstraint().GetName())
 	if err != nil {
-		logger.Errorw("error while handling add constraint RPC", "error", err)
+		logger.Errorw("error while handling add constraint RPC", "err", err)
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
@@ -100,7 +101,7 @@ func (cs *ConfigServer) AddConstraint(ctx context.Context, request *tarianpb.Add
 
 	err = cs.constraintStore.Add(request.GetConstraint())
 	if err != nil {
-		logger.Errorw("error while handling add constraint RPC", "error", err)
+		logger.Errorw("error while handling add constraint RPC", "err", err)
 		return &tarianpb.AddConstraintResponse{Success: false}, nil
 	}
 

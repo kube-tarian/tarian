@@ -6,6 +6,8 @@ import (
 	"github.com/devopstoday11/tarian/pkg/server/dbstore"
 	"github.com/devopstoday11/tarian/pkg/store"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"github.com/gogo/status"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -24,11 +26,11 @@ func NewEventServer(dsn string) (*EventServer, error) {
 }
 
 func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.IngestEventRequest) (*tarianpb.IngestEventResponse, error) {
-	logger.Infow("ingest event", "request", request)
+	logger.Debugw("ingest event", "request", request)
 
 	event := request.GetEvent()
 	if event == nil {
-		return &tarianpb.IngestEventResponse{Success: false}, nil
+		return nil, status.Error(codes.InvalidArgument, "required event is empty")
 	}
 
 	event.ServerTimestamp = timestamppb.Now()
@@ -37,7 +39,7 @@ func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.Ingest
 
 	if err != nil {
 		logger.Errorw("error while handling ingest event", "err", err)
-		return &tarianpb.IngestEventResponse{Success: false}, nil
+		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
 	return &tarianpb.IngestEventResponse{Success: true}, nil
@@ -54,7 +56,7 @@ func (es *EventServer) GetEvents(ctxt context.Context, request *tarianpb.GetEven
 	}
 
 	if err != nil {
-		logger.Errorw("error while handling get events RPC", "error", err)
+		logger.Errorw("error while handling get events RPC", "err", err)
 	}
 
 	return &tarianpb.GetEventsResponse{
