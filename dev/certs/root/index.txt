@@ -1,2 +1,0 @@
-V	220731075403Z		67F58FBA992AD041467AFDFDABD4001E	root.crt	/C=US/O=Tarian/OU=Developers/CN=Tarian Dev Certificate Authority
-V	220731075527Z		9BD37B9F43E051EEB8C4E2F0D4F696BF	wildcard.tarian-system.svc.crt	/C=US/O=Tarian/OU=Developers/CN=*.tarian-system.svc
