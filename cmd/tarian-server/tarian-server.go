@@ -167,15 +167,13 @@ func dbmigrate(c *cli.Context) error {
 	var cfg server.PostgresqlConfig
 	err := envconfig.Process("Postgres", &cfg)
 	if err != nil {
-		logger.Errorw("database config error", "err", err)
-		return err
+		logger.Fatalw("database config error", "err", err)
 	}
 
 	count, err := dbstore.RunMigration(cfg.GetDsn())
 
 	if err != nil {
-		logger.Errorw("error while running database migration", "err", err)
-		return err
+		logger.Fatalw("error while running database migration", "err", err)
 	} else {
 		logger.Infow("completed database migration", "applied", count)
 	}
@@ -189,14 +187,12 @@ func devSeedData(c *cli.Context) error {
 	var cfg server.PostgresqlConfig
 	err := envconfig.Process("Postgres", &cfg)
 	if err != nil {
-		logger.Errorw("database config error", "err", err)
-		return err
+		logger.Fatalw("database config error", "err", err)
 	}
 
 	dbStore, err := dbstore.NewDbConstraintStore(cfg.GetDsn())
 	if err != nil {
-		logger.Errorw("error creating database store", "err", err)
-		return err
+		logger.Fatalw("error creating database store", "err", err)
 	}
 
 	regexes := []string{"ssh", "worker", "swap", "scsi", "loop", "gvfs", "idle", "injection", "nvme", "jbd", "snap", "cpu", "soft", "bash", "integrity", "kcryptd", "krfcommd", "kcompactd0", "wpa_supplican", "oom_reaper", "registryd", "migration", "kblockd", "gsd-", "kdevtmpfs", "pipewire"}
@@ -207,8 +203,7 @@ func devSeedData(c *cli.Context) error {
 		exampleConstraint.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
 		err := dbStore.Add(&exampleConstraint)
 		if err != nil {
-			logger.Errorw("error while adding seed data: constraint", "err", err)
-			return err
+			logger.Fatalw("error while adding seed data: constraint", "err", err)
 		}
 	}
 
@@ -220,7 +215,7 @@ func devSeedData(c *cli.Context) error {
 		exampleConstraint.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
 		err := dbStore.Add(&exampleConstraint)
 		if err != nil {
-			logger.Errorw("error while adding seed data: constraint", "err", err)
+			logger.Fatalw("error while adding seed data: constraint", "err", err)
 			return err
 		}
 	}
