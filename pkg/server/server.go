@@ -48,9 +48,8 @@ type Server struct {
 	ConfigServer    *ConfigServer
 	AlertDispatcher *AlertDispatcher
 
-	cancelCtx   context.Context
-	cancelFunc  context.CancelFunc
-	eventStream chan *tarianpb.Event
+	cancelCtx  context.Context
+	cancelFunc context.CancelFunc
 
 	eventStore *dbstore.DbEventStore
 }
