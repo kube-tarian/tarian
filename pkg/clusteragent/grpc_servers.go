@@ -50,7 +50,7 @@ func NewConfigServer(tarianServerAddress string) *ConfigServer {
 func (cs *ConfigServer) GetConstraints(reqCtx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
 	logger.Info("Received get config RPC")
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	r, err := cs.configClient.GetConstraints(ctx, request)
@@ -89,7 +89,7 @@ func NewEventServer(tarianServerAddress string) *EventServer {
 func (es *EventServer) IngestEvent(requestContext context.Context, request *tarianpb.IngestEventRequest) (*tarianpb.IngestEventResponse, error) {
 	logger.Info("Received ingest violation event RPC")
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	r, err := es.eventClient.IngestEvent(ctx, request)
