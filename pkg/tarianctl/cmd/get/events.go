@@ -26,7 +26,7 @@ func NewGetEventsCommand() *cli.Command {
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"Time", "Namespace", "Uid", "Violating Processes"})
+			table.SetHeader([]string{"Time", "Namespace", "Name", "Violating Processes"})
 			table.SetColumnSeparator(" ")
 			table.SetCenterSeparator("-")
 			table.SetAlignment(tablewriter.ALIGN_LEFT)
@@ -37,7 +37,7 @@ func NewGetEventsCommand() *cli.Command {
 						[]string{
 							e.GetServerTimestamp().AsTime().Format(time.RFC3339),
 							t.GetPod().GetNamespace(),
-							t.GetPod().GetUid(),
+							t.GetPod().GetName(),
 							violatingProcessesToString(t.GetViolatingProcesses()),
 						},
 					)
