@@ -48,7 +48,7 @@ func TestPodAgentReportViolationsToClusterAgent(t *testing.T) {
 
 	pids := []int32{}
 	for _, process := range event.GetTargets()[0].GetViolatingProcesses() {
-		pids = append(pids, process.GetId())
+		pids = append(pids, process.GetPid())
 	}
 
 	assert.Contains(t, pids, int32(1))
