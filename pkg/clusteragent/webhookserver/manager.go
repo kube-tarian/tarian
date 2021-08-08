@@ -75,13 +75,13 @@ func RegisterControllers(mgr manager.Manager, cfg PodAgentContainerConfig) {
 	)
 }
 
-func RegisterCertRotator(mgr manager.Manager, isReady chan struct{}, namespace string) {
+func RegisterCertRotator(mgr manager.Manager, isReady chan struct{}, namespace string, mutatingWebhookConfigurationName string) {
 	dnsName := "*." + namespace + ".svc"
 	certDir := "/tmp/k8s-webhook-server/serving-certs"
 
 	var webhooks = []rotator.WebhookInfo{
 		{
-			Name: "tarian-mutating-webhook-configuration",
+			Name: mutatingWebhookConfigurationName,
 			Type: rotator.Mutating,
 		},
 	}

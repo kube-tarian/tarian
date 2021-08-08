@@ -128,6 +128,11 @@ func getCliApp() *cli.App {
 						Usage: "Enable cert rotator",
 						Value: true,
 					},
+					&cli.StringFlag{
+						Name:  "mutating-webhook-configuration-name",
+						Usage: "Name of MutatingWebhookConfiguration to which it will inject the ca bundle",
+						Value: "tarian-mutating-webhook-configuration",
+					},
 				},
 				Action: runWebhookServer,
 			},
@@ -191,7 +196,7 @@ func runWebhookServer(c *cli.Context) error {
 
 	if c.Bool("enable-cert-rotator") {
 		namespace := c.String("pod-namespace")
-		webhookserver.RegisterCertRotator(mgr, isReady, namespace)
+		webhookserver.RegisterCertRotator(mgr, isReady, namespace, c.String("mutating-webhook-configuration-name"))
 	} else {
 		close(isReady)
 	}
