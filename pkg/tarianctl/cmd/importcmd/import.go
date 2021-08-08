@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/devopstoday11/tarian/pkg/tarianctl/client"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	cli "github.com/urfave/cli/v2"
@@ -22,13 +23,14 @@ func NewImportCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
+			logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
 			files := []*os.File{}
 
 			for _, path := range c.Args().Slice() {
 				f, err := os.Open(path)
 
 				if err != nil {
-					return err
+					logger.Fatal(err)
 				}
 
 				files = append(files, f)

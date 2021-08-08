@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/devopstoday11/tarian/pkg/tarianctl/client"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"github.com/olekukonko/tablewriter"
@@ -24,11 +25,13 @@ func NewGetConstraintsCommand() *cli.Command {
 			Value:   "",
 		}},
 		Action: func(c *cli.Context) error {
+			logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
+
 			client, _ := client.NewConfigClient(c.String("server-address"))
 			response, err := client.GetConstraints(context.Background(), &tarianpb.GetConstraintsRequest{})
 
 			if err != nil {
-				return err
+				logger.Fatal(err)
 			}
 
 			outputFormat := c.String("output")

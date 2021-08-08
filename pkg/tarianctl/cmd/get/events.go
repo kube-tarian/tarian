@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/devopstoday11/tarian/pkg/tarianctl/client"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"github.com/olekukonko/tablewriter"
@@ -18,11 +19,13 @@ func NewGetEventsCommand() *cli.Command {
 		Name:  "events",
 		Usage: "Get events from the Tarian Server.",
 		Action: func(c *cli.Context) error {
+			logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
+
 			client, _ := client.NewEventClient(c.String("server-address"))
 			response, err := client.GetEvents(context.Background(), &tarianpb.GetEventsRequest{})
 
 			if err != nil {
-				return err
+				logger.Fatal(err)
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
