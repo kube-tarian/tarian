@@ -57,6 +57,7 @@ proto:
 
 lint: fmt vet
 	revive -formatter stylish -config .revive.toml ./pkg/...
+	staticcheck ./...
 
 local-images: build
 	docker build -f Dockerfile-server -t localhost:5000/tarian-server . && docker push localhost:5000/tarian-server
