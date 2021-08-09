@@ -32,14 +32,14 @@ func SetLogger(l *zap.SugaredLogger) {
 type PostgresqlConfig struct {
 	User     string `default:"postgres"`
 	Password string `default:"tarian"`
-	Name     string `default:"tarian"`
+	DbName   string `default:"tarian"`
 	Host     string `default:"localhost"`
 	Port     string `default:"5432"`
 	SslMode  string `default:"disable"`
 }
 
 func (p *PostgresqlConfig) GetDsn() string {
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", p.User, p.Password, p.Host, p.Port, p.Name, p.SslMode)
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", p.User, p.Password, p.Host, p.Port, p.DbName, p.SslMode)
 }
 
 type Server struct {

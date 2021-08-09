@@ -22,7 +22,7 @@ import (
 var cfg server.PostgresqlConfig = server.PostgresqlConfig{
 	User:     "postgres",
 	Password: "tarian",
-	Name:     "tarian", // only used to connect, it will create its own db
+	DbName:   "tarian", // only used to connect, it will create its own db
 	Host:     "localhost",
 	Port:     "5432",
 	SslMode:  "disable",
@@ -47,9 +47,9 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	require.Nil(t, err)
 
 	dbConfig := cfg
-	dbConfig.Name += "_test_" + fmt.Sprintf("%d", time.Now().Unix()) + "_" + uuid.NewV4().String()[:8]
+	dbConfig.DbName += "_test_" + fmt.Sprintf("%d", time.Now().Unix()) + "_" + uuid.NewV4().String()[:8]
 
-	_, err = dbPool.Exec(context.Background(), "CREATE DATABASE "+dbConfig.Name)
+	_, err = dbPool.Exec(context.Background(), "CREATE DATABASE "+dbConfig.DbName)
 	require.Nil(t, err)
 
 	srv, err := server.NewServer(dbConfig.GetDsn())
@@ -100,7 +100,7 @@ func (th *TestHelper) PrepareDatabase() {
 }
 
 func (th *TestHelper) DropDatabase() {
-	_, err := th.dbPool.Exec(context.Background(), "DROP DATABASE "+th.dbConfig.Name+" WITH (FORCE)")
+	_, err := th.dbPool.Exec(context.Background(), "DROP DATABASE "+th.dbConfig.DbName+" WITH (FORCE)")
 
 	require.Nil(th.t, err)
 }
