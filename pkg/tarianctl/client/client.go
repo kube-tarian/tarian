@@ -5,14 +5,14 @@ import (
 	"google.golang.org/grpc"
 )
 
-func NewConfigClient(serverAddress string) (tarianpb.ConfigClient, error) {
-	grpcConn, err := grpc.Dial(serverAddress, grpc.WithInsecure())
+func NewConfigClient(serverAddress string, opts ...grpc.DialOption) (tarianpb.ConfigClient, error) {
+	grpcConn, err := grpc.Dial(serverAddress, opts...)
 
 	return tarianpb.NewConfigClient(grpcConn), err
 }
 
-func NewEventClient(serverAddress string) (tarianpb.EventClient, error) {
-	grpcConn, err := grpc.Dial(serverAddress, grpc.WithInsecure())
+func NewEventClient(serverAddress string, opts ...grpc.DialOption) (tarianpb.EventClient, error) {
+	grpcConn, err := grpc.Dial(serverAddress, opts...)
 
 	return tarianpb.NewEventClient(grpcConn), err
 }

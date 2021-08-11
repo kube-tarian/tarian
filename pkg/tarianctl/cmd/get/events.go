@@ -9,6 +9,7 @@ import (
 
 	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/devopstoday11/tarian/pkg/tarianctl/client"
+	"github.com/devopstoday11/tarian/pkg/tarianctl/util"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"github.com/olekukonko/tablewriter"
 	cli "github.com/urfave/cli/v2"
@@ -21,7 +22,9 @@ func NewGetEventsCommand() *cli.Command {
 		Action: func(c *cli.Context) error {
 			logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
 
-			client, _ := client.NewEventClient(c.String("server-address"))
+			opts := util.ClientOptionsFromCliContext(c)
+			client, _ := client.NewEventClient(c.String("server-address"), opts...)
+
 			response, err := client.GetEvents(context.Background(), &tarianpb.GetEventsRequest{})
 
 			if err != nil {

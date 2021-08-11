@@ -8,6 +8,7 @@ import (
 
 	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/devopstoday11/tarian/pkg/tarianctl/client"
+	"github.com/devopstoday11/tarian/pkg/tarianctl/util"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	cli "github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v3"
@@ -36,7 +37,8 @@ func NewImportCommand() *cli.Command {
 				files = append(files, f)
 			}
 
-			client, _ := client.NewConfigClient(c.String("server-address"))
+			opts := util.ClientOptionsFromCliContext(c)
+			client, _ := client.NewConfigClient(c.String("server-address"), opts...)
 
 			for _, f := range files {
 				importFile(f, client)

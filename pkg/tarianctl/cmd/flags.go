@@ -23,5 +23,15 @@ func CmdFlags() []cli.Flag {
 			Usage: "Tarian server address to communicate with",
 			Value: defaultServerAddress,
 		},
+		&cli.BoolFlag{
+			Name:  "server-tls-enabled",
+			Usage: "If enabled, it will communicate with the server using TLS",
+			Value: false,
+		},
+		&cli.BoolFlag{
+			Name:  "server-tls-insecure-skip-verify",
+			Usage: "If set to true, it will skip server's certificate chain and hostname verification",
+			Value: true,
+		},
 	}
 }

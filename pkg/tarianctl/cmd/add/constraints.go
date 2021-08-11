@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/devopstoday11/tarian/pkg/tarianctl/client"
+	"github.com/devopstoday11/tarian/pkg/tarianctl/util"
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	cli "github.com/urfave/cli/v2"
 )
@@ -46,7 +47,8 @@ func NewAddConstraintCommand() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			client, _ := client.NewConfigClient(c.String("server-address"))
+			opts := util.ClientOptionsFromCliContext(c)
+			client, _ := client.NewConfigClient(c.String("server-address"), opts...)
 
 			req := &tarianpb.AddConstraintRequest{
 				Constraint: &tarianpb.Constraint{
