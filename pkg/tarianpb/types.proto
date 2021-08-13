@@ -17,6 +17,11 @@ message AllowedProcessRule {
 	optional string regex = 1;
 }
 
+message AllowedFileRule {
+	string name = 1;
+	optional string sha256sum = 2;
+}
+
 message Constraint {
 	string kind = 1;
 	string namespace = 2;
@@ -24,6 +29,7 @@ message Constraint {
 
 	Selector selector = 4;
 	repeated AllowedProcessRule allowed_processes = 5;
+	repeated AllowedFileRule allowed_files = 6;
 }
 
 message Process {

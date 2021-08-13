@@ -45,6 +45,7 @@ type constraintRow struct {
 	name             string
 	selector         string
 	allowedProcesses string
+	allowedFiles     string
 }
 
 func (c *constraintRow) toConstraint() *tarianpb.Constraint {
@@ -53,6 +54,7 @@ func (c *constraintRow) toConstraint() *tarianpb.Constraint {
 	constraint.Name = c.name
 	json.Unmarshal([]byte(c.selector), &constraint.Selector)
 	json.Unmarshal([]byte(c.allowedProcesses), &constraint.AllowedProcesses)
+	json.Unmarshal([]byte(c.allowedFiles), &constraint.AllowedFiles)
 
 	return constraint
 }
@@ -70,7 +72,7 @@ func (d *DbConstraintStore) GetAll() ([]*tarianpb.Constraint, error) {
 	for rows.Next() {
 		r := constraintRow{}
 
-		err := rows.Scan(&r.id, &r.namespace, &r.name, &r.selector, &r.allowedProcesses)
+		err := rows.Scan(&r.id, &r.namespace, &r.name, &r.selector, &r.allowedProcesses, &r.allowedFiles)
 		if err != nil {
 			return nil, err
 		}
@@ -121,11 +123,16 @@ func (d *DbConstraintStore) Add(constraint *tarianpb.Constraint) error {
 		return err
 	}
 
+	allowedFilesJSON, err := json.Marshal(constraint.GetAllowedFiles())
+	if err != nil {
+		return err
+	}
+
 	err = d.pool.
 		QueryRow(
 			context.Background(),
-			"INSERT INTO constraints(namespace, name, selector, allowed_processes) VALUES($1, $2, $3, $4) RETURNING id",
-			constraint.GetNamespace(), constraint.GetName(), selectorJSON, allowedProcessesJSON).
+			"INSERT INTO constraints(namespace, name, selector, allowed_processes, allowed_files) VALUES($1, $2, $3, $4, $5) RETURNING id",
+			constraint.GetNamespace(), constraint.GetName(), selectorJSON, allowedProcessesJSON, allowedFilesJSON).
 		Scan(&id)
 	if err != nil {
 		return err

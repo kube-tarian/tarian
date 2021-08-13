@@ -37,13 +37,13 @@ func NewGetConstraintsCommand() *cli.Command {
 			outputFormat := c.String("output")
 			if outputFormat == "" {
 				table := tablewriter.NewWriter(os.Stdout)
-				table.SetHeader([]string{"Namespace", "Selector", "Allowed Processes"})
+				table.SetHeader([]string{"Namespace", "Selector", "Allowed Processes", "Allowed Files"})
 				table.SetColumnSeparator(" ")
 				table.SetCenterSeparator("-")
 				table.SetAlignment(tablewriter.ALIGN_LEFT)
 
 				for _, c := range response.GetConstraints() {
-					table.Append([]string{c.GetNamespace(), matchLabelsToString(c.GetSelector().GetMatchLabels()), allowedProcessesToString(c.GetAllowedProcesses())})
+					table.Append([]string{c.GetNamespace(), matchLabelsToString(c.GetSelector().GetMatchLabels()), allowedProcessesToString(c.GetAllowedProcesses()), allowedFilesToString(c.GetAllowedFiles())})
 				}
 
 				table.Render()
@@ -88,9 +88,25 @@ func matchLabelsToString(labels []*tarianpb.MatchLabel) string {
 func allowedProcessesToString(rules []*tarianpb.AllowedProcessRule) string {
 	str := strings.Builder{}
 
-	for i, l := range rules {
+	for i, r := range rules {
 		str.WriteString("regex:")
-		str.WriteString(l.GetRegex())
+		str.WriteString(r.GetRegex())
+
+		if i < len(rules)-1 {
+			str.WriteString(",")
+		}
+	}
+
+	return str.String()
+}
+
+func allowedFilesToString(rules []*tarianpb.AllowedFileRule) string {
+	str := strings.Builder{}
+
+	for i, r := range rules {
+		str.WriteString(r.GetName())
+		str.WriteString(":")
+		str.WriteString(r.GetSha256Sum())
 
 		if i < len(rules)-1 {
 			str.WriteString(",")

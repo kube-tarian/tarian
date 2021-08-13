@@ -3,7 +3,8 @@ CREATE TABLE constraints (
   namespace CHARACTER VARYING(255) NOT NULL,
   name CHARACTER VARYING(255) NOT NULL,
   selector JSONB,
-  allowed_processes JSONB
+  allowed_processes JSONB,
+  allowed_files JSONB
 );
 
 CREATE INDEX constraints_namespace_idx ON constraints (namespace);
