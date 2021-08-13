@@ -178,7 +178,7 @@ func (p *PodAgent) loopValidateFileChecksums(ctx context.Context) error {
 		}
 
 		if len(violatedFiles) > 0 {
-			// p.ReportViolatedFilesToClusterAgent(violatedFiles)
+			p.ReportViolatedFilesToClusterAgent(violatedFiles)
 		}
 
 		select {
@@ -345,4 +345,45 @@ func (p *PodAgent) ValidateFileChecksums() map[string]*violatedFile {
 	}
 
 	return violatedFiles
+}
+
+func (p *PodAgent) ReportViolatedFilesToClusterAgent(violatedFiles map[string]*violatedFile) {
+	vf := make([]*tarianpb.ViolatedFile, len(violatedFiles))
+
+	i := 0
+	for _, f := range violatedFiles {
+		vf[i] = &tarianpb.ViolatedFile{Name: f.name, ActualSha256Sum: f.actualSha256Sum, ExpectedSha256Sum: f.expectedSha256Sum}
+		i++
+	}
+
+	req := &tarianpb.IngestEventRequest{
+		Event: &tarianpb.Event{
+			Type:            tarianpb.EventTypeViolation,
+			ClientTimestamp: timestamppb.Now(),
+			Targets: []*tarianpb.Target{
+				{
+					Pod: &tarianpb.Pod{
+						Uid:       "abc-def-ghe",
+						Name:      "pod-name-placeholder",
+						Namespace: "tarian-system",
+						Labels: []*tarianpb.Label{
+							{
+								Key:   "app",
+								Value: "nginx",
+							},
+						},
+					},
+					ViolatedFiles: vf,
+				},
+			},
+		},
+	}
+
+	response, err := p.eventClient.IngestEvent(context.Background(), req)
+
+	if err != nil {
+		logger.Errorw("error while reporting violation events", "err", err)
+	} else {
+		logger.Infow("ingest event response", "response", response)
+	}
 }
