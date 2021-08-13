@@ -2,6 +2,10 @@ package podagent
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
+	"io"
+	"os"
 	"regexp"
 	"sync"
 	"time"
@@ -82,7 +86,7 @@ func (p *PodAgent) Run() {
 	defer p.grpcConn.Close()
 
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(3)
 
 	go func() {
 		p.loopSyncConstraints(p.cancelCtx)
@@ -91,6 +95,11 @@ func (p *PodAgent) Run() {
 
 	go func() {
 		p.loopValidateProcesses(p.cancelCtx)
+		wg.Done()
+	}()
+
+	go func() {
+		p.loopValidateFileChecksums(p.cancelCtx)
 		wg.Done()
 	}()
 
@@ -150,6 +159,26 @@ func (p *PodAgent) loopValidateProcesses(ctx context.Context) error {
 
 		if len(violations) > 0 {
 			p.ReportViolationsToClusterAgent(violations)
+		}
+
+		select {
+		case <-time.After(3 * time.Second):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+func (p *PodAgent) loopValidateFileChecksums(ctx context.Context) error {
+	for {
+		violatedFiles := p.ValidateFileChecksums()
+
+		for _, violation := range violatedFiles {
+			logger.Infow("found a file that violates checksum", "file", violation.name, "actual", violation.actualSha256Sum, "expected", violation.expectedSha256Sum)
+		}
+
+		if len(violatedFiles) > 0 {
+			// p.ReportViolatedFilesToClusterAgent(violatedFiles)
 		}
 
 		select {
@@ -251,4 +280,69 @@ func (p *PodAgent) ValidateProcesses(processes []*Process) map[int32]*Process {
 	}
 
 	return violations
+}
+
+type violatedFile struct {
+	name              string
+	expectedSha256Sum string
+	actualSha256Sum   string
+}
+
+func (p *PodAgent) ValidateFileChecksums() map[string]*violatedFile {
+	p.constraintsLock.RLock()
+
+	// Copy constraints to a local var to not block SyncConstraints() because this function can run quite long
+	constraints := make([]*tarianpb.Constraint, len(p.constraints))
+	copy(constraints, p.constraints)
+
+	p.constraintsLock.RUnlock()
+
+	violatedFiles := make(map[string]*violatedFile)
+	allowedFiles := make(map[string]struct{})
+
+	for _, constraint := range constraints {
+		if constraint.GetAllowedFiles() == nil {
+			continue
+		}
+
+		for _, allowedFile := range constraint.GetAllowedFiles() {
+			if allowedFile.GetName() == "" || allowedFile.GetSha256Sum() == "" {
+				continue
+			}
+
+			logger.Infow("validating file sha256 checksum", "file", allowedFile.GetName(), "allowedSha256Sum", allowedFile.GetSha256Sum())
+
+			f, err := os.Open(allowedFile.GetName())
+			if err != nil {
+				logger.Errorw("can not open file to check the sha256 checksum", "file", allowedFile.GetName(), "err", err)
+			}
+
+			s256 := sha256.New()
+			if _, err := io.Copy(s256, f); err != nil {
+				logger.Errorw("can not read file to check the sha256 checksum", "file", allowedFile.GetName(), "err", err)
+			}
+
+			actualSha256Sum := fmt.Sprintf("%x", s256.Sum(nil))
+
+			if actualSha256Sum == allowedFile.GetSha256Sum() {
+				allowedFiles[allowedFile.GetName()] = struct{}{}
+			} else {
+				violated := &violatedFile{
+					name:              allowedFile.GetName(),
+					actualSha256Sum:   actualSha256Sum,
+					expectedSha256Sum: allowedFile.GetSha256Sum(),
+				}
+
+				violatedFiles[allowedFile.GetName()] = violated
+			}
+
+			f.Close()
+		}
+	}
+
+	for name := range allowedFiles {
+		delete(violatedFiles, name)
+	}
+
+	return violatedFiles
 }

@@ -98,7 +98,7 @@ func (d *DbConstraintStore) FindByNamespace(namespace string) ([]*tarianpb.Const
 	for rows.Next() {
 		r := constraintRow{}
 
-		err := rows.Scan(&r.id, &r.namespace, &r.name, &r.selector, &r.allowedProcesses)
+		err := rows.Scan(&r.id, &r.namespace, &r.name, &r.selector, &r.allowedProcesses, &r.allowedFiles)
 		if err != nil {
 			return nil, err
 		}
