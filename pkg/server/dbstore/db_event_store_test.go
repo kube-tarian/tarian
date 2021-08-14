@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	columns = []string{"id", "uid", "type", "server_timestamp", "client_timestamp", "alert_sent_at", "targets"}
+	eventColumns = []string{"id", "uid", "type", "server_timestamp", "client_timestamp", "alert_sent_at", "targets"}
 )
 
 func TestDbEventStoreGetAll(t *testing.T) {
@@ -32,7 +32,7 @@ func TestDbEventStoreGetAll(t *testing.T) {
 	nullTime := sql.NullTime{}
 	nullTime.Scan(timeNow.Add(2 * time.Second))
 
-	pgxRows := pgxpoolmock.NewRows(columns).
+	pgxRows := pgxpoolmock.NewRows(eventColumns).
 		AddRow(1, uid1.String(), "violation", timeNow, timeNow.Add(1*time.Second), nullTime, "[{\"pod\":{\"namespace\":\"default\"}}]").
 		AddRow(2, uid2.String(), "violation", timeNow2, timeNow2.Add(1*time.Second), nullTime, "[{\"pod\":{\"namespace\":\"monitoring\"}}]").
 		ToPgxRows()
@@ -70,7 +70,7 @@ func TestDbEventStoreFindByNamespace(t *testing.T) {
 	nullTime := sql.NullTime{}
 	nullTime.Scan(timeNow.Add(2 * time.Second))
 
-	pgxRows := pgxpoolmock.NewRows(columns).
+	pgxRows := pgxpoolmock.NewRows(eventColumns).
 		AddRow(1, uid1.String(), "violation", timeNow, timeNow.Add(1*time.Second), nullTime, "[{\"pod\":{\"namespace\":\"monitoring\"}}]").
 		ToPgxRows()
 	mockPool.EXPECT().Query(gomock.Any(), "SELECT * FROM events WHERE namespace = $1 ORDER BY id ASC", gomock.Any()).Return(pgxRows, nil)

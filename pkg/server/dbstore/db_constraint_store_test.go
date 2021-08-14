@@ -9,16 +9,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var constraintColumns = []string{"id", "namespace", "name", "selector", "allowed_processes", "allowed_files"}
+
 func TestGetAll(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	// setup
 	mockPool := pgxpoolmock.NewMockPgxPool(ctrl)
-	columns := []string{"id", "namespace", "name", "selector", "allowed_processes"}
-	pgxRows := pgxpoolmock.NewRows(columns).
-		AddRow(1, "default", "nginx", `{"match_labels": [{"key": "app", "value": "nginx"}]}`, `[{"regex": "(.*)nginx(.*)"}]`).
-		AddRow(2, "default2", "worker", `{"match_labels": [{"key": "app", "value": "worker"}]}`, `[{"regex": "(.*)worker(.*)"}]`).
+	pgxRows := pgxpoolmock.NewRows(constraintColumns).
+		AddRow(1, "default", "nginx", `{"match_labels": [{"key": "app", "value": "nginx"}]}`, `[{"regex": "(.*)nginx(.*)"}]`, `[{"name": "/etc/nginx/nginx.conf", "sha256sum": "c01b39c7a35ccc3b081a3e83d2c71fa9a767ebfeb45c69f08e17dfe3ef375a7b"}]`).
+		AddRow(2, "default2", "worker", `{"match_labels": [{"key": "app", "value": "worker"}]}`, `[{"regex": "(.*)worker(.*)"}]`, `[{"name": "/etc/worker/worker.yaml", "sha256sum": "c01b39c7a35ccc3b081a3e83d2c71fa9a767ebfeb45c69f08e17dfe3ef375a7b"}]`).
 		ToPgxRows()
 	mockPool.EXPECT().Query(gomock.Any(), "SELECT * FROM constraints ORDER BY id ASC", gomock.Any()).Return(pgxRows, nil)
 
@@ -38,6 +39,7 @@ func TestGetAll(t *testing.T) {
 	assert.Equal(t, "app", constraint.GetSelector().GetMatchLabels()[0].GetKey())
 	assert.Equal(t, "nginx", constraint.GetSelector().GetMatchLabels()[0].GetValue())
 	assert.Equal(t, "(.*)nginx(.*)", constraint.GetAllowedProcesses()[0].GetRegex())
+	assert.Equal(t, "/etc/nginx/nginx.conf", constraint.GetAllowedFiles()[0].GetName())
 
 	constraint = constraints[1]
 	assert.Equal(t, "default2", constraint.GetNamespace())
@@ -45,6 +47,7 @@ func TestGetAll(t *testing.T) {
 	assert.Equal(t, "app", constraint.GetSelector().GetMatchLabels()[0].GetKey())
 	assert.Equal(t, "worker", constraint.GetSelector().GetMatchLabels()[0].GetValue())
 	assert.Equal(t, "(.*)worker(.*)", constraint.GetAllowedProcesses()[0].GetRegex())
+	assert.Equal(t, "/etc/worker/worker.yaml", constraint.GetAllowedFiles()[0].GetName())
 }
 
 func TestFindByNamespace(t *testing.T) {
@@ -53,9 +56,8 @@ func TestFindByNamespace(t *testing.T) {
 
 	// setup
 	mockPool := pgxpoolmock.NewMockPgxPool(ctrl)
-	columns := []string{"id", "namespace", "name", "selector", "allowed_processes"}
-	pgxRows := pgxpoolmock.NewRows(columns).
-		AddRow(1, "default", "nginx", `{"match_labels": [{"key": "app", "value": "nginx"}]}`, `[{"regex": "(.*)nginx(.*)"}]`).
+	pgxRows := pgxpoolmock.NewRows(constraintColumns).
+		AddRow(1, "default", "nginx", `{"match_labels": [{"key": "app", "value": "nginx"}]}`, `[{"regex": "(.*)nginx(.*)"}]`, `[{"name": "/etc/nginx/nginx.conf", "sha256sum": "c01b39c7a35ccc3b081a3e83d2c71fa9a767ebfeb45c69f08e17dfe3ef375a7b"}]`).
 		ToPgxRows()
 	mockPool.EXPECT().Query(gomock.Any(), "SELECT * FROM constraints WHERE namespace = $1 ORDER BY id ASC", "default").Return(pgxRows, nil)
 
@@ -75,4 +77,5 @@ func TestFindByNamespace(t *testing.T) {
 	assert.Equal(t, "app", constraint.GetSelector().GetMatchLabels()[0].GetKey())
 	assert.Equal(t, "nginx", constraint.GetSelector().GetMatchLabels()[0].GetValue())
 	assert.Equal(t, "(.*)nginx(.*)", constraint.GetAllowedProcesses()[0].GetRegex())
+	assert.Equal(t, "/etc/nginx/nginx.conf", constraint.GetAllowedFiles()[0].GetName())
 }

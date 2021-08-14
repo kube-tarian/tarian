@@ -86,7 +86,14 @@ func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) error {
 		labels["pod_namespace"] = target.GetPod().GetNamespace()
 		labels["pod_name"] = target.GetPod().GetName()
 		labels["pod_uid"] = target.GetPod().GetUid()
-		labels["violating_processes"] = violatingProcessesToString(target.GetViolatingProcesses())
+
+		if target.GetViolatingProcesses() != nil {
+			labels["violating_processes"] = violatingProcessesToString(target.GetViolatingProcesses())
+		}
+
+		if target.GetViolatedFiles() != nil {
+			labels["violated_files"] = violatedFilesToString(target.GetViolatedFiles())
+		}
 
 		pa := &models.PostableAlert{Alert: models.Alert{Labels: labels}}
 
@@ -122,6 +129,27 @@ func violatingProcessesToString(processes []*tarianpb.Process) string {
 		if i >= 10 {
 			str.WriteString("... ")
 			str.WriteString(strconv.Itoa(int(len(processes) - i - 1)))
+			str.WriteString(" more")
+			break
+		}
+	}
+
+	return str.String()
+}
+
+func violatedFilesToString(violatedFiles []*tarianpb.ViolatedFile) string {
+	str := strings.Builder{}
+
+	for i, f := range violatedFiles {
+		str.WriteString(f.GetName())
+
+		if i < len(violatedFiles)-1 {
+			str.WriteString(", ")
+		}
+
+		if i >= 10 {
+			str.WriteString("... ")
+			str.WriteString(strconv.Itoa(int(len(violatedFiles) - i - 1)))
 			str.WriteString(" more")
 			break
 		}
