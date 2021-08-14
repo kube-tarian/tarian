@@ -28,7 +28,7 @@ func NewConfigServer(dsn string) (*ConfigServer, error) {
 }
 
 func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
-	logger.Infow("Received get config RPC", "namespace", request.GetNamespace(), "labels", request.GetLabels())
+	logger.Debugw("Received get config RPC", "namespace", request.GetNamespace(), "labels", request.GetLabels())
 
 	var constraints []*tarianpb.Constraint
 	var err error

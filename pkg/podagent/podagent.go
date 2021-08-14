@@ -148,7 +148,7 @@ func (p *PodAgent) SyncConstraints() {
 		logger.Errorw("error while getting constraints from the cluster agent", "err", err)
 	}
 
-	logger.Infow("received constraints from the cluster agent", "constraint", r.GetConstraints())
+	logger.Debugw("received constraints from the cluster agent", "constraint", r.GetConstraints())
 	cancel()
 
 	p.SetConstraints(r.GetConstraints())
@@ -164,7 +164,7 @@ func (p *PodAgent) loopValidateProcesses(ctx context.Context) error {
 		for _, violation := range violations {
 			name := violation.GetName()
 
-			logger.Infow("found process that violates regex", "process", name)
+			logger.Debugw("found process that violates regex", "process", name)
 		}
 
 		if len(violations) > 0 {
@@ -184,7 +184,7 @@ func (p *PodAgent) loopValidateFileChecksums(ctx context.Context) error {
 		violatedFiles := p.ValidateFileChecksums()
 
 		for _, violation := range violatedFiles {
-			logger.Infow("found a file that violates checksum", "file", violation.name, "actual", violation.actualSha256Sum, "expected", violation.expectedSha256Sum)
+			logger.Debugw("found a file that violates checksum", "file", violation.name, "actual", violation.actualSha256Sum, "expected", violation.expectedSha256Sum)
 		}
 
 		if len(violatedFiles) > 0 {
@@ -231,7 +231,7 @@ func (p *PodAgent) ReportViolationsToClusterAgent(processes map[int32]*Process) 
 	if err != nil {
 		logger.Errorw("error while reporting violation events", "err", err)
 	} else {
-		logger.Infow("ingest event response", "response", response)
+		logger.Debugw("ingest event response", "response", response)
 	}
 }
 
@@ -259,7 +259,7 @@ func (p *PodAgent) ValidateProcesses(processes []*Process) map[int32]*Process {
 				continue
 			}
 
-			logger.Infow("looking for running processes that violate regex", "expr", rgx.String())
+			logger.Debugw("looking for running processes that violate regex", "expr", rgx.String())
 
 			for _, process := range processes {
 				name := process.GetName()
@@ -315,7 +315,7 @@ func (p *PodAgent) ValidateFileChecksums() map[string]*violatedFile {
 				continue
 			}
 
-			logger.Infow("validating file sha256 checksum", "file", allowedFile.GetName(), "allowedSha256Sum", allowedFile.GetSha256Sum())
+			logger.Debugw("validating file sha256 checksum", "file", allowedFile.GetName(), "allowedSha256Sum", allowedFile.GetSha256Sum())
 
 			f, err := os.Open(allowedFile.GetName())
 			if err != nil {
@@ -389,6 +389,6 @@ func (p *PodAgent) ReportViolatedFilesToClusterAgent(violatedFiles map[string]*v
 	if err != nil {
 		logger.Errorw("error while reporting violation events", "err", err)
 	} else {
-		logger.Infow("ingest event response", "response", response)
+		logger.Debugw("ingest event response", "response", response)
 	}
 }
