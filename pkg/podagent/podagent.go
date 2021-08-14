@@ -368,15 +368,10 @@ func (p *PodAgent) ReportViolatedFilesToClusterAgent(violatedFiles map[string]*v
 			Targets: []*tarianpb.Target{
 				{
 					Pod: &tarianpb.Pod{
-						Uid:       "abc-def-ghe",
-						Name:      "pod-name-placeholder",
-						Namespace: "tarian-system",
-						Labels: []*tarianpb.Label{
-							{
-								Key:   "app",
-								Value: "nginx",
-							},
-						},
+						Uid:       p.podUid,
+						Name:      p.podName,
+						Namespace: p.namespace,
+						Labels:    p.podLabels,
 					},
 					ViolatedFiles: vf,
 				},
