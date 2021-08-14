@@ -54,6 +54,20 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 		}
 	}
 
+	// mount all volumes into pod agent
+	volumeMounts := []corev1.VolumeMount{{Name: "podinfo", MountPath: "/etc/podinfo"}}
+	mountNamesAdded := make(map[string]struct{})
+	for _, c := range pod.Spec.Containers {
+		for _, vm := range c.VolumeMounts {
+			if _, found := mountNamesAdded[vm.Name]; found {
+				continue
+			}
+
+			volumeMounts = append(volumeMounts, vm)
+			mountNamesAdded[vm.Name] = struct{}{}
+		}
+	}
+
 	podAgentContainer := corev1.Container{
 		Name:  p.config.Name,
 		Image: p.config.Image,
@@ -70,7 +84,7 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 			"--namespace=$(NAMESPACE)",
 			"--pod-labels-file==/etc/podinfo/labels",
 		},
-		VolumeMounts: []corev1.VolumeMount{{Name: "podinfo", MountPath: "/etc/podinfo"}},
+		VolumeMounts: volumeMounts,
 	}
 	pod.Spec.Containers = append(pod.Spec.Containers, podAgentContainer)
 	pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
