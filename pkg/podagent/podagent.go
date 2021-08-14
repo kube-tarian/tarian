@@ -38,6 +38,8 @@ type PodAgent struct {
 	grpcConn            *grpc.ClientConn
 	configClient        tarianpb.ConfigClient
 	eventClient         tarianpb.EventClient
+	podName             string
+	podUid              string
 	podLabels           []*tarianpb.Label
 	namespace           string
 
@@ -56,6 +58,14 @@ func NewPodAgent(clusterAgentAddress string) *PodAgent {
 
 func (p *PodAgent) SetPodLabels(labels []*tarianpb.Label) {
 	p.podLabels = labels
+}
+
+func (p *PodAgent) SetPodName(name string) {
+	p.podName = name
+}
+
+func (p *PodAgent) SetPodUid(uid string) {
+	p.podUid = uid
 }
 
 func (p *PodAgent) SetNamespace(namespace string) {
@@ -205,15 +215,10 @@ func (p *PodAgent) ReportViolationsToClusterAgent(processes map[int32]*Process) 
 			Targets: []*tarianpb.Target{
 				{
 					Pod: &tarianpb.Pod{
-						Uid:       "abc-def-ghe",
-						Name:      "pod-name-placeholder",
-						Namespace: "tarian-system",
-						Labels: []*tarianpb.Label{
-							{
-								Key:   "app",
-								Value: "nginx",
-							},
-						},
+						Uid:       p.podUid,
+						Name:      p.podName,
+						Namespace: p.namespace,
+						Labels:    p.podLabels,
 					},
 					ViolatingProcesses: violatingProcesses,
 				},

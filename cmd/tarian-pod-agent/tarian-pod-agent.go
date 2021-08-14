@@ -74,6 +74,16 @@ func getCliApp() *cli.App {
 						Value: "",
 					},
 					&cli.StringFlag{
+						Name:  "pod-name",
+						Usage: "Pod name where it is running. This is intended to be set from Downward API",
+						Value: "",
+					},
+					&cli.StringFlag{
+						Name:  "pod-uid",
+						Usage: "Pod UID where it is running. This is intended to be set from Downward API",
+						Value: "",
+					},
+					&cli.StringFlag{
 						Name:  "namespace",
 						Usage: "Kubernetes namespace where it is running",
 						Value: "tarian-system",
@@ -101,6 +111,16 @@ func run(c *cli.Context) error {
 		}
 
 		agent.SetPodLabels(podLabels)
+	}
+
+	podName := c.String("pod-name")
+	if podName != "" {
+		agent.SetPodName(podName)
+	}
+
+	podUid := c.String("pod-uid")
+	if podUid != "" {
+		agent.SetPodUid(podUid)
 	}
 
 	namespace := c.String("namespace")
