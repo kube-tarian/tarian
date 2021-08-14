@@ -75,6 +75,12 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 			{
 				Name: "NAMESPACE", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.namespace"}},
 			},
+			{
+				Name: "POD_NAME", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"}},
+			},
+			{
+				Name: "POD_UID", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.uid"}},
+			},
 		},
 		Args: []string{
 			"--log-encoding=" + p.config.LogEncoding,
@@ -82,7 +88,9 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 			"--host=" + p.config.Host,
 			"--port=" + p.config.Port,
 			"--namespace=$(NAMESPACE)",
-			"--pod-labels-file==/etc/podinfo/labels",
+			"--pod-name=$(POD_NAME)",
+			"--pod-uid=$(POD_UID)",
+			"--pod-labels-file=/etc/podinfo/labels",
 		},
 		VolumeMounts: volumeMounts,
 	}
