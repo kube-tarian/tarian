@@ -17,6 +17,7 @@ spec:
         image: localhost:5000/tarian-cluster-agent:latest
         args:
         - --log-encoding=json
+        - --log-level=debug
         - run
         - "--server-address=tarian-server:80"
         ports:
