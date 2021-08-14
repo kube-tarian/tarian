@@ -1,0 +1,84 @@
+builds:
+  - id: tarian-server
+    main: ./cmd/tarian-server/
+    binary: tarian-server
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+  - id: tarian-cluster-agent
+    main: ./cmd/tarian-cluster-agent/
+    binary: tarian-cluster-agent
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+  - id: tarian-pod-agent
+    main: ./cmd/tarian-pod-agent/
+    binary: tarian-pod-agent
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+  - id: tarianctl
+    main: ./cmd/tarianctl/
+    binary: tarianctl
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+
+dockers:
+  - ids:
+    - tarian-server
+    goos: linux
+    goarch: amd64
+    image_templates:
+    - "localhost:5000/tarian-server:latest"
+    dockerfile: Dockerfile-server
+    skip_push: false
+    build_flag_templates:
+    - "--pull"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.title={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source={{ .GitURL }}"
+  - ids:
+    - tarian-cluster-agent
+    goos: linux
+    goarch: amd64
+    image_templates:
+    - "localhost:5000/tarian-cluster-agent:latest"
+    dockerfile: Dockerfile-cluster-agent
+    skip_push: false
+    build_flag_templates:
+    - "--pull"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.title={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source={{ .GitURL }}"
+  - ids:
+    - tarian-pod-agent
+    goos: linux
+    goarch: amd64
+    image_templates:
+    - "localhost:5000/tarian-pod-agent:latest"
+    dockerfile: Dockerfile-pod-agent
+    skip_push: false
+    build_flag_templates:
+    - "--pull"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.title={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source={{ .GitURL }}"

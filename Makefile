@@ -45,11 +45,9 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
-build: generate proto
-	CGO_ENABLED=0 go build -o ./bin/tarian-server ./cmd/tarian-server/
-	CGO_ENABLED=0 go build -o ./bin/tarian-cluster-agent ./cmd/tarian-cluster-agent/
-	CGO_ENABLED=0 go build -o ./bin/tarian-pod-agent ./cmd/tarian-pod-agent/
-	CGO_ENABLED=0 go build -o ./bin/tarianctl ./cmd/tarianctl/
+build: bin/goreleaser generate proto
+	./bin/goreleaser build --single-target --snapshot --rm-dist --single-target
+	cp dist/*/tarian* ./bin/
 
 proto:
 	$(PROTOC) --experimental_allow_proto3_optional=true -I=./.local/include -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/types.proto
@@ -60,9 +58,14 @@ lint: fmt vet
 	staticcheck ./...
 
 local-images: build
-	docker build -f Dockerfile-server -t localhost:5000/tarian-server . && docker push localhost:5000/tarian-server
-	docker build -f Dockerfile-cluster-agent -t localhost:5000/tarian-cluster-agent . && docker push localhost:5000/tarian-cluster-agent
-	docker build -f Dockerfile-pod-agent -t localhost:5000/tarian-pod-agent . && docker push localhost:5000/tarian-pod-agent
+	docker build -f Dockerfile-server -t localhost:5000/tarian-server dist/tarian-server_linux_amd64/ && docker push localhost:5000/tarian-server
+	docker build -f Dockerfile-cluster-agent -t localhost:5000/tarian-cluster-agent dist/tarian-cluster-agent_linux_amd64/ && docker push localhost:5000/tarian-cluster-agent
+	docker build -f Dockerfile-pod-agent -t localhost:5000/tarian-pod-agent dist/tarian-pod-agent_linux_amd64/ && docker push localhost:5000/tarian-pod-agent
+
+push-local-images:
+	docker push localhost:5000/tarian-server
+	docker push localhost:5000/tarian-cluster-agent
+	docker push localhost:5000/tarian-pod-agent
 
 unit-test:
 	go test -v ./pkg/...
@@ -112,6 +115,13 @@ protoc:
 	unzip -o $(PROTOC_ZIP) -d ./.local 'include/*'
 	rm -f $(PROTOC_ZIP)
 	chmod +x ./bin/protoc
+
+GORELEASER = $(shell pwd)/bin/goreleaser
+bin/goreleaser:
+	curl -LO "https://github.com/goreleaser/goreleaser/releases/download/v0.174.2/goreleaser_Linux_x86_64.tar.gz"
+	mkdir -p bin
+	tar -C ./bin/ -xvf goreleaser_Linux_x86_64.tar.gz goreleaser
+	rm -f goreleaser_Linux_x86_64.tar.gz
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
