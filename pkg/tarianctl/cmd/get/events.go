@@ -29,7 +29,7 @@ func NewGetEventsCommand() *cli.Command {
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"Time", "Namespace", "Name", "Violating Processes"})
+			table.SetHeader([]string{"Time", "Namespace", "Name", "Violating Processes", "Violated Files"})
 			table.SetColumnSeparator(" ")
 			table.SetCenterSeparator("-")
 			table.SetAlignment(tablewriter.ALIGN_LEFT)
@@ -42,6 +42,7 @@ func NewGetEventsCommand() *cli.Command {
 							t.GetPod().GetNamespace(),
 							t.GetPod().GetName(),
 							violatingProcessesToString(t.GetViolatingProcesses()),
+							violatedFilesToString(t.GetViolatedFiles()),
 						},
 					)
 				}
@@ -69,6 +70,27 @@ func violatingProcessesToString(processes []*tarianpb.Process) string {
 		if i >= 10 {
 			str.WriteString("... ")
 			str.WriteString(strconv.Itoa(int(len(processes) - i - 1)))
+			str.WriteString(" more")
+			break
+		}
+	}
+
+	return str.String()
+}
+
+func violatedFilesToString(violatedFiles []*tarianpb.ViolatedFile) string {
+	str := strings.Builder{}
+
+	for i, f := range violatedFiles {
+		str.WriteString(f.GetName())
+
+		if i < len(violatedFiles)-1 {
+			str.WriteString(", ")
+		}
+
+		if i >= 10 {
+			str.WriteString("... ")
+			str.WriteString(strconv.Itoa(int(len(violatedFiles) - i - 1)))
 			str.WriteString(" more")
 			break
 		}
