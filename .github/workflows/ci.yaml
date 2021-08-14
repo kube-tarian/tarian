@@ -73,7 +73,7 @@ jobs:
       - run: kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
       - run: kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dev seed-data
       - run: ./bin/tarianctl --server-address=localhost:31051 add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx 
-      - run: ./bin/tarianctl --server-address=localhost:31051 add constraint --name nginx --namespace default --match-labels run=nginx --allowed-file-sha256sums=/usr/share/nginx/html/index.html=38ffd4972ae513a0c79a8be4573403edcd709f0f572105362b08ff50cf6de521
+      - run: ./bin/tarianctl --server-address=localhost:31051 add constraint --name nginx-files --namespace default --match-labels run=nginx --allowed-file-sha256sums=/usr/share/nginx/html/index.html=38ffd4972ae513a0c79a8be4573403edcd709f0f572105362b08ff50cf6de521
       - run: ./bin/tarianctl --server-address=localhost:31051 get constraints
       - run: kubectl get pods -n tarian-system
       - run: kubectl logs deploy/tarian-controller-manager -n tarian-system
@@ -86,11 +86,20 @@ jobs:
 
       - run: kubectl wait --for=condition=ready pod/nginx
       - run: test $(kubectl get pod nginx -o json | jq -r '.spec.containers | length') -eq 2 || (echo "expected container count 2" && false)
+
+      # the monitored file content changed
+      - run: sed -i 's/Welcome/Welcome-updated/g' dev/config/monitored-pod/configmap.yaml
+      - run: kubectl apply -f dev/config/monitored-pod -R
+
+      # simulate unknown process runs
       - run: kubectl exec -ti nginx -c nginx -- sleep 15
+
       # output for debugging
       - run: ./bin/tarianctl --server-address=localhost:31051 get events
       # assert contains sleep
       - run: ./bin/tarianctl --server-address=localhost:31051 get events | grep sleep
+      # assert contains index.html
+      - run: ./bin/tarianctl --server-address=localhost:31051 get events | grep index.html
 
       # output for debugging
       - run: kubectl run -ti --restart=Never get-alerts --image=curlimages/curl -- http://tarian-alertmanager.tarian-system.svc:9093/api/v2/alerts
