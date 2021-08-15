@@ -11,6 +11,7 @@ import (
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 var logger *zap.SugaredLogger
@@ -54,8 +55,14 @@ type Server struct {
 	eventStore *dbstore.DbEventStore
 }
 
-func NewServer(dsn string) (*Server, error) {
-	grpcServer := grpc.NewServer()
+func NewServer(dsn string, certFile string, privateKeyFile string) (*Server, error) {
+	opts := []grpc.ServerOption{}
+	if certFile != "" && privateKeyFile != "" {
+		creds, _ := credentials.NewServerTLSFromFile(certFile, privateKeyFile)
+		opts = append(opts, grpc.Creds(creds))
+	}
+
+	grpcServer := grpc.NewServer(opts...)
 
 	configServer, err := NewConfigServer(dsn)
 	if err != nil {

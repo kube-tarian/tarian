@@ -52,7 +52,7 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	_, err = dbPool.Exec(context.Background(), "CREATE DATABASE "+dbConfig.DbName)
 	require.Nil(t, err)
 
-	srv, err := server.NewServer(dbConfig.GetDsn())
+	srv, err := server.NewServer(dbConfig.GetDsn(), "", "")
 	grpcServer := srv.GrpcServer
 	require.Nil(t, err)
 

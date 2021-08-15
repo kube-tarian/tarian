@@ -81,6 +81,16 @@ func getCliApp() *cli.App {
 						Usage: "The interval for evaluating and sending alerts",
 						Value: 30 * time.Second,
 					},
+					&cli.StringFlag{
+						Name:  "tls-cert-file",
+						Usage: "File containing the default x509 Certificate for TLS. (CA cert concatenated after the cert)",
+						Value: "",
+					},
+					&cli.StringFlag{
+						Name:  "tls-private-key-file",
+						Usage: "Private key file in x509 format matching --tls-cert-file",
+						Value: "",
+					},
 				},
 				Action: run,
 			},
@@ -124,7 +134,7 @@ func run(c *cli.Context) error {
 		logger.Fatalw("database config error", "err", err)
 	}
 
-	server, err := server.NewServer(cfg.GetDsn())
+	server, err := server.NewServer(cfg.GetDsn(), c.String("tls-cert-file"), c.String("tls-private-key-file"))
 	if err != nil {
 		logger.Fatalw("error while initiating tarian-server", "err", err)
 		return err
