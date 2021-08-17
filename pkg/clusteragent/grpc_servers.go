@@ -34,9 +34,9 @@ type ConfigServer struct {
 	configClient tarianpb.ConfigClient
 }
 
-func NewConfigServer(tarianServerAddress string) *ConfigServer {
+func NewConfigServer(tarianServerAddress string, opts []grpc.DialOption) *ConfigServer {
 	logger.Infow("connecting to the tarian server", "address", tarianServerAddress)
-	grpcConn, err := grpc.Dial(tarianServerAddress, grpc.WithInsecure())
+	grpcConn, err := grpc.Dial(tarianServerAddress, opts...)
 
 	if err != nil {
 		logger.Fatalw("couldn't not connect to tarian-server", "err", err)
@@ -73,9 +73,9 @@ type EventServer struct {
 	eventClient tarianpb.EventClient
 }
 
-func NewEventServer(tarianServerAddress string) *EventServer {
+func NewEventServer(tarianServerAddress string, opts []grpc.DialOption) *EventServer {
 	logger.Infow("connecting to the tarian server", "address", tarianServerAddress)
-	grpcConn, err := grpc.Dial(tarianServerAddress, grpc.WithInsecure())
+	grpcConn, err := grpc.Dial(tarianServerAddress, opts...)
 
 	if err != nil {
 		logger.Fatalw("couldn't not connect to tarian-server", "err", err)

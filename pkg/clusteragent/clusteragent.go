@@ -11,11 +11,11 @@ type ClusterAgent struct {
 	eventServer  *EventServer
 }
 
-func NewClusterAgent(serverAddress string) *ClusterAgent {
+func NewClusterAgent(serverAddress string, opts []grpc.DialOption) *ClusterAgent {
 	grpcServer := grpc.NewServer()
 
-	configServer := NewConfigServer(serverAddress)
-	eventServer := NewEventServer(serverAddress)
+	configServer := NewConfigServer(serverAddress, opts)
+	eventServer := NewEventServer(serverAddress, opts)
 
 	tarianpb.RegisterConfigServer(grpcServer, configServer)
 	tarianpb.RegisterEventServer(grpcServer, eventServer)

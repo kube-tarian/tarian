@@ -28,6 +28,11 @@ func CmdFlags() []cli.Flag {
 			Usage: "If enabled, it will communicate with the server using TLS",
 			Value: false,
 		},
+		&cli.StringFlag{
+			Name:  "server-tls-ca-file",
+			Usage: "The CA the server uses for TLS connection.",
+			Value: "",
+		},
 		&cli.BoolFlag{
 			Name:  "server-tls-insecure-skip-verify",
 			Usage: "If set to true, it will skip server's certificate chain and hostname verification",

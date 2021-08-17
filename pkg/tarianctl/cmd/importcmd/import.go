@@ -25,6 +25,8 @@ func NewImportCommand() *cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
+			util.SetLogger(logger)
+
 			files := []*os.File{}
 
 			for _, path := range c.Args().Slice() {

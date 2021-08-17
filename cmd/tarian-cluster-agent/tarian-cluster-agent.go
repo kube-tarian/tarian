@@ -1,6 +1,9 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -12,6 +15,8 @@ import (
 	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/go-logr/zapr"
 	cli "github.com/urfave/cli/v2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -75,6 +80,21 @@ func getCliApp() *cli.App {
 						Name:  "server-address",
 						Usage: "Tarian server address to communicate with",
 						Value: defaultServerAddress,
+					},
+					&cli.BoolFlag{
+						Name:  "server-tls-enabled",
+						Usage: "If enabled, it will communicate with the server using TLS",
+						Value: false,
+					},
+					&cli.StringFlag{
+						Name:  "server-tls-ca-file",
+						Usage: "The CA the server uses for TLS connection.",
+						Value: "",
+					},
+					&cli.BoolFlag{
+						Name:  "server-tls-insecure-skip-verify",
+						Usage: "If set to true, it will skip server's certificate chain and hostname verification",
+						Value: true,
 					},
 				},
 				Action: run,
@@ -149,7 +169,36 @@ func run(c *cli.Context) error {
 		logger.Fatalw("failed to listen", "err", err)
 	}
 
-	clusterAgent := clusteragent.NewClusterAgent(c.String("server-address"))
+	dialOpts := []grpc.DialOption{}
+
+	if c.Bool("server-tls-enabled") {
+		certPool, _ := x509.SystemCertPool()
+		if certPool == nil {
+			certPool = x509.NewCertPool()
+		}
+
+		serverCAFile := c.String("server-tls-ca-file")
+
+		if serverCAFile != "" {
+			serverCACert, err := ioutil.ReadFile(serverCAFile)
+			if err != nil {
+				logger.Fatalw("failed to read server tls ca files", "filename", serverCAFile, "err", err)
+			}
+
+			if ok := certPool.AppendCertsFromPEM(serverCACert); !ok {
+				logger.Errorw("failed to append server ca file")
+			}
+		}
+
+		tlsConfig := &tls.Config{ServerName: "", RootCAs: certPool}
+		tlsConfig.InsecureSkipVerify = c.Bool("server-tls-insecure-skip-verify")
+
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	} else {
+		dialOpts = append(dialOpts, grpc.WithInsecure())
+	}
+
+	clusterAgent := clusteragent.NewClusterAgent(c.String("server-address"), dialOpts)
 	defer clusterAgent.Close()
 
 	grpcServer := clusterAgent.GetGrpcServer()
