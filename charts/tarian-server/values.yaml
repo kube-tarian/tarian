@@ -15,3 +15,6 @@ server:
     password: tarian
     dbname: tarian
     sslmode: disable
+
+alertManager:
+  install: true
