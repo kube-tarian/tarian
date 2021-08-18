@@ -1,0 +1,17 @@
+server:
+  log:
+    encoding: json
+    level: info
+  image:
+    name: ghcr.io/devopstoday11/tarian-server
+    tag: latest
+  alert:
+    alertManagerAddress: http://alertmanager:9093
+    evaluationInterval: 5s
+  postgresql:
+    host: tarian-postgresql
+    port: 5432
+    user: postgres
+    password: tarian
+    dbname: tarian
+    sslmode: disable

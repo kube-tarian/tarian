@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: tarian-server
+        image: "{{ .Values.server.image.name }}:{{ .Values.server.image.tag }}"
+        args:
+        - "--log-encoding={{ .Values.server.log.encoding }}"
+        - "--log-level={{ .Values.server.log.level }}"
+        - run
+{{- if .Values.server.alert.alertManagerAddress }}
+        - "--alertmanager-address={{ .Values.server.alert.alertManagerAddress }}"
+{{- end }}
+{{- if .Values.server.alert.evaluationInterval }}
+        - "--alert-evaluation-interval={{ .Values.server.alert.evaluationInterval }}"
+{{- end }}
+        ports:
+        - containerPort: 50051
+          name: grpc
+        env:
+        - name: POSTGRES_HOST
+          value: tarian-postgresql
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: tarian
+        - name: POSTGRES_DBNAME
+          value: tarian
+        - name: POSTGRES_SSLMODE
+          value: disable
