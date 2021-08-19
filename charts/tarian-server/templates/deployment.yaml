@@ -30,14 +30,14 @@ spec:
           name: grpc
         env:
         - name: POSTGRES_HOST
-          value: tarian-postgresql
+          value: {{ .Values.server.postgresql.host | quote }}
         - name: POSTGRES_PORT
-          value: "5432"
+          value: {{ .Values.server.postgresql.port | quote }}
         - name: POSTGRES_USER
-          value: postgres
+          value: {{ .Values.server.postgresql.user | quote }}
         - name: POSTGRES_PASSWORD
-          value: tarian
+          value: {{ .Values.server.postgresql.password | quote }}
         - name: POSTGRES_DBNAME
-          value: tarian
+          value: {{ .Values.server.postgresql.dbname | quote }}
         - name: POSTGRES_SSLMODE
-          value: disable
+          value: {{ .Values.server.postgresql.sslmode | quote }}
