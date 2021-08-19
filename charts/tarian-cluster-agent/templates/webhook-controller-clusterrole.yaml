@@ -1,0 +1,16 @@
+{{- $name := printf "%s-%s" .Release.Name "webhook-controller" -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $name }}-cert-rotator-clusterrole
+rules:
+- apiGroups:
+  - "admissionregistration.k8s.io"
+  resources:
+  - mutatingwebhookconfigurations
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
