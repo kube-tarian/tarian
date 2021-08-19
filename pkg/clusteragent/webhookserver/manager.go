@@ -20,10 +20,8 @@ var (
 )
 
 const (
-	managedSecretName = "tarian-webhook-server-cert"
-	serviceName       = "tarian-controller-manager"
-	caName            = "tarian-ca"
-	caOrganization    = "tarian"
+	caName         = "tarian-ca"
+	caOrganization = "tarian"
 
 	leaderElectionID = "0f4c7cb2.k8s.tarian.dev"
 )
@@ -75,7 +73,7 @@ func RegisterControllers(mgr manager.Manager, cfg PodAgentContainerConfig) {
 	)
 }
 
-func RegisterCertRotator(mgr manager.Manager, isReady chan struct{}, namespace string, mutatingWebhookConfigurationName string) {
+func RegisterCertRotator(mgr manager.Manager, isReady chan struct{}, namespace string, mutatingWebhookConfigurationName string, secretName string) {
 	dnsName := "*." + namespace + ".svc"
 	certDir := "/tmp/k8s-webhook-server/serving-certs"
 
@@ -90,7 +88,7 @@ func RegisterCertRotator(mgr manager.Manager, isReady chan struct{}, namespace s
 	if err := rotator.AddRotator(mgr, &rotator.CertRotator{
 		SecretKey: types.NamespacedName{
 			Namespace: namespace,
-			Name:      managedSecretName,
+			Name:      secretName,
 		},
 		CertDir:        certDir,
 		CAName:         caName,
