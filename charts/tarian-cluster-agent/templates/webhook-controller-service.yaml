@@ -1,0 +1,16 @@
+{{- $name := printf "%s-%s" .Release.Name "webhook-controller" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: {{ $name }}
+  name: {{ $name }}
+spec:
+  ports:
+  - name: webhook-server
+    port: 9443
+    protocol: TCP
+    targetPort: 9443
+  selector:
+    control-plane: {{ $name }}
+  type: ClusterIP

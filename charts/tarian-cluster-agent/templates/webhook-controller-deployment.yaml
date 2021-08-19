@@ -1,0 +1,57 @@
+{{- $name := printf "%s-%s" .Release.Name "webhook-controller" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    control-plane: {{ $name }}
+spec:
+  selector:
+    matchLabels:
+      control-plane: {{ $name }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: {{ $name }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - command:
+        - /manager
+        args:
+        - --leader-elect
+        image: "{{ .Values.clusterAgent.image.name }}:{{ .Values.clusterAgent.image.tag }}"
+        name: manager
+        securityContext:
+          allowPrivilegeEscalation: false
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+        volumeMounts:
+        - mountPath: "/tmp/k8s-webhook-server/serving-certs"
+          name: {{ $name }}-cert
+          readOnly: true
+      serviceAccountName: {{ $name }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: {{ $name }}-cert
+        secret:
+          secretName: {{ $name }}-cert

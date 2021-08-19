@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: tarian-cluster-agent
+        image: "{{ .Values.clusterAgent.image.name }}:{{ .Values.clusterAgent.image.tag }}"
+        args:
+        - "--log-encoding={{ .Values.clusterAgent.log.encoding }}"
+        - "--log-level={{ .Values.clusterAgent.log.level }}"
+        - run
+        - "--server-address={{ .Values.clusterAgent.serverAddress}}"
+        ports:
+        - containerPort: 50052
+          name: grpc
+
+
