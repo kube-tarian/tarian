@@ -18,14 +18,18 @@ spec:
       securityContext:
         runAsNonRoot: true
       containers:
-      - command:
-        - /manager
-        args:
-        - --leader-elect
+      - name: manager
         image: "{{ .Values.clusterAgent.image.name }}:{{ .Values.clusterAgent.image.tag }}"
-        name: manager
+        args:
+        - "--log-encoding={{ .Values.clusterAgent.log.encoding }}"
+        - "--log-level={{ .Values.clusterAgent.log.level }}"
+        - run-webhook-server
+        - "--cert-rotator-secret-name={{ $name }}-cert"
+        - "--mutating-webhook-configuration-name={{ .Release.Name }}"
         securityContext:
           allowPrivilegeEscalation: false
+          runAsUser: 10001
+          runAsGroup: 10001
         livenessProbe:
           httpGet:
             path: /healthz
