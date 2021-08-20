@@ -8,10 +8,10 @@ webhooks:
   - v1
   clientConfig:
     service:
-      name: {{ .Release.Name }}
+      name: {{ .Release.Name }}-webhook-controller
       namespace: {{ .Release.Namespace }}
       path: /inject-pod-agent
-  failurePolicy: Ignore
+  failurePolicy: {{ .Values.webhook.failurePolicy }}
   name: {{ .Release.Name }}.k8s.tarian.dev
   rules:
   - apiGroups:

@@ -6,3 +6,5 @@ clusterAgent:
     name: ghcr.io/devopstoday11/tarian-cluster-agent
     tag: latest
   serverAddress: tarian-server:80
+webhook:
+  failurePolicy: Ignore
