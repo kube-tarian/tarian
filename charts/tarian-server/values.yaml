@@ -15,6 +15,9 @@ server:
     password: tarian
     dbname: tarian
     sslmode: disable
+  service:
+    type: ClusterIP
+    nodeport:
 
 alertManager:
   install: true

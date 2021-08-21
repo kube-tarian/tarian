@@ -8,6 +8,10 @@ spec:
   ports:
   - port: 80
     targetPort: 50051
+{{- if .Values.server.service.nodePort }}
+    nodePort: {{ .Values.server.service.nodePort }}
+{{- end }}
     name: grpc
   selector:
     app: {{ .Release.Name }}
+  type: {{ .Values.server.service.type }}
