@@ -26,6 +26,7 @@ spec:
         - run-webhook-server
         - "--cert-rotator-secret-name={{ $name }}-cert"
         - "--mutating-webhook-configuration-name={{ .Release.Name }}"
+        - "--pod-agent-container-image={{ .Values.webhook.podAgentContainerImage }}"
         securityContext:
           allowPrivilegeEscalation: false
           runAsUser: 10001

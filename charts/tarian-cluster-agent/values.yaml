@@ -11,3 +11,4 @@ clusterAgent:
     nodeport:
 webhook:
   failurePolicy: Ignore
+  podAgentContainerImage: ghcr.io/devopstoday11/tarian-pod-agent:latest
