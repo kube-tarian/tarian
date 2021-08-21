@@ -1,6 +1,14 @@
-name: CI
+name: build-test-publishcontainers
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'charts/**'
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - 'charts/**'
+      - '**.md'
 
 jobs:
   build:

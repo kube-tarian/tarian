@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - charts/**
+      - .github/**
   pull_request:
     paths:
       - charts/**
+      - .github/**
 
 jobs:
   lint-test:
@@ -48,6 +50,12 @@ jobs:
       - name: Create kind cluster
         uses: helm/kind-action@v1.1.0
         if: steps.list-changed.outputs.changed == 'true'
+
+      - name: Print nodes
+        run: kubectl get nodes
+
+      - name: Wait for nodes to become ready
+        run: kubectl wait --for=condition=ready nodes --all --timeout=600s
 
       - name: Run chart-testing (install)
         run: ct install --config ct.yaml
