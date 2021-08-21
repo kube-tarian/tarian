@@ -74,9 +74,14 @@ jobs:
       - run: make deploy
 
       # wait for deployment rollout
-      - run: kubectl wait --for=condition=ready deployment --all --all-namespaces
-      - run: kubectl wait --for=condition=ready pod --all --all-namespaces
-      - run: sleep 5s
+      - name: Wait for pods ready
+        run: |
+          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=10m || true
+          kubectl get pods --all-namespaces
+          kubectl get deployment --all-namespaces
+          sleep 5s
+
+      - run: make k8s-test
 
   publish-containers:
     needs: k8s-test
