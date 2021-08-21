@@ -73,6 +73,9 @@ unit-test:
 e2e-test:
 	go test -v -race -count=1 ./test/e2e/...
 
+k8s-test:
+	./test/k8s/test.sh
+
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) webhook paths="./..." output:webhook:artifacts:config=dev/config/webhook
 
