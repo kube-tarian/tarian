@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
+  name: tarian-cluster-agent-controller-manager
   namespace: system
 spec:
   template:
@@ -18,9 +18,9 @@ spec:
           allowPrivilegeEscalation: true
         volumeMounts:
         - mountPath: "/tmp/k8s-webhook-server/serving-certs"
-          name: webhook-server-cert
+          name: tarian-webhook-server-cert
           readOnly: true
       volumes:
-      - name: webhook-server-cert
+      - name: tarian-webhook-server-cert
         secret:
-          secretName: webhook-server-cert
+          secretName: tarian-webhook-server-cert

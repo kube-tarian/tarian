@@ -1,4 +1,4 @@
-{{- $name := printf "%s-%s" .Release.Name "webhook-controller" -}}
+{{- $name := printf "%s-%s" .Release.Name "controller-manager" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

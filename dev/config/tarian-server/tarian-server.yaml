@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: server
+  name: tarian-server
 spec:
   selector:
     matchLabels:
@@ -19,14 +19,14 @@ spec:
         - "--log-encoding=json"
         - "--log-level=debug"
         - run
-        - "--alertmanager-address=http://tarian-alertmanager:9093"
+        - "--alertmanager-address=http://alertmanager:9093"
         - "--alert-evaluation-interval=3s"
         ports:
         - containerPort: 50051
           name: grpc
         env:
         - name: POSTGRES_HOST
-          value: tarian-postgresql
+          value: postgresql
         - name: POSTGRES_PORT
           value: "5432"
         - name: POSTGRES_USER
@@ -41,9 +41,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: server
+  name: tarian-server
   labels:
-    app: server
+    app: tarian-server
 spec:
   type: NodePort
   ports:

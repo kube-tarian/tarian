@@ -8,7 +8,7 @@ webhooks:
   - v1
   clientConfig:
     service:
-      name: {{ .Release.Name }}-webhook-controller
+      name: {{ .Release.Name }}-controller-manager
       namespace: {{ .Release.Namespace }}
       path: /inject-pod-agent
   failurePolicy: {{ .Values.webhook.failurePolicy }}

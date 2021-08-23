@@ -10,8 +10,7 @@ kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dev se
 ./bin/tarianctl --server-address=localhost:31051 get constraints
 kubectl get pods -n tarian-system
 
-# temporary ignore, due to different name in helm vs kustomize
-kubectl logs deploy/tarian-controller-manager -n tarian-system || true
+kubectl logs deploy/tarian-cluster-agent-controller-manager -n tarian-system
 
 sleep 10s
 kubectl get MutatingWebhookConfiguration -o yaml
@@ -39,14 +38,11 @@ kubectl exec -ti nginx -c nginx -- sleep 15
 ./bin/tarianctl --server-address=localhost:31051 get events | grep index.html
 
 # output for debugging
-kubectl run -ti --restart=Never get-alerts --image=curlimages/curl -- http://tarian-alertmanager.tarian-system.svc:9093/api/v2/alerts \
-  || kubectl run -ti --restart=Never get-alerts2 --image=curlimages/curl -- http://alertmanager.tarian-system.svc:9093/api/v2/alerts
+kubectl run -ti --restart=Never get-alerts2 --image=curlimages/curl -- http://alertmanager.tarian-system.svc:9093/api/v2/alerts
 
 # assert alerts were sent
-echo $'test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- http://tarian-alertmanager.tarian-system.svc:9093/api/v2/alerts | jq \'. | length\') -gt 1' \
-  $'|| test $(kubectl run -ti --restart=Never verify-alerts2 --image=curlimages/curl -- http://tarian-alertmanager.tarian-system.svc:9093/api/v2/alerts | jq \'. | length\') -gt 1' \
+echo $'test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- http://alertmanager.tarian-system.svc:9093/api/v2/alerts | jq \'. | length\') -gt 1' \
   $'|| (echo "expected alerts created" && false)'
 
-test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- http://tarian-alertmanager.tarian-system.svc:9093/api/v2/alerts | jq '. | length') -gt 1 \
-  || test $(kubectl run -ti --restart=Never verify-alerts2 --image=curlimages/curl -- http://alertmanager.tarian-system.svc:9093/api/v2/alerts | jq '. | length') -gt 1 \
+test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- http://alertmanager.tarian-system.svc:9093/api/v2/alerts | jq '. | length') -gt 1 \
   || (echo "expected alerts created" && false)

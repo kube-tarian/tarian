@@ -8,7 +8,7 @@ webhooks:
   name: pod-agent.k8s.tarian.dev
   clientConfig:
     service:
-      name: tarian-controller-manager
+      name: tarian-cluster-agent-controller-manager
       namespace: tarian-system
       path: /inject-pod-agent
       port: 9443

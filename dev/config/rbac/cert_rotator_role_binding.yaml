@@ -8,5 +8,5 @@ roleRef:
   name: cert-rotator-role
 subjects:
 - kind: ServiceAccount
-  name: controller-manager
+  name: tarian-cluster-agent-controller-manager
   namespace: system
