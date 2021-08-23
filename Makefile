@@ -80,6 +80,7 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 	$(CONTROLLER_GEN) webhook paths="./..." output:webhook:artifacts:config=dev/config/webhook
 
 create-kind-cluster:
+	./dev/run-kind-registry.sh
 	kind create cluster --config=dev/cluster-config.yaml
 
 delete-kind-cluster:

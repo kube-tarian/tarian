@@ -1,0 +1,19 @@
+extraVolumes:
+- name: grpc-cert
+  secret:
+    secretName: falco-grpc-server-cert
+extraVolumeMounts:
+- name: grpc-cert
+  mountPath: /etc/falco/grpc-cert
+falco:
+  grpc:
+    enabled: true
+    unixSocketPath: ""
+    threadiness: 1
+    listenPort: 5070
+    privateKey: /etc/falco/grpc-cert/tls.key
+    certChain: /etc/falco/grpc-cert/tls.crt
+    rootCerts: /etc/falco/grpc-cert/ca.crt
+  grpcOutput:
+    enabled: true
+

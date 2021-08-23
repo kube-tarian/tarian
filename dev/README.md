@@ -11,10 +11,10 @@
 
 Go to the root directory of this project.
 
-1. Start local registry to be used with kind
+1. Create a kind cluster
 
 ```bash
-./dev/run-kind-registry.sh
+make create-kind-cluster
 ```
 
 2. Build local images
@@ -23,13 +23,7 @@ Go to the root directory of this project.
 make local-images
 ```
 
-3. Create a kind cluster
-
-```bash
-make create-kind-cluster
-```
-
-4. Apply tarian-k8s manifests
+3. Apply tarian-k8s manifests
 
 ```bash
 make deploy
@@ -37,13 +31,13 @@ make deploy
 
 Once the pods are running (`kubectl get pods -n tarian-system`),
 
-5. Run DB migration:
+4. Run DB migration:
 
 ```bash
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
 ```
 
-6. Install seed data:
+5. Install seed data:
 
 ```bash
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dev seed-data
@@ -51,7 +45,7 @@ kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dev se
 
 To test that it's working:
 
-7. Run pod:
+6. Run pod:
 
 ```bash
 kubectl run nginx --image=nginx --annotations=pod-agent.k8s.tarian.dev/inject=true
