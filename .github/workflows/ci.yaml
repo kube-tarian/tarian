@@ -76,7 +76,7 @@ jobs:
       # wait for deployment rollout
       - name: Wait for pods ready
         run: |
-          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=10m || true
+          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=5m || true
           kubectl get pods --all-namespaces
           kubectl get deployment --all-namespaces
           sleep 5s
