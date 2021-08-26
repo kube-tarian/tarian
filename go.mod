@@ -5,9 +5,11 @@ go 1.16
 require (
 	github.com/Boostport/migration v0.21.2
 	github.com/driftprogramming/pgxpoolmock v1.1.0
+	github.com/falcosecurity/client-go v0.3.0
 	github.com/go-logr/zapr v0.4.0
 	github.com/go-openapi/runtime v0.19.29
 	github.com/go-openapi/strfmt v0.20.1
+	github.com/gogo/protobuf v1.3.2
 	github.com/gogo/status v1.1.0
 	github.com/golang/mock v1.5.0
 	github.com/jackc/pgx/v4 v4.12.0

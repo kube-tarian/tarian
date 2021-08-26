@@ -55,10 +55,18 @@ message Pod {
 	repeated Label labels = 4;
 }
 
+message FalcoAlert {
+	string rule = 1;
+	string priority = 2;
+	string output = 3;
+	map<string, string> outputFields = 4;
+}
+
 message Target {
 	Pod pod = 1;
 	repeated Process violatingProcesses = 2;
 	repeated ViolatedFile violatedFiles = 3;
+	optional FalcoAlert falcoAlert = 4;
 }
 
 message Event {

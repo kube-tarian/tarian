@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tarian-cluster-agent
+spec:
+  template:
+    spec:
+      containers:
+      - name: tarian-cluster-agent
+        args:
+        - --log-encoding=json
+        - --log-level=debug
+        - run
+        - "--server-address=tarian-server:80"
+        - "--falco-grpc-server-hostname=falco-grpc.falco.svc"
+        - "--falco-grpc-server-port=5060"
+        - "--falco-grpc-client-cert-file=/etc/tarian/certs/falco-integration/tls.crt"
+        - "--falco-grpc-client-key-file=/etc/tarian/certs/falco-integration/tls.key"
+        - "--falco-grpc-client-ca-file=/etc/tarian/certs/falco-integration/ca.crt"
+        volumeMounts:
+        - name: tarian-falco-integration
+          mountPath: "/etc/tarian/certs/falco-integration"
+      volumes:
+      - name: tarian-falco-integration
+        secret:
+          secretName: tarian-falco-integration

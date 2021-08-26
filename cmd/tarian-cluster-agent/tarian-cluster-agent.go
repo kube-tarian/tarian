@@ -15,9 +15,12 @@ import (
 	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/go-logr/zapr"
 	cli "github.com/urfave/cli/v2"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	falcoclient "github.com/falcosecurity/client-go/pkg/client"
 )
 
 const (
@@ -95,6 +98,31 @@ func getCliApp() *cli.App {
 						Name:  "server-tls-insecure-skip-verify",
 						Usage: "If set to true, it will skip server's certificate chain and hostname verification",
 						Value: true,
+					},
+					&cli.StringFlag{
+						Name:  "falco-grpc-server-hostname",
+						Usage: "The server hostname of falco grpc server to integrate with. Setting this will enable falco integration.",
+						Value: "",
+					},
+					&cli.UintFlag{
+						Name:  "falco-grpc-server-port",
+						Usage: "Falco grpc server port",
+						Value: 5060,
+					},
+					&cli.StringFlag{
+						Name:  "falco-grpc-client-cert-file",
+						Usage: "File containing x509 certificate to communicate with falco grpc server",
+						Value: "",
+					},
+					&cli.StringFlag{
+						Name:  "falco-grpc-client-key-file",
+						Usage: "Private key file in x509 matching --falco-grpc-client-cert-file",
+						Value: "",
+					},
+					&cli.StringFlag{
+						Name:  "falco-grpc-client-ca-file",
+						Usage: "CA file in x509 matching --falco-grpc-client-cert-file",
+						Value: "",
 					},
 				},
 				Action: run,
@@ -174,6 +202,38 @@ func run(c *cli.Context) error {
 		logger.Fatalw("failed to listen", "err", err)
 	}
 
+	clusterAgentConfig := newClusterAgentConfigFromCliContext(c, logger)
+	clusterAgent := clusteragent.NewClusterAgent(clusterAgentConfig)
+	defer clusterAgent.Close()
+
+	grpcServer := clusterAgent.GetGrpcServer()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		sig := <-sigCh
+		logger.Infow("got sigterm signal, attempting graceful shutdown", "signal", sig)
+
+		grpcServer.GracefulStop()
+	}()
+
+	if clusterAgent.GetFalcoAlertsSubscriber() != nil {
+		go clusterAgent.GetFalcoAlertsSubscriber().Start()
+	}
+
+	logger.Infow("tarian-cluster-agent is listening at", "address", listener.Addr())
+
+	if err := grpcServer.Serve(listener); err != nil {
+		logger.Fatalw("failed to serve", "err", err)
+	}
+
+	logger.Info("tarian-cluster-agent shutdown gracefully")
+
+	return nil
+}
+
+func newClusterAgentConfigFromCliContext(c *cli.Context, logger *zap.SugaredLogger) *clusteragent.ClusterAgentConfig {
 	dialOpts := []grpc.DialOption{}
 
 	if c.Bool("server-tls-enabled") {
@@ -203,30 +263,28 @@ func run(c *cli.Context) error {
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	}
 
-	clusterAgent := clusteragent.NewClusterAgent(c.String("server-address"), dialOpts)
-	defer clusterAgent.Close()
+	enableFalcoIntegration := c.String("falco-grpc-server-hostname") != ""
 
-	grpcServer := clusterAgent.GetGrpcServer()
-
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		sig := <-sigCh
-		logger.Infow("got sigterm signal, attempting graceful shutdown", "signal", sig)
-
-		grpcServer.GracefulStop()
-	}()
-
-	logger.Infow("tarian-cluster-agent is listening at", "address", listener.Addr())
-
-	if err := grpcServer.Serve(listener); err != nil {
-		logger.Fatalw("failed to serve", "err", err)
+	falcoClientConfig := &falcoclient.Config{
+		Hostname:   c.String("falco-grpc-server-hostname"),
+		Port:       uint16(c.Uint("falco-grpc-server-port")),
+		CertFile:   c.String("falco-grpc-client-cert-file"),
+		KeyFile:    c.String("falco-grpc-client-key-file"),
+		CARootFile: c.String("falco-grpc-client-ca-file"),
 	}
 
-	logger.Info("tarian-cluster-agent shutdown gracefully")
+	if enableFalcoIntegration {
+		enableFalcoIntegration = true
+	}
 
-	return nil
+	config := &clusteragent.ClusterAgentConfig{
+		ServerAddress:          c.String("server-address"),
+		ServerGrpcDialOptions:  dialOpts,
+		EnableFalcoIntegration: enableFalcoIntegration,
+		FalcoClientConfig:      falcoClientConfig,
+	}
+
+	return config
 }
 
 func runWebhookServer(c *cli.Context) error {

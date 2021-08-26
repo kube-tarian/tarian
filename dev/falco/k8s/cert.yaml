@@ -39,7 +39,7 @@ spec:
   isCA: false
   commonName: falco-grpc
   dnsNames:
-  - falco-grpc.default.svc
+  - falco-grpc.falco.svc
   - falco-grpc
   secretName: falco-grpc-server-cert
   usages:

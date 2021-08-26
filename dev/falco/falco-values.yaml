@@ -10,7 +10,7 @@ falco:
     enabled: true
     unixSocketPath: ""
     threadiness: 1
-    listenPort: 5070
+    listenPort: 5060
     privateKey: /etc/falco/grpc-cert/tls.key
     certChain: /etc/falco/grpc-cert/tls.crt
     rootCerts: /etc/falco/grpc-cert/ca.crt
