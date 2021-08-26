@@ -8,11 +8,11 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: my-selfsigned-ca
+  name: root-ca
   namespace: cert-manager
 spec:
   isCA: true
-  commonName: my-selfsigned-ca
+  commonName: root-ca
   secretName: root-secret
   privateKey:
     algorithm: ECDSA
@@ -43,29 +43,7 @@ spec:
   - falco-grpc
   secretName: falco-grpc-server-cert
   usages:
-  - client auth
   - server auth
-  privateKey:
-    algorithm: ECDSA
-    size: 256
-  issuerRef:
-    name: ca-issuer
-    kind: ClusterIssuer
-    group: cert-manager.io
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: tarian-falco-integration-cert
-  namespace: default
-spec:
-  isCA: false
-  commonName: tarian-falco-integration
-  dnsNames:
-  - tarian-falco-integration
-  usages:
-  - client auth
-  secretName: tarian-falco-integration
   privateKey:
     algorithm: ECDSA
     size: 256

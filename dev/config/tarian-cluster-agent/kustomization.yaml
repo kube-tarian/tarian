@@ -1,2 +1,4 @@
 resources:
 - tarian-cluster-agent.yaml
+
+namespace: tarian-system

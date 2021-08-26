@@ -6,6 +6,7 @@ data:
 kind: Secret
 metadata:
   name: tarian-webhook-server-cert
+  namespace: tarian-system
 type: kubernetes.io/tls
 ---
 apiVersion: v1
@@ -24,4 +25,3 @@ spec:
   selector:
     control-plane: tarian-cluster-agent-controller-manager
   type: ClusterIP
----

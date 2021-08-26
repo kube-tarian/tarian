@@ -1,6 +1,3 @@
-# Adds namespace to all resources.
-namespace: tarian-system
-
 bases:
 - ../rbac
 - ../manager
@@ -14,6 +11,8 @@ patchesStrategicMerge:
 
 resources:
 - manager_resources.yaml
+# Uncomment the resource below to enable falco integration
+# - tarian_falco_integration_cert.yaml
 
 patches:
 - target:

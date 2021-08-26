@@ -5,3 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: localhost:5000/tarian-cluster-agent
+namespace: tarian-system

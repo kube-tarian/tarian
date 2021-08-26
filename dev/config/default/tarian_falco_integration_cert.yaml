@@ -1,0 +1,20 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: tarian-falco-integration-cert
+  namespace: tarian-system
+spec:
+  isCA: false
+  commonName: tarian-falco-integration
+  dnsNames:
+  - tarian-falco-integration
+  usages:
+  - client auth
+  secretName: tarian-falco-integration
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io

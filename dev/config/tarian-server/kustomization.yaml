@@ -3,3 +3,5 @@ resources:
 - postgresql.yaml
 - phppgadmin.yaml
 - alertmanager.yaml
+
+namespace: tarian-system

@@ -1,2 +1,4 @@
 resources:
 - manifests.yaml
+
+namespace: tarian-system
