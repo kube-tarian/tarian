@@ -33,7 +33,7 @@ func NewGetEventsCommand() *cli.Command {
 			}
 
 			table := tablewriter.NewWriter(os.Stdout)
-			table.SetHeader([]string{"Time", "Namespace", "Name", "Violating Processes", "Violated Files"})
+			table.SetHeader([]string{"Time", "Namespace", "Pod", "Events"})
 			table.SetColumnSeparator(" ")
 			table.SetCenterSeparator("-")
 			table.SetAlignment(tablewriter.ALIGN_LEFT)
@@ -45,8 +45,9 @@ func NewGetEventsCommand() *cli.Command {
 							e.GetServerTimestamp().AsTime().Format(time.RFC3339),
 							t.GetPod().GetNamespace(),
 							t.GetPod().GetName(),
-							violatingProcessesToString(t.GetViolatingProcesses()),
-							violatedFilesToString(t.GetViolatedFiles()),
+							violatingProcessesToString(t.GetViolatingProcesses()) +
+								"\n" + violatedFilesToString(t.GetViolatedFiles()) +
+								"\n" + falcoAlertToString(t.GetFalcoAlert()),
 						},
 					)
 				}
@@ -101,4 +102,12 @@ func violatedFilesToString(violatedFiles []*tarianpb.ViolatedFile) string {
 	}
 
 	return str.String()
+}
+
+func falcoAlertToString(f *tarianpb.FalcoAlert) string {
+	if f == nil {
+		return ""
+	}
+
+	return f.GetOutput()
 }
