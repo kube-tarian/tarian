@@ -1,3 +1,5 @@
+env:
+  - CONTAINER_REGISTRY={{ if index .Env "CONTAINER_REGISTRY" }}{{ .Env.CONTAINER_REGISTRY }}{{ else }}localhost:5000{{ end }}
 builds:
   - id: tarian-server
     main: ./cmd/tarian-server/
@@ -42,7 +44,7 @@ dockers:
     goos: linux
     goarch: amd64
     image_templates:
-    - "localhost:5000/tarian-server:latest"
+    - '{{ .Env.CONTAINER_REGISTRY }}/tarian-server:{{ if .IsSnapshot }}latest{{ else }}{{ trimprefix .Tag "v" }}{{ end }}'
     dockerfile: Dockerfile-server
     skip_push: false
     build_flag_templates:
@@ -57,7 +59,7 @@ dockers:
     goos: linux
     goarch: amd64
     image_templates:
-    - "localhost:5000/tarian-cluster-agent:latest"
+    - '{{ .Env.CONTAINER_REGISTRY }}/tarian-cluster-agent:{{ if .IsSnapshot }}latest{{ else }}{{ trimprefix .Tag "v"}}{{ end }}'
     dockerfile: Dockerfile-cluster-agent
     skip_push: false
     build_flag_templates:
@@ -72,7 +74,7 @@ dockers:
     goos: linux
     goarch: amd64
     image_templates:
-    - "localhost:5000/tarian-pod-agent:latest"
+    - '{{ .Env.CONTAINER_REGISTRY }}/tarian-pod-agent:{{ if .IsSnapshot }}latest{{ else }}{{ trimprefix .Tag "v" }}{{ end }}'
     dockerfile: Dockerfile-pod-agent
     skip_push: false
     build_flag_templates:
