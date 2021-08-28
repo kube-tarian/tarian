@@ -55,7 +55,7 @@ func (a *AlertDispatcher) LoopSendAlerts(ctx context.Context, es store.EventStor
 		}
 
 		for _, event := range events {
-			if event.GetType() == "violation" {
+			if event.GetType() == tarianpb.EventTypeViolation || event.GetType() == tarianpb.EventTypeFalcoAlert {
 				err := a.SendAlert(event)
 
 				if err == nil {
@@ -93,6 +93,10 @@ func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) error {
 
 		if target.GetViolatedFiles() != nil {
 			labels["violated_files"] = violatedFilesToString(target.GetViolatedFiles())
+		}
+
+		if target.GetFalcoAlert() != nil {
+			labels["falco_alert"] = target.GetFalcoAlert().GetOutput()
 		}
 
 		pa := &models.PostableAlert{Alert: models.Alert{Labels: labels}}
