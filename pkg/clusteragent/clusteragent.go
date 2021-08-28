@@ -38,7 +38,7 @@ func NewClusterAgent(config *ClusterAgentConfig) *ClusterAgent {
 	if config.EnableFalcoIntegration {
 		var err error
 
-		ca.falcoAlertsSubsriber, err = NewFalcoAlertsSubscriber(config.FalcoClientConfig)
+		ca.falcoAlertsSubsriber, err = NewFalcoAlertsSubscriber(config.ServerAddress, config.ServerGrpcDialOptions, config.FalcoClientConfig)
 
 		if err != nil {
 			logger.Fatalw("falco: unable to connect to falco grpc server", "err", err)

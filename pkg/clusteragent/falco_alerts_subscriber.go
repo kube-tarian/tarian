@@ -2,43 +2,61 @@ package clusteragent
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"github.com/falcosecurity/client-go/pkg/api/outputs"
 	"github.com/falcosecurity/client-go/pkg/client"
-	"github.com/gogo/protobuf/jsonpb"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type FalcoAlertsSubscriber struct {
-	client *client.Client
+	client      *client.Client
+	grpcConn    *grpc.ClientConn
+	eventClient tarianpb.EventClient
+	cancelCtx   context.Context
+	cancelFunc  context.CancelFunc
 }
 
-func NewFalcoAlertsSubscriber(config *client.Config) (*FalcoAlertsSubscriber, error) {
+func NewFalcoAlertsSubscriber(tarianServerAddress string, opts []grpc.DialOption, config *client.Config) (*FalcoAlertsSubscriber, error) {
 	falcoClient, err := client.NewForConfig(context.Background(), config)
 
 	if err != nil {
 		return nil, err
 	}
 
+	grpcConn, err := grpc.Dial(tarianServerAddress, opts...)
+	if err != nil {
+		logger.Fatalw("couldn't not connect to tarian-server", "err", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &FalcoAlertsSubscriber{
-		client: falcoClient,
+		client:      falcoClient,
+		grpcConn:    grpcConn,
+		eventClient: tarianpb.NewEventClient(grpcConn),
+		cancelCtx:   ctx,
+		cancelFunc:  cancel,
 	}, nil
 }
 
 func (f *FalcoAlertsSubscriber) Start() {
-	ctx := context.Background()
-
-	err := f.client.OutputsWatch(ctx, f.ProcessFalcoOutput, time.Second*1)
-	if err != nil {
-		logger.Fatalw("falco: outputs watch error", err, "err")
+	for {
+		select {
+		case <-time.After(time.Second):
+			f.client.OutputsWatch(f.cancelCtx, f.ProcessFalcoOutput, time.Second*1)
+		case <-f.cancelCtx.Done():
+			return
+		}
 	}
 }
 
 func (f *FalcoAlertsSubscriber) Close() {
+	f.cancelFunc()
 	f.client.Close()
+	f.grpcConn.Close()
 }
 
 func (f *FalcoAlertsSubscriber) ProcessFalcoOutput(res *outputs.Response) error {
@@ -74,10 +92,19 @@ func (f *FalcoAlertsSubscriber) ProcessFalcoOutput(res *outputs.Response) error 
 		},
 	}
 
-	out, err := (&jsonpb.Marshaler{}).MarshalToString(event)
-	if err != nil {
-		return err
+	req := &tarianpb.IngestEventRequest{
+		Event: event,
 	}
-	fmt.Println(out)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	response, err := f.eventClient.IngestEvent(ctx, req)
+	defer cancel()
+
+	if err != nil {
+		logger.Errorw("error while reporting falco alerts", "err", err)
+	} else {
+		logger.Debugw("ingest event response", "response", response)
+	}
+
 	return nil
 }

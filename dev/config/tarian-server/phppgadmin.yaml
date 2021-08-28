@@ -20,7 +20,7 @@ spec:
           name: phppgadmin
         env:
         - name: DATABASE_HOST
-          value: tarian-postgresql
+          value: postgresql
         - name: DATABASE_SSL_MODE
           value: disable
 ---
