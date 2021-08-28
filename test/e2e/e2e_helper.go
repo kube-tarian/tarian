@@ -56,7 +56,12 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	grpcServer := srv.GrpcServer
 	require.Nil(t, err)
 
-	clusterAgent := clusteragent.NewClusterAgent("localhost:"+e2eServerPort, []grpc.DialOption{grpc.WithInsecure()})
+	clusterAgentConfig := &clusteragent.ClusterAgentConfig{
+		ServerAddress:         "localhost:" + e2eServerPort,
+		ServerGrpcDialOptions: []grpc.DialOption{grpc.WithInsecure()},
+	}
+
+	clusterAgent := clusteragent.NewClusterAgent(clusterAgentConfig)
 	podAgent := podagent.NewPodAgent("localhost:" + e2eClusterAgentPort)
 
 	return &TestHelper{t: t, dbPool: dbPool, dbConfig: dbConfig, server: grpcServer, clusterAgent: clusterAgent, podAgent: podAgent}
