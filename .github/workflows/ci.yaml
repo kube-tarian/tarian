@@ -85,7 +85,7 @@ jobs:
 
   publish-containers:
     needs: k8s-test
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -102,11 +102,19 @@ jobs:
           registry: ghcr.io
           username: devopstoday11
           password: ${{ secrets.GITHUB_TOKEN }}
-      - run: ./bin/goreleaser release --snapshot --rm-dist
+      - run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            ./goreleaser
+          elif [[ $GITHUB_REF == refs/heads/master ]]; then
+            ./goreleaser --snapshot --skip-publish
+          fi
         env:
           CONTAINER_REGISTRY: ghcr.io/${{ github.repository_owner }}
       - run: docker images
-      - run: docker push ghcr.io/${{ github.repository_owner}}/tarian-server
-      - run: docker push ghcr.io/${{ github.repository_owner}}/tarian-cluster-agent
-      - run: docker push ghcr.io/${{ github.repository_owner}}/tarian-pod-agent
+      - run: |
+          if [[ $GITHUB_REF == refs/heads/master ]]; then
+            docker push ghcr.io/${{ github.repository_owner}}/tarian-server
+            docker push ghcr.io/${{ github.repository_owner}}/tarian-cluster-agent
+            docker push ghcr.io/${{ github.repository_owner}}/tarian-pod-agent
+          fi
 
