@@ -118,9 +118,9 @@ func run(c *cli.Context) error {
 		agent.SetPodName(podName)
 	}
 
-	podUid := c.String("pod-uid")
-	if podUid != "" {
-		agent.SetPodUid(podUid)
+	podUID := c.String("pod-uid")
+	if podUID != "" {
+		agent.SetpodUID(podUID)
 	}
 
 	namespace := c.String("namespace")

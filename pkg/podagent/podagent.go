@@ -39,7 +39,7 @@ type PodAgent struct {
 	configClient        tarianpb.ConfigClient
 	eventClient         tarianpb.EventClient
 	podName             string
-	podUid              string
+	podUID              string
 	podLabels           []*tarianpb.Label
 	namespace           string
 
@@ -64,8 +64,8 @@ func (p *PodAgent) SetPodName(name string) {
 	p.podName = name
 }
 
-func (p *PodAgent) SetPodUid(uid string) {
-	p.podUid = uid
+func (p *PodAgent) SetpodUID(uid string) {
+	p.podUID = uid
 }
 
 func (p *PodAgent) SetNamespace(namespace string) {
@@ -181,7 +181,7 @@ func (p *PodAgent) loopValidateProcesses(ctx context.Context) error {
 
 func (p *PodAgent) loopValidateFileChecksums(ctx context.Context) error {
 	for {
-		violatedFiles := p.ValidateFileChecksums()
+		violatedFiles := p.validateFileChecksums()
 
 		for _, violation := range violatedFiles {
 			logger.Debugw("found a file that violates checksum", "file", violation.name, "actual", violation.actualSha256Sum, "expected", violation.expectedSha256Sum)
@@ -215,7 +215,7 @@ func (p *PodAgent) ReportViolationsToClusterAgent(processes map[int32]*Process) 
 			Targets: []*tarianpb.Target{
 				{
 					Pod: &tarianpb.Pod{
-						Uid:       p.podUid,
+						Uid:       p.podUID,
 						Name:      p.podName,
 						Namespace: p.namespace,
 						Labels:    p.podLabels,
@@ -293,7 +293,7 @@ type violatedFile struct {
 	actualSha256Sum   string
 }
 
-func (p *PodAgent) ValidateFileChecksums() map[string]*violatedFile {
+func (p *PodAgent) validateFileChecksums() map[string]*violatedFile {
 	p.constraintsLock.RLock()
 
 	// Copy constraints to a local var to not block SyncConstraints() because this function can run quite long
@@ -368,7 +368,7 @@ func (p *PodAgent) ReportViolatedFilesToClusterAgent(violatedFiles map[string]*v
 			Targets: []*tarianpb.Target{
 				{
 					Pod: &tarianpb.Pod{
-						Uid:       p.podUid,
+						Uid:       p.podUID,
 						Name:      p.podName,
 						Namespace: p.namespace,
 						Labels:    p.podLabels,
