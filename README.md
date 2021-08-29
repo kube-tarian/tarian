@@ -37,3 +37,39 @@ Why another new security tool when there are many tools available already, like 
 ![Arch. Diagram](https://github.com/devopstoday11/tarian/blob/5eeed9a0bd5875e6cee423d2d12161a3f7d2d84c/Kube-Tarian.svg)
 
 #
+
+## Install
+
+1. Create tarian-system namespace
+
+```bash
+kubectl create namespace tarian-system
+```
+
+2. Prepare a Postgresql Database. You can use a DB as a service from your Cloud Services or you can also run by yourself in the cluster. For example to install the DB in the cluster, run:
+
+```bash
+helm install tarian-postgresql bitnami/postgresql -n tarian-system --set postgresqlUsername=postgres --set postgresqlPassword=tarian --set postgresqlDatabase=tarian
+```
+
+3. Install tarian
+
+```bash
+helm repo add tarian https://devopstoday11.github.io/tarian
+helm repo update
+
+helm install tarian-server tarian/tarian-server --devel -n tarian-system
+helm install tarian-cluster-agent tarian/tarian-cluster-agent --devel -n tarian-system
+```
+
+4. Wait for all pods to be ready
+
+```bash
+kubectl wait --for=condition=ready pod --all -n tarian-system
+```
+
+5. Run database migration to create necessary tables
+
+```bash
+kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
+```
