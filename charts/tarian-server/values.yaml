@@ -4,7 +4,7 @@ server:
     level: info
   image:
     name: ghcr.io/devopstoday11/tarian-server
-    tag: latest
+    tag: 0.0.2-alpha6
   alert:
     alertManagerAddress: http://alertmanager:9093
     evaluationInterval: 5s

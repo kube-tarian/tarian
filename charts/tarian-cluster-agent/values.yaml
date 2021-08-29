@@ -4,11 +4,11 @@ clusterAgent:
     level: info
   image:
     name: ghcr.io/devopstoday11/tarian-cluster-agent
-    tag: latest
+    tag: 0.0.2-alpha6
   serverAddress: tarian-server:80
   service:
     type: ClusterIP
     nodeport:
 webhook:
   failurePolicy: Ignore
-  podAgentContainerImage: ghcr.io/devopstoday11/tarian-pod-agent:latest
+  podAgentContainerImage: ghcr.io/devopstoday11/tarian-pod-agent:0.0.2-alpha6
