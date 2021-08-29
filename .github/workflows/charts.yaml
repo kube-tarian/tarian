@@ -74,7 +74,7 @@ jobs:
         run: make k8s-test
 
   release:
-    if: startsWith(github.ref, 'refs/tags/chart-')
+    if: startsWith(github.ref, 'refs/heads/main')
     needs: lint-test
     runs-on: ubuntu-latest
     steps:
