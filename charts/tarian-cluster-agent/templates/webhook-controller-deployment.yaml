@@ -19,14 +19,14 @@ spec:
         runAsNonRoot: true
       containers:
       - name: manager
-        image: "{{ .Values.clusterAgent.image.name }}:{{ .Values.clusterAgent.image.tag }}"
+        image: "{{ .Values.clusterAgent.image.name }}:{{ .Values.clusterAgent.image.tag | default .Chart.AppVersion }}"
         args:
         - "--log-encoding={{ .Values.clusterAgent.log.encoding }}"
         - "--log-level={{ .Values.clusterAgent.log.level }}"
         - run-webhook-server
         - "--cert-rotator-secret-name={{ $name }}-cert"
         - "--mutating-webhook-configuration-name={{ .Release.Name }}"
-        - "--pod-agent-container-image={{ .Values.webhook.podAgentContainerImage }}"
+        - "--pod-agent-container-image={{ .Values.webhook.podAgentContainerImage.name }}:{{ .Values.webhook.podAgentContainerImage.tag | default .Chart.AppVersion }}"
         securityContext:
           allowPrivilegeEscalation: false
           runAsUser: 10001

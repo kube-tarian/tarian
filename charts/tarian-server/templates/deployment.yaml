@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: tarian-server
-        image: "{{ .Values.server.image.name }}:{{ .Values.server.image.tag }}"
+        image: "{{ .Values.server.image.name }}:{{ .Values.server.image.tag | default .Chart.AppVersion }}"
         args:
         - "--log-encoding={{ .Values.server.log.encoding }}"
         - "--log-level={{ .Values.server.log.level }}"
