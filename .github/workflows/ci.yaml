@@ -104,15 +104,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - run: |
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
-            ./goreleaser
-          elif [[ $GITHUB_REF == refs/heads/master ]]; then
-            ./goreleaser --snapshot --skip-publish
+            ./bin/goreleaser
+          elif [[ $GITHUB_REF == refs/heads/main ]]; then
+            ./bin/goreleaser --snapshot
           fi
         env:
           CONTAINER_REGISTRY: ghcr.io/${{ github.repository_owner }}
       - run: docker images
       - run: |
-          if [[ $GITHUB_REF == refs/heads/master ]]; then
+          if [[ $GITHUB_REF == refs/heads/main ]]; then
             docker push ghcr.io/${{ github.repository_owner}}/tarian-server
             docker push ghcr.io/${{ github.repository_owner}}/tarian-cluster-agent
             docker push ghcr.io/${{ github.repository_owner}}/tarian-pod-agent
