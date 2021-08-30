@@ -136,7 +136,16 @@ tarianctl --server-address=localhost:41051 get events
 
 ## Alert Manager Integration
 
-TODO
+Tarian comes with Prometheus Alert Manager by default. If you want to use another alert manager instance:
+
+```bash
+helm install tarian-server tarian/tarian-server --devel \
+  --set server.alert.alertManagerAddress=http://alertmanager.monitoring.svc:9093 \
+  --set alertManager.install=false \
+  -n tarian-system
+```
+
+To disable it, you can set the alertManagerAddress value to empty.
 
 ## Falco Integration
 
