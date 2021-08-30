@@ -121,8 +121,8 @@ tarianctl --server-address=localhost:41051 get constraints
 ### Try a pod that violates the constraints
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/devopstoday11/tarian/installation-guide/dev/config/monitored-pod/configmap.yaml
-kubectl apply -f https://raw.githubusercontent.com/devopstoday11/tarian/installation-guide/dev/config/monitored-pod/pod.yaml
+kubectl apply -f https://raw.githubusercontent.com/devopstoday11/tarian/main/dev/config/monitored-pod/configmap.yaml
+kubectl apply -f https://raw.githubusercontent.com/devopstoday11/tarian/main/dev/config/monitored-pod/pod.yaml
 
 # wait for it to become ready
 kubectl wait --for=condition=ready pod nginx
