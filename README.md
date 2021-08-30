@@ -93,23 +93,23 @@ kubectl port-forward svc/tarian-server -n tarian-system 41051:80
 4. To see violation events
 
 ```bash
-./tarianctl --server-address=localhost:41051 get events
+tarianctl --server-address=localhost:41051 get events
 ```
 
 ### Add a process constraint
 
 ```bash
-./bin/tarianctl --server-address=localhost:41051 add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx 
+tarianctl --server-address=localhost:41051 add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx 
 ```
 
 ```bash
-./tarianctl --server-address=localhost:41051 get constraints
+tarianctl --server-address=localhost:41051 get constraints
 ```
 
 ### Add a file constraint
 
 ```bash
-./bin/tarianctl --server-address=localhost:41051 add constraint --name nginx-files --namespace default --match-labels run=nginx --allowed-file-sha256sums=/usr/share/nginx/html/index.html=38ffd4972ae513a0c79a8be4573403edcd709f0f572105362b08ff50cf6de521
+tarianctl --server-address=localhost:41051 add constraint --name nginx-files --namespace default --match-labels run=nginx --allowed-file-sha256sums=/usr/share/nginx/html/index.html=38ffd4972ae513a0c79a8be4573403edcd709f0f572105362b08ff50cf6de521
 ```
 
 ```bash
@@ -129,7 +129,7 @@ kubectl wait --for=condition=ready pod nginx
 kubectl exec -ti nginx -c nginx -- sleep 15
 
 # you should see it reported in tarian
-./tarianctl --server-address=localhost:41051 get events
+tarianctl --server-address=localhost:41051 get events
 ```
 
 ## Falco Integration
