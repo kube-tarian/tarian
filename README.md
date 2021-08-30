@@ -76,7 +76,9 @@ kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db mig
 
 ## Configuration
 
-TODO
+See helm chart values for
+- [tarian-server](https://github.com/devopstoday11/tarian/blob/main/charts/tarian-server/values.yaml)
+- [tarian-cluster-agent](https://github.com/devopstoday11/tarian/blob/main/charts/tarian-cluster-agent/values.yaml)
 
 ## Usage
 
@@ -131,6 +133,10 @@ kubectl exec -ti nginx -c nginx -- sleep 15
 # you should see it reported in tarian
 tarianctl --server-address=localhost:41051 get events
 ```
+
+## Alert Manager Integration
+
+TODO
 
 ## Falco Integration
 
