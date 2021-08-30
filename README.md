@@ -113,7 +113,7 @@ tarianctl --server-address=localhost:41051 add constraint --name nginx-files --n
 ```
 
 ```bash
-./tarianctl --server-address=localhost:41051 get constraints
+tarianctl --server-address=localhost:41051 get constraints
 ```
 
 ### Try a pod that violates the constraints
