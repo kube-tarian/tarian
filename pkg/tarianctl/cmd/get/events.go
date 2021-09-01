@@ -34,20 +34,36 @@ func NewGetEventsCommand() *cli.Command {
 
 			table := tablewriter.NewWriter(os.Stdout)
 			table.SetHeader([]string{"Time", "Namespace", "Pod", "Events"})
+			table.SetColWidth(80)
 			table.SetColumnSeparator(" ")
 			table.SetCenterSeparator("-")
 			table.SetAlignment(tablewriter.ALIGN_LEFT)
 
 			for _, e := range response.GetEvents() {
 				for _, t := range e.GetTargets() {
+
+					evt := strings.Builder{}
+					if t.GetViolatingProcesses() != nil {
+						evt.WriteString("violating_processes = ")
+						evt.WriteString(violatingProcessesToString(t.GetViolatingProcesses()))
+					}
+
+					if t.GetViolatedFiles() != nil {
+						evt.WriteString("violated_files = ")
+						evt.WriteString(violatedFilesToString(t.GetViolatedFiles()))
+					}
+
+					if t.GetFalcoAlert() != nil {
+						evt.WriteString("falco_alert = ")
+						evt.WriteString(falcoAlertToString(t.GetFalcoAlert()))
+					}
+
 					table.Append(
 						[]string{
 							e.GetServerTimestamp().AsTime().Format(time.RFC3339),
 							t.GetPod().GetNamespace(),
 							t.GetPod().GetName(),
-							violatingProcessesToString(t.GetViolatingProcesses()) +
-								"\n" + violatedFilesToString(t.GetViolatedFiles()) +
-								"\n" + falcoAlertToString(t.GetFalcoAlert()),
+							evt.String(),
 						},
 					)
 				}
