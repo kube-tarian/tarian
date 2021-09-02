@@ -49,10 +49,17 @@ func (es *EventServer) GetEvents(ctxt context.Context, request *tarianpb.GetEven
 	var events []*tarianpb.Event
 	var err error
 
+	limit := request.GetLimit()
+
+	// TODO: validate limit
+	if limit == 0 {
+		limit = 1000
+	}
+
 	if request.GetNamespace() == "" {
-		events, err = es.eventStore.GetAll()
+		events, err = es.eventStore.GetAll(uint(limit))
 	} else {
-		events, err = es.eventStore.FindByNamespace(request.GetNamespace())
+		events, err = es.eventStore.FindByNamespace(request.GetNamespace(), uint(limit))
 	}
 
 	if err != nil {

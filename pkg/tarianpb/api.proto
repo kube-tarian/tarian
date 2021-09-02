@@ -43,6 +43,7 @@ message IngestEventResponse {
 
 message GetEventsRequest {
 	string namespace = 1;
+	uint32 limit = 2;
 }
 
 message GetEventsResponse {

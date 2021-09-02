@@ -19,6 +19,13 @@ func NewGetEventsCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "events",
 		Usage: "Get events from the Tarian Server.",
+		Flags: []cli.Flag{
+			&cli.UintFlag{
+				Name:  "limit",
+				Usage: "Limit the events returned from the server",
+				Value: 200,
+			},
+		},
 		Action: func(c *cli.Context) error {
 			logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
 			util.SetLogger(logger)
@@ -26,7 +33,7 @@ func NewGetEventsCommand() *cli.Command {
 			opts := util.ClientOptionsFromCliContext(c)
 			client, _ := client.NewEventClient(c.String("server-address"), opts...)
 
-			response, err := client.GetEvents(context.Background(), &tarianpb.GetEventsRequest{})
+			response, err := client.GetEvents(context.Background(), &tarianpb.GetEventsRequest{Limit: uint32(c.Uint("limit"))})
 
 			if err != nil {
 				logger.Fatal(err)

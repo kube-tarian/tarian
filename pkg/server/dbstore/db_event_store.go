@@ -72,8 +72,8 @@ func (e *eventRow) toEvent() *tarianpb.Event {
 	return event
 }
 
-func (d *DbEventStore) GetAll() ([]*tarianpb.Event, error) {
-	rows, err := d.pool.Query(context.Background(), "SELECT * FROM events ORDER BY id ASC")
+func (d *DbEventStore) GetAll(limit uint) ([]*tarianpb.Event, error) {
+	rows, err := d.pool.Query(context.Background(), "SELECT * FROM events ORDER BY id ASC LIMIT $1", limit)
 
 	if err != nil {
 		return nil, err
@@ -83,8 +83,8 @@ func (d *DbEventStore) GetAll() ([]*tarianpb.Event, error) {
 	return rowsToPbEvents(rows)
 }
 
-func (d *DbEventStore) FindByNamespace(namespace string) ([]*tarianpb.Event, error) {
-	rows, err := d.pool.Query(context.Background(), "SELECT * FROM events WHERE namespace = $1 ORDER BY id ASC", namespace)
+func (d *DbEventStore) FindByNamespace(namespace string, limit uint) ([]*tarianpb.Event, error) {
+	rows, err := d.pool.Query(context.Background(), "SELECT * FROM events WHERE namespace = $1 ORDER BY id ASC LIMIT $2", namespace, limit)
 
 	if err != nil {
 		return nil, err
