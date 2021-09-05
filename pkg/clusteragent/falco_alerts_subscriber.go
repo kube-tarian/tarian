@@ -46,7 +46,10 @@ func (f *FalcoAlertsSubscriber) Start() {
 	for {
 		select {
 		case <-time.After(time.Second):
-			f.client.OutputsWatch(f.cancelCtx, f.ProcessFalcoOutput, time.Second*1)
+			err := f.client.OutputsWatch(f.cancelCtx, f.ProcessFalcoOutput, time.Second*1)
+			if err != nil {
+				logger.Error(err)
+			}
 		case <-f.cancelCtx.Done():
 			return
 		}
