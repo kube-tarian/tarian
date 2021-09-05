@@ -40,13 +40,13 @@ func NewGetConstraintsCommand() *cli.Command {
 			outputFormat := c.String("output")
 			if outputFormat == "" {
 				table := tablewriter.NewWriter(os.Stdout)
-				table.SetHeader([]string{"Namespace", "Selector", "Allowed Processes", "Allowed Files"})
+				table.SetHeader([]string{"Namespace", "Constraint Name", "Selector", "Allowed Processes", "Allowed Files"})
 				table.SetColumnSeparator(" ")
 				table.SetCenterSeparator("-")
 				table.SetAlignment(tablewriter.ALIGN_LEFT)
 
 				for _, c := range response.GetConstraints() {
-					table.Append([]string{c.GetNamespace(), matchLabelsToString(c.GetSelector().GetMatchLabels()), allowedProcessesToString(c.GetAllowedProcesses()), allowedFilesToString(c.GetAllowedFiles())})
+					table.Append([]string{c.GetNamespace(), c.GetName(), matchLabelsToString(c.GetSelector().GetMatchLabels()), allowedProcessesToString(c.GetAllowedProcesses()), allowedFilesToString(c.GetAllowedFiles())})
 				}
 
 				table.Render()

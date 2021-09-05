@@ -7,4 +7,5 @@ type ConstraintStore interface {
 	FindByNamespace(namespace string) ([]*tarianpb.Constraint, error)
 	NamespaceAndNameExist(namespace, name string) (bool, error)
 	Add(*tarianpb.Constraint) error
+	RemoveByNamespaceAndName(namespace, name string) error
 }

@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 type ConfigClient interface {
 	GetConstraints(ctx context.Context, in *GetConstraintsRequest, opts ...grpc.CallOption) (*GetConstraintsResponse, error)
 	AddConstraint(ctx context.Context, in *AddConstraintRequest, opts ...grpc.CallOption) (*AddConstraintResponse, error)
+	RemoveConstraint(ctx context.Context, in *RemoveConstraintRequest, opts ...grpc.CallOption) (*RemoveConstraintResponse, error)
 }
 
 type configClient struct {
@@ -48,12 +49,22 @@ func (c *configClient) AddConstraint(ctx context.Context, in *AddConstraintReque
 	return out, nil
 }
 
+func (c *configClient) RemoveConstraint(ctx context.Context, in *RemoveConstraintRequest, opts ...grpc.CallOption) (*RemoveConstraintResponse, error) {
+	out := new(RemoveConstraintResponse)
+	err := c.cc.Invoke(ctx, "/tarianpb.api.Config/RemoveConstraint", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations must embed UnimplementedConfigServer
 // for forward compatibility
 type ConfigServer interface {
 	GetConstraints(context.Context, *GetConstraintsRequest) (*GetConstraintsResponse, error)
 	AddConstraint(context.Context, *AddConstraintRequest) (*AddConstraintResponse, error)
+	RemoveConstraint(context.Context, *RemoveConstraintRequest) (*RemoveConstraintResponse, error)
 	mustEmbedUnimplementedConfigServer()
 }
 
@@ -66,6 +77,9 @@ func (UnimplementedConfigServer) GetConstraints(context.Context, *GetConstraints
 }
 func (UnimplementedConfigServer) AddConstraint(context.Context, *AddConstraintRequest) (*AddConstraintResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddConstraint not implemented")
+}
+func (UnimplementedConfigServer) RemoveConstraint(context.Context, *RemoveConstraintRequest) (*RemoveConstraintResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveConstraint not implemented")
 }
 func (UnimplementedConfigServer) mustEmbedUnimplementedConfigServer() {}
 
@@ -116,6 +130,24 @@ func _Config_AddConstraint_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_RemoveConstraint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveConstraintRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).RemoveConstraint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tarianpb.api.Config/RemoveConstraint",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).RemoveConstraint(ctx, req.(*RemoveConstraintRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -130,6 +162,10 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddConstraint",
 			Handler:    _Config_AddConstraint_Handler,
+		},
+		{
+			MethodName: "RemoveConstraint",
+			Handler:    _Config_RemoveConstraint_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

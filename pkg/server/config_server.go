@@ -107,3 +107,27 @@ func (cs *ConfigServer) AddConstraint(ctx context.Context, request *tarianpb.Add
 
 	return &tarianpb.AddConstraintResponse{Success: true}, nil
 }
+
+func (cs *ConfigServer) RemoveConstraint(ctx context.Context, request *tarianpb.RemoveConstraintRequest) (*tarianpb.RemoveConstraintResponse, error) {
+	if request.GetNamespace() == "" || request.GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "required namespace or name is empty")
+	}
+
+	exist, err := cs.constraintStore.NamespaceAndNameExist(request.GetNamespace(), request.GetName())
+	if err != nil {
+		logger.Errorw("error while handling remove constraint RPC", "err", err)
+		return nil, status.Error(codes.Internal, "internal server error")
+	}
+
+	if !exist {
+		return &tarianpb.RemoveConstraintResponse{Success: false}, status.Error(codes.NotFound, "Constraint not found")
+	}
+
+	err = cs.constraintStore.RemoveByNamespaceAndName(request.GetNamespace(), request.GetName())
+	if err != nil {
+		logger.Errorw("error while handling remove constraint RPC", "err", err)
+		return nil, status.Error(codes.Internal, "internal server error")
+	}
+
+	return &tarianpb.RemoveConstraintResponse{Success: true}, nil
+}

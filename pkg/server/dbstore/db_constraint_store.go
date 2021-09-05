@@ -157,3 +157,14 @@ func (d *DbConstraintStore) NamespaceAndNameExist(namespace, name string) (bool,
 
 	return exist, nil
 }
+
+func (d *DbConstraintStore) RemoveByNamespaceAndName(namespace, name string) error {
+	_, err := d.pool.
+		Exec(
+			context.Background(),
+			"DELETE FROM constraints WHERE namespace = $1 AND name = $2",
+			namespace, name,
+		)
+
+	return err
+}

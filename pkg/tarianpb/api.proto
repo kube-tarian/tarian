@@ -8,6 +8,7 @@ import "tarianpb/types.proto";
 service Config {
 	rpc GetConstraints(GetConstraintsRequest) returns (GetConstraintsResponse) {}
 	rpc AddConstraint(AddConstraintRequest) returns (AddConstraintResponse) {}
+	rpc RemoveConstraint(RemoveConstraintRequest) returns (RemoveConstraintResponse) {}
 }
 
 service Event {
@@ -30,6 +31,15 @@ message AddConstraintRequest {
 }
 
 message AddConstraintResponse {
+	bool success = 1;
+}
+
+message RemoveConstraintRequest {
+	string namespace = 1;
+	string name = 2;
+}
+
+message RemoveConstraintResponse {
 	bool success = 1;
 }
 

@@ -62,6 +62,10 @@ func (cs *ConfigServer) AddConstraint(ctx context.Context, request *tarianpb.Add
 	return nil, status.Errorf(codes.Unimplemented, "Method AddConstraint is not supported in tarian-cluster-agent, send it to tarian-server instead.")
 }
 
+func (cs *ConfigServer) RemoveConstraint(ctx context.Context, request *tarianpb.RemoveConstraintRequest) (*tarianpb.RemoveConstraintResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "Method RemoveConstraint is not supported in tarian-cluster-agent, send it to tarian-server instead.")
+}
+
 func (cs *ConfigServer) Close() {
 	cs.grpcConn.Close()
 }
