@@ -28,7 +28,8 @@ type PodAgentContainerConfig struct {
 }
 
 const (
-	InjectionRequestAnnotation = "pod-agent.k8s.tarian.dev/threat-scan"
+	InjectionRequestAnnotation       = "pod-agent.k8s.tarian.dev/threat-scan"
+	FileValidationIntervalAnnotation = "pod-agent.k8s.tarian.dev/file-validation-interval"
 )
 
 // podAnnotator adds an annotation to every incoming pods.
@@ -68,6 +69,21 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 		}
 	}
 
+	podAgentArgs := []string{
+		"--log-encoding=" + p.config.LogEncoding,
+		"run",
+		"--host=" + p.config.Host,
+		"--port=" + p.config.Port,
+		"--namespace=$(NAMESPACE)",
+		"--pod-name=$(POD_NAME)",
+		"--pod-uid=$(POD_UID)",
+		"--pod-labels-file=/etc/podinfo/labels",
+	}
+
+	if fileValidationInterval, ok := pod.Annotations[FileValidationIntervalAnnotation]; ok {
+		podAgentArgs = append(podAgentArgs, "--file-validation-interval="+fileValidationInterval)
+	}
+
 	podAgentContainer := corev1.Container{
 		Name:  p.config.Name,
 		Image: p.config.Image,
@@ -82,16 +98,7 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 				Name: "POD_UID", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.uid"}},
 			},
 		},
-		Args: []string{
-			"--log-encoding=" + p.config.LogEncoding,
-			"run",
-			"--host=" + p.config.Host,
-			"--port=" + p.config.Port,
-			"--namespace=$(NAMESPACE)",
-			"--pod-name=$(POD_NAME)",
-			"--pod-uid=$(POD_UID)",
-			"--pod-labels-file=/etc/podinfo/labels",
-		},
+		Args:         podAgentArgs,
 		VolumeMounts: volumeMounts,
 	}
 	pod.Spec.Containers = append(pod.Spec.Containers, podAgentContainer)

@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/devopstoday11/tarian/pkg/podagent"
@@ -88,6 +89,11 @@ func getCliApp() *cli.App {
 						Usage: "Kubernetes namespace where it is running",
 						Value: "tarian-system",
 					},
+					&cli.DurationFlag{
+						Name:  "file-validation-interval",
+						Usage: "How frequent podagent should validate files based on constraints",
+						Value: 3 * time.Second,
+					},
 				},
 				Action: run,
 			},
@@ -127,6 +133,8 @@ func run(c *cli.Context) error {
 	if namespace != "" {
 		agent.SetNamespace(namespace)
 	}
+
+	agent.SetFileValidationInterval(c.Duration("file-validation-interval"))
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)

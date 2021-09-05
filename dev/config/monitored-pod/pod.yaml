@@ -3,6 +3,7 @@ kind: Pod
 metadata:
   annotations:
     pod-agent.k8s.tarian.dev/threat-scan: "true"
+    pod-agent.k8s.tarian.dev/file-validation-interval: "7s"
   labels:
     run: nginx
   name: nginx

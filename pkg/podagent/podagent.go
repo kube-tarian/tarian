@@ -43,8 +43,9 @@ type PodAgent struct {
 	podLabels           []*tarianpb.Label
 	namespace           string
 
-	constraints     []*tarianpb.Constraint
-	constraintsLock sync.RWMutex
+	constraints            []*tarianpb.Constraint
+	constraintsLock        sync.RWMutex
+	fileValidationInterval time.Duration
 
 	cancelFunc context.CancelFunc
 	cancelCtx  context.Context
@@ -70,6 +71,10 @@ func (p *PodAgent) SetpodUID(uid string) {
 
 func (p *PodAgent) SetNamespace(namespace string) {
 	p.namespace = namespace
+}
+
+func (p *PodAgent) SetFileValidationInterval(t time.Duration) {
+	p.fileValidationInterval = t
 }
 
 func (p *PodAgent) Dial() {
@@ -192,7 +197,7 @@ func (p *PodAgent) loopValidateFileChecksums(ctx context.Context) error {
 		}
 
 		select {
-		case <-time.After(3 * time.Second):
+		case <-time.After(p.fileValidationInterval):
 		case <-ctx.Done():
 			return ctx.Err()
 		}
