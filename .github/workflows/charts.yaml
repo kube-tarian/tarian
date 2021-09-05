@@ -50,8 +50,21 @@ jobs:
 
       - name: Install charts
         run: |
-          helm install tarian-server ./charts/tarian-server -n tarian-system --set server.service.type=NodePort --set server.service.nodePort=31051
-          helm install tarian-cluster-agent ./charts/tarian-cluster-agent/ -n tarian-system --set clusterAgent.service.type=NodePort --set clusterAgent.service.nodePort=31052
+          APP_VERSION_TAG=$(helm show chart ./charts/tarian-server | grep appVersion | cut -d':' -f2 | tr -d ' "')
+          echo $APP_VERSION_TAG
+
+          set +e
+
+          IMAGE_EXIST=$(sudo docker manifest inspect ghcr.io/devopstoday11/tarian-server:$APP_VERSION_TAG > /dev/null 2>&1)$?
+          if [ $IMAGE_EXIST -gt 0 ]; then
+            CONDITIONAL_SERVER_IMAGE_TAG="--set server.image.tag=latest"
+            CONDITIONAL_CLUSTER_AGENT_IMAGE_TAG="--set clusterAgent.image.tag=latest --set webhook.podAgentContainerImage.tag=latest"
+          fi
+
+          set -e
+
+          helm install tarian-server ./charts/tarian-server -n tarian-system --set server.service.type=NodePort --set server.service.nodePort=31051 $CONDITIONAL_SERVER_IMAGE_TAG
+          helm install tarian-cluster-agent ./charts/tarian-cluster-agent/ -n tarian-system --set clusterAgent.service.type=NodePort --set clusterAgent.service.nodePort=31052 $CONDITIONAL_CLUSTER_AGENT_IMAGE_TAG
 
       - name: Wait for pods ready
         run: |
