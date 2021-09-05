@@ -45,25 +45,26 @@ func NewGetEventsCommand() *cli.Command {
 			table.SetColumnSeparator(" ")
 			table.SetCenterSeparator("-")
 			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.SetReflowDuringAutoWrap(false)
 
 			for _, e := range response.GetEvents() {
 				for _, t := range e.GetTargets() {
-
 					evt := strings.Builder{}
 					if t.GetViolatingProcesses() != nil {
-						evt.WriteString("violating_processes = ")
+						evt.WriteString("violating processes\n")
 						evt.WriteString(violatingProcessesToString(t.GetViolatingProcesses()))
 					}
 
 					if t.GetViolatedFiles() != nil {
-						evt.WriteString("violated_files = ")
+						evt.WriteString("violated files\n")
 						evt.WriteString(violatedFilesToString(t.GetViolatedFiles()))
 					}
 
 					if t.GetFalcoAlert() != nil {
-						evt.WriteString("falco_alert = ")
+						evt.WriteString("falco alert\n")
 						evt.WriteString(falcoAlertToString(t.GetFalcoAlert()))
 					}
+					evt.WriteString("\n")
 
 					table.Append(
 						[]string{
@@ -110,7 +111,12 @@ func violatedFilesToString(violatedFiles []*tarianpb.ViolatedFile) string {
 	str := strings.Builder{}
 
 	for i, f := range violatedFiles {
+		str.WriteString("name=")
 		str.WriteString(f.GetName())
+		str.WriteString(" actual-sha256=")
+		str.WriteString(f.GetActualSha256Sum())
+		str.WriteString(" expected-sha256=")
+		str.WriteString(f.GetExpectedSha256Sum())
 
 		if i < len(violatedFiles)-1 {
 			str.WriteString(", ")
