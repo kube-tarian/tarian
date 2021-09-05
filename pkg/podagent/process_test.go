@@ -30,11 +30,11 @@ func TestNewProcessesFromPsutil(t *testing.T) {
 	processes := NewProcessesFromPsutil(psutilProcesses)
 	require.Equal(t, len(psutilProcesses), len(processes))
 
-	psutilProcess := psutilProcesses[len(psutilProcesses)-1]
+	psutilProcess := psutilProcesses[0]
 	name, err := psutilProcess.Name()
 	require.Nil(t, err)
 
-	process := processes[len(processes)-1]
+	process := processes[0]
 	assert.Equal(t, psutilProcess.Pid, process.GetPid())
 	assert.Equal(t, name, process.GetName())
 }
