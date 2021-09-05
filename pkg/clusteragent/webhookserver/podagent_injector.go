@@ -28,7 +28,7 @@ type PodAgentContainerConfig struct {
 }
 
 const (
-	InjectionRequestAnnotation = "pod-agent.k8s.tarian.dev/inject"
+	InjectionRequestAnnotation = "pod-agent.k8s.tarian.dev/threat-scan"
 )
 
 // podAnnotator adds an annotation to every incoming pods.

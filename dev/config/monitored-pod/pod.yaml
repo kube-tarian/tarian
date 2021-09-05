@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations:
-    pod-agent.k8s.tarian.dev/inject: "true"
+    pod-agent.k8s.tarian.dev/threat-scan: "true"
   labels:
     run: nginx
   name: nginx
