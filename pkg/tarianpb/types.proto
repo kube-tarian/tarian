@@ -78,7 +78,5 @@ message Event {
 	google.protobuf.Timestamp clientTimestamp = 5;
 	google.protobuf.Timestamp alertSentAt = 6;
 
-	// TODO: reference to the original constraint, probably by id?
-
 	repeated Target targets = 7;
 }
