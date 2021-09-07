@@ -205,11 +205,11 @@ func (p *PodAgent) loopValidateFileChecksums(ctx context.Context) error {
 }
 
 func (p *PodAgent) ReportViolationsToClusterAgent(processes map[int32]*Process) {
-	violatingProcesses := make([]*tarianpb.Process, len(processes))
+	violatedProcesses := make([]*tarianpb.Process, len(processes))
 
 	i := 0
 	for _, p := range processes {
-		violatingProcesses[i] = &tarianpb.Process{Pid: p.GetPid(), Name: p.GetName()}
+		violatedProcesses[i] = &tarianpb.Process{Pid: p.GetPid(), Name: p.GetName()}
 		i++
 	}
 
@@ -225,7 +225,7 @@ func (p *PodAgent) ReportViolationsToClusterAgent(processes map[int32]*Process) 
 						Namespace: p.namespace,
 						Labels:    p.podLabels,
 					},
-					ViolatingProcesses: violatingProcesses,
+					ViolatingProcesses: violatedProcesses,
 				},
 			},
 		},

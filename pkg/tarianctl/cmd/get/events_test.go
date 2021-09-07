@@ -7,18 +7,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestViolatingProcessesToStringShort(t *testing.T) {
+func TestViolatedProcessesToStringShort(t *testing.T) {
 	processes := []*tarianpb.Process{
 		{Pid: 1, Name: "pause1"},
 		{Pid: 2, Name: "pause2"},
 		{Pid: 3, Name: "pause3"},
 	}
 
-	str := violatingProcessesToString(processes)
+	str := violatedProcessesToString(processes)
 	assert.Equal(t, "1:pause1, 2:pause2, 3:pause3", str)
 }
 
-func TestViolatingProcessesToStringLong(t *testing.T) {
+func TestViolatedProcessesToStringLong(t *testing.T) {
 	processes := []*tarianpb.Process{
 		{Pid: 1, Name: "pause1"},
 		{Pid: 2, Name: "pause2"},
@@ -38,5 +38,5 @@ func TestViolatingProcessesToStringLong(t *testing.T) {
 	expected := "1:pause1, 2:pause2, 3:pause3, 4:pause4, 5:pause5, 6:pause6, "
 	expected += "7:pause7, 8:pause8, 9:pause9, 10:pause10, 11:pause11, "
 	expected += "... 2 more"
-	assert.Equal(t, expected, violatingProcessesToString(processes))
+	assert.Equal(t, expected, violatedProcessesToString(processes))
 }

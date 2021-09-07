@@ -88,7 +88,7 @@ func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) error {
 		labels["pod_uid"] = target.GetPod().GetUid()
 
 		if target.GetViolatingProcesses() != nil {
-			labels["violating_processes"] = violatingProcessesToString(target.GetViolatingProcesses())
+			labels["violated_processes"] = violatedProcessesToString(target.GetViolatingProcesses())
 		}
 
 		if target.GetViolatedFiles() != nil {
@@ -118,7 +118,7 @@ func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) error {
 	return nil
 }
 
-func violatingProcessesToString(processes []*tarianpb.Process) string {
+func violatedProcessesToString(processes []*tarianpb.Process) string {
 	str := strings.Builder{}
 
 	for i, p := range processes {

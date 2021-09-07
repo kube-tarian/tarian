@@ -51,8 +51,8 @@ func NewGetEventsCommand() *cli.Command {
 				for _, t := range e.GetTargets() {
 					evt := strings.Builder{}
 					if t.GetViolatingProcesses() != nil {
-						evt.WriteString("violating processes\n")
-						evt.WriteString(violatingProcessesToString(t.GetViolatingProcesses()))
+						evt.WriteString("violated processes\n")
+						evt.WriteString(violatedProcessesToString(t.GetViolatingProcesses()))
 					}
 
 					if t.GetViolatedFiles() != nil {
@@ -84,7 +84,7 @@ func NewGetEventsCommand() *cli.Command {
 	}
 }
 
-func violatingProcessesToString(processes []*tarianpb.Process) string {
+func violatedProcessesToString(processes []*tarianpb.Process) string {
 	str := strings.Builder{}
 
 	for i, p := range processes {

@@ -20,13 +20,13 @@ func TestPodAgentReportViolationsToClusterAgent(t *testing.T) {
 	defer e2eHelper.DropDatabase()
 	defer e2eHelper.Stop()
 
-	violatingProcesses := make(map[int32]*podagent.Process)
-	violatingProcesses[1] = &podagent.Process{Pid: 1, Name: "unknown_process"}
-	violatingProcesses[2] = &podagent.Process{Pid: 2, Name: "unknown_process_2"}
+	violatedProcesses := make(map[int32]*podagent.Process)
+	violatedProcesses[1] = &podagent.Process{Pid: 1, Name: "unknown_process"}
+	violatedProcesses[2] = &podagent.Process{Pid: 2, Name: "unknown_process_2"}
 
 	// Report violations to cluster agent
 	podAgent := e2eHelper.podAgent
-	podAgent.ReportViolationsToClusterAgent(violatingProcesses)
+	podAgent.ReportViolationsToClusterAgent(violatedProcesses)
 
 	// Verify get events
 	grpcConn, err := grpc.Dial(":"+e2eServerPort, grpc.WithInsecure())
