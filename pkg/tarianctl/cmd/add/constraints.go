@@ -249,7 +249,7 @@ func buildConstraintFromViolatedPod(podName string, c *cli.Context, eventClient 
 	// build process rules
 	allowedProcesses := []*tarianpb.AllowedProcessRule{}
 	for _, target := range targets {
-		for _, p := range target.ViolatingProcesses {
+		for _, p := range target.ViolatedProcesses {
 			processName := p.GetName()
 			allowedProcesses = append(allowedProcesses, &tarianpb.AllowedProcessRule{Regex: &processName})
 		}

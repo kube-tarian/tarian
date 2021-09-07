@@ -87,8 +87,8 @@ func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) error {
 		labels["pod_name"] = target.GetPod().GetName()
 		labels["pod_uid"] = target.GetPod().GetUid()
 
-		if target.GetViolatingProcesses() != nil {
-			labels["violated_processes"] = violatedProcessesToString(target.GetViolatingProcesses())
+		if target.GetViolatedProcesses() != nil {
+			labels["violated_processes"] = violatedProcessesToString(target.GetViolatedProcesses())
 		}
 
 		if target.GetViolatedFiles() != nil {

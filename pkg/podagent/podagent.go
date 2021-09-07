@@ -225,7 +225,7 @@ func (p *PodAgent) ReportViolationsToClusterAgent(processes map[int32]*Process) 
 						Namespace: p.namespace,
 						Labels:    p.podLabels,
 					},
-					ViolatingProcesses: violatedProcesses,
+					ViolatedProcesses: violatedProcesses,
 				},
 			},
 		},

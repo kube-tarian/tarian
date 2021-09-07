@@ -50,9 +50,9 @@ func NewGetEventsCommand() *cli.Command {
 			for _, e := range response.GetEvents() {
 				for _, t := range e.GetTargets() {
 					evt := strings.Builder{}
-					if t.GetViolatingProcesses() != nil {
+					if t.GetViolatedProcesses() != nil {
 						evt.WriteString("violated processes\n")
-						evt.WriteString(violatedProcessesToString(t.GetViolatingProcesses()))
+						evt.WriteString(violatedProcessesToString(t.GetViolatedProcesses()))
 					}
 
 					if t.GetViolatedFiles() != nil {
