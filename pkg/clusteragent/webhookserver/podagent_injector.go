@@ -71,7 +71,7 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 
 	podAgentArgs := []string{
 		"--log-encoding=" + p.config.LogEncoding,
-		"run",
+		"threat-scan",
 		"--host=" + p.config.Host,
 		"--port=" + p.config.Port,
 		"--namespace=$(NAMESPACE)",

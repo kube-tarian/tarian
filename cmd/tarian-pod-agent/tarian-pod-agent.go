@@ -52,12 +52,12 @@ func getCliApp() *cli.App {
 			},
 		},
 		Action: func(ctx *cli.Context) error {
-			return ctx.App.Command("run").Run(ctx)
+			return ctx.App.Command("threat-scan").Run(ctx)
 		},
 		Commands: []*cli.Command{
 			{
-				Name:  "run",
-				Usage: "Run the pod agent",
+				Name:  "threat-scan",
+				Usage: "Run the pod agent to scan threats",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "host",
@@ -95,13 +95,13 @@ func getCliApp() *cli.App {
 						Value: 3 * time.Second,
 					},
 				},
-				Action: run,
+				Action: threatScan,
 			},
 		},
 	}
 }
 
-func run(c *cli.Context) error {
+func threatScan(c *cli.Context) error {
 	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
 	podagent.SetLogger(logger)
 	logger.Infow("tarian-pod-agent is running")
