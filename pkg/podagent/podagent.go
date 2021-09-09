@@ -96,7 +96,32 @@ func (p *PodAgent) GracefulStop() {
 	}
 }
 
-func (p *PodAgent) Run() {
+func (p *PodAgent) RunThreatScan() {
+	p.Dial()
+	defer p.grpcConn.Close()
+
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+
+	go func() {
+		p.loopSyncConstraints(p.cancelCtx)
+		wg.Done()
+	}()
+
+	go func() {
+		p.loopValidateProcesses(p.cancelCtx)
+		wg.Done()
+	}()
+
+	go func() {
+		p.loopValidateFileChecksums(p.cancelCtx)
+		wg.Done()
+	}()
+
+	wg.Wait()
+}
+
+func (p *PodAgent) RunRegister() {
 	p.Dial()
 	defer p.grpcConn.Close()
 

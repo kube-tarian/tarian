@@ -97,6 +97,48 @@ func getCliApp() *cli.App {
 				},
 				Action: threatScan,
 			},
+			{
+				Name:  "register",
+				Usage: "Run the pod agent to register known processes and files as a constraint",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "host",
+						Usage: "Host address of the cluster agent to communicate with",
+						Value: defaultClusterAgentHost,
+					},
+					&cli.StringFlag{
+						Name:  "port",
+						Usage: "Host port of the cluster agent to communicate with",
+						Value: defaultClusterAgentPort,
+					},
+					&cli.StringFlag{
+						Name:  "pod-labels-file",
+						Usage: "File path containing pod labels. This is intended to be a file from Kubernetes DownwardAPIVolumeFile",
+						Value: "",
+					},
+					&cli.StringFlag{
+						Name:  "pod-name",
+						Usage: "Pod name where it is running. This is intended to be set from Downward API",
+						Value: "",
+					},
+					&cli.StringFlag{
+						Name:  "pod-uid",
+						Usage: "Pod UID where it is running. This is intended to be set from Downward API",
+						Value: "",
+					},
+					&cli.StringFlag{
+						Name:  "namespace",
+						Usage: "Kubernetes namespace where it is running",
+						Value: "tarian-system",
+					},
+					&cli.DurationFlag{
+						Name:  "file-validation-interval",
+						Usage: "How frequent podagent should validate files based on constraints",
+						Value: 3 * time.Second,
+					},
+				},
+				Action: register,
+			},
 		},
 	}
 }
@@ -104,7 +146,7 @@ func getCliApp() *cli.App {
 func threatScan(c *cli.Context) error {
 	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
 	podagent.SetLogger(logger)
-	logger.Infow("tarian-pod-agent is running")
+	logger.Infow("tarian-pod-agent is running in threat-scan mode")
 
 	agent := podagent.NewPodAgent(c.String("host") + ":" + c.String("port"))
 
@@ -146,7 +188,58 @@ func threatScan(c *cli.Context) error {
 		agent.GracefulStop()
 	}()
 
-	agent.Run()
+	agent.RunThreatScan()
+	logger.Info("tarian-pod-agent shutdown gracefully")
+
+	return nil
+}
+
+func register(c *cli.Context) error {
+	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
+	podagent.SetLogger(logger)
+	logger.Infow("tarian-pod-agent is running in register mode")
+
+	agent := podagent.NewPodAgent(c.String("host") + ":" + c.String("port"))
+
+	podLabelsFile := c.String("pod-labels-file")
+	if podLabelsFile != "" {
+		podLabels, err := readLabelsFromFile(podLabelsFile)
+
+		if err != nil {
+			logger.Errorw("failed reading pod-labels-file", "err", err)
+		}
+
+		agent.SetPodLabels(podLabels)
+	}
+
+	podName := c.String("pod-name")
+	if podName != "" {
+		agent.SetPodName(podName)
+	}
+
+	podUID := c.String("pod-uid")
+	if podUID != "" {
+		agent.SetpodUID(podUID)
+	}
+
+	namespace := c.String("namespace")
+	if namespace != "" {
+		agent.SetNamespace(namespace)
+	}
+
+	agent.SetFileValidationInterval(c.Duration("file-validation-interval"))
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		sig := <-sigCh
+		logger.Infow("got sigterm signal, attempting graceful shutdown", "signal", sig)
+
+		agent.GracefulStop()
+	}()
+
+	agent.RunRegister()
 	logger.Info("tarian-pod-agent shutdown gracefully")
 
 	return nil
