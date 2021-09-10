@@ -124,6 +124,11 @@ func getCliApp() *cli.App {
 						Usage: "CA file in x509 matching --falco-grpc-client-cert-file",
 						Value: "",
 					},
+					&cli.BoolFlag{
+						Name:  "enable-add-constraint",
+						Usage: "Enable add constraint RPC. This is needed to support pod agent running in register mode.",
+						Value: false,
+					},
 				},
 				Action: run,
 			},
@@ -283,6 +288,7 @@ func newClusterAgentConfigFromCliContext(c *cli.Context, logger *zap.SugaredLogg
 		ServerGrpcDialOptions:  dialOpts,
 		EnableFalcoIntegration: enableFalcoIntegration,
 		FalcoClientConfig:      falcoClientConfig,
+		EnableAddConstraint:    c.Bool("enable-add-constraint"),
 	}
 
 	return config

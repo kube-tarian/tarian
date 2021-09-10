@@ -10,6 +10,7 @@ type ClusterAgentConfig struct {
 	ServerAddress          string
 	ServerGrpcDialOptions  []grpc.DialOption
 	EnableFalcoIntegration bool
+	EnableAddConstraint    bool
 	FalcoClientConfig      *falcoclient.Config
 }
 
@@ -24,6 +25,8 @@ func NewClusterAgent(config *ClusterAgentConfig) *ClusterAgent {
 	grpcServer := grpc.NewServer()
 
 	configServer := NewConfigServer(config.ServerAddress, config.ServerGrpcDialOptions)
+	configServer.EnableAddConstraint(config.EnableAddConstraint)
+
 	eventServer := NewEventServer(config.ServerAddress, config.ServerGrpcDialOptions)
 
 	tarianpb.RegisterConfigServer(grpcServer, configServer)

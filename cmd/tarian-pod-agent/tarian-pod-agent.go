@@ -164,6 +164,11 @@ func threatScan(c *cli.Context) error {
 	podName := c.String("pod-name")
 	if podName != "" {
 		agent.SetPodName(podName)
+	} else {
+		hostname, err := os.Hostname()
+		if err == nil {
+			agent.SetPodName(hostname)
+		}
 	}
 
 	podUID := c.String("pod-uid")
@@ -215,6 +220,11 @@ func register(c *cli.Context) error {
 	podName := c.String("pod-name")
 	if podName != "" {
 		agent.SetPodName(podName)
+	} else {
+		hostname, err := os.Hostname()
+		if err == nil {
+			agent.SetPodName(hostname)
+		}
 	}
 
 	podUID := c.String("pod-uid")

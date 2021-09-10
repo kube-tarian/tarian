@@ -28,7 +28,8 @@ type PodAgentContainerConfig struct {
 }
 
 const (
-	InjectionRequestAnnotation       = "pod-agent.k8s.tarian.dev/threat-scan"
+	ThreatScanAnnotation             = "pod-agent.k8s.tarian.dev/threat-scan"
+	RegisterAnnotation               = "pod-agent.k8s.tarian.dev/register"
 	FileValidationIntervalAnnotation = "pod-agent.k8s.tarian.dev/file-validation-interval"
 )
 
@@ -45,8 +46,11 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 		return admission.Allowed("no annotation found")
 	}
 
-	if _, ok := pod.Annotations[InjectionRequestAnnotation]; !ok {
-		return admission.Allowed("annotation " + InjectionRequestAnnotation + " not found")
+	_, threatScanAnnotationPresent := pod.Annotations[ThreatScanAnnotation]
+	_, registerAnnotationPresent := pod.Annotations[RegisterAnnotation]
+
+	if !threatScanAnnotationPresent && !registerAnnotationPresent {
+		return admission.Allowed("annotation " + ThreatScanAnnotation + " or " + RegisterAnnotation + " not found")
 	}
 
 	for _, c := range pod.Spec.Containers {
@@ -69,9 +73,14 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 		}
 	}
 
+	podAgentRunMode := "threat-scan"
+	if registerAnnotationPresent {
+		podAgentRunMode = "register"
+	}
+
 	podAgentArgs := []string{
 		"--log-encoding=" + p.config.LogEncoding,
-		"threat-scan",
+		podAgentRunMode,
 		"--host=" + p.config.Host,
 		"--port=" + p.config.Port,
 		"--namespace=$(NAMESPACE)",

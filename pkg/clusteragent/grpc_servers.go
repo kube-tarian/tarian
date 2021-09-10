@@ -32,6 +32,8 @@ type ConfigServer struct {
 
 	grpcConn     *grpc.ClientConn
 	configClient tarianpb.ConfigClient
+
+	enableAddConstraint bool
 }
 
 func NewConfigServer(tarianServerAddress string, opts []grpc.DialOption) *ConfigServer {
@@ -47,6 +49,10 @@ func NewConfigServer(tarianServerAddress string, opts []grpc.DialOption) *Config
 	return &ConfigServer{grpcConn: grpcConn, configClient: tarianpb.NewConfigClient(grpcConn)}
 }
 
+func (cs *ConfigServer) EnableAddConstraint(value bool) {
+	cs.enableAddConstraint = value
+}
+
 func (cs *ConfigServer) GetConstraints(reqCtx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
 	logger.Debug("Received get config RPC")
 
@@ -58,12 +64,30 @@ func (cs *ConfigServer) GetConstraints(reqCtx context.Context, request *tarianpb
 	return r, err
 }
 
-func (cs *ConfigServer) AddConstraint(ctx context.Context, request *tarianpb.AddConstraintRequest) (*tarianpb.AddConstraintResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "Method AddConstraint is not supported in tarian-cluster-agent, send it to tarian-server instead.")
+func (cs *ConfigServer) AddConstraint(reqCtx context.Context, request *tarianpb.AddConstraintRequest) (*tarianpb.AddConstraintResponse, error) {
+	if !cs.enableAddConstraint {
+		return nil, status.Errorf(codes.Unimplemented, "Method AddConstraint is disabled in tarian-cluster-agent")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r, err := cs.configClient.AddConstraint(ctx, request)
+
+	return r, err
 }
 
-func (cs *ConfigServer) RemoveConstraint(ctx context.Context, request *tarianpb.RemoveConstraintRequest) (*tarianpb.RemoveConstraintResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "Method RemoveConstraint is not supported in tarian-cluster-agent, send it to tarian-server instead.")
+func (cs *ConfigServer) RemoveConstraint(reqCtx context.Context, request *tarianpb.RemoveConstraintRequest) (*tarianpb.RemoveConstraintResponse, error) {
+	if !cs.enableAddConstraint {
+		return nil, status.Errorf(codes.Unimplemented, "Method RemoveConstraint is not supported in tarian-cluster-agent, send it to tarian-server instead.")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	r, err := cs.configClient.RemoveConstraint(ctx, request)
+
+	return r, err
 }
 
 func (cs *ConfigServer) Close() {
