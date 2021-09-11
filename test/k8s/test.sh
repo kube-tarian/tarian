@@ -46,3 +46,9 @@ echo $'test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/c
 
 test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- http://alertmanager.tarian-system.svc:9093/api/v2/alerts | jq '. | length') -gt 1 \
   || (echo "expected alerts created" && false)
+
+./bin/tarianctl --server-address=localhost:31051 get constraints
+
+
+# test register constraint using annotation
+./bin/tarianctl --server-address=localhost:31051 get constraints | grep run=nginx2

@@ -20,6 +20,7 @@ spec:
         - --log-level=debug
         - run
         - "--server-address=tarian-server:80"
+        - --enable-add-constraint
         ports:
         - containerPort: 50052
           name: grpc
