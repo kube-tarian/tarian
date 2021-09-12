@@ -47,7 +47,7 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 	}
 
 	_, threatScanAnnotationPresent := pod.Annotations[ThreatScanAnnotation]
-	_, registerAnnotationPresent := pod.Annotations[RegisterAnnotation]
+	registerAnnotationValue, registerAnnotationPresent := pod.Annotations[RegisterAnnotation]
 
 	if !threatScanAnnotationPresent && !registerAnnotationPresent {
 		return admission.Allowed("annotation " + ThreatScanAnnotation + " or " + RegisterAnnotation + " not found")
@@ -73,20 +73,24 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 		}
 	}
 
-	podAgentRunMode := "threat-scan"
+	podAgentCommand := "threat-scan"
 	if registerAnnotationPresent {
-		podAgentRunMode = "register"
+		podAgentCommand = "register"
 	}
 
 	podAgentArgs := []string{
 		"--log-encoding=" + p.config.LogEncoding,
-		podAgentRunMode,
+		podAgentCommand,
 		"--host=" + p.config.Host,
 		"--port=" + p.config.Port,
 		"--namespace=$(NAMESPACE)",
 		"--pod-name=$(POD_NAME)",
 		"--pod-uid=$(POD_UID)",
 		"--pod-labels-file=/etc/podinfo/labels",
+	}
+
+	if registerAnnotationPresent {
+		podAgentArgs = append(podAgentArgs, "--register-rules="+registerAnnotationValue)
 	}
 
 	if fileValidationInterval, ok := pod.Annotations[FileValidationIntervalAnnotation]; ok {

@@ -50,6 +50,9 @@ type PodAgent struct {
 
 	cancelFunc context.CancelFunc
 	cancelCtx  context.Context
+
+	enableRegisterProcesses bool
+	enableRegisterFiles     bool
 }
 
 func NewPodAgent(clusterAgentAddress string) *PodAgent {
@@ -76,6 +79,14 @@ func (p *PodAgent) SetNamespace(namespace string) {
 
 func (p *PodAgent) SetFileValidationInterval(t time.Duration) {
 	p.fileValidationInterval = t
+}
+
+func (p *PodAgent) EnableRegisterProcesses() {
+	p.enableRegisterProcesses = true
+}
+
+func (p *PodAgent) EnableRegisterFiles() {
+	p.enableRegisterFiles = true
 }
 
 func (p *PodAgent) Dial() {
@@ -127,17 +138,20 @@ func (p *PodAgent) RunRegister() {
 	defer p.grpcConn.Close()
 
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(1)
 
 	go func() {
 		p.loopSyncConstraints(p.cancelCtx)
 		wg.Done()
 	}()
 
-	go func() {
-		p.loopRegisterProcesses(p.cancelCtx)
-		wg.Done()
-	}()
+	if p.enableRegisterProcesses {
+		wg.Add(1)
+		go func() {
+			p.loopRegisterProcesses(p.cancelCtx)
+			wg.Done()
+		}()
+	}
 
 	// go func() {
 	// p.loopValidateFileChecksums(p.cancelCtx)

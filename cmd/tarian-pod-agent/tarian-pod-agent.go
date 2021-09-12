@@ -136,6 +136,11 @@ func getCliApp() *cli.App {
 						Usage: "How frequent podagent should validate files based on constraints",
 						Value: 3 * time.Second,
 					},
+					&cli.StringFlag{
+						Name:  "register-rules",
+						Usage: "Type of rules that should be automatically registered.",
+						Value: "processes,files",
+					},
 				},
 				Action: register,
 			},
@@ -235,6 +240,22 @@ func register(c *cli.Context) error {
 	namespace := c.String("namespace")
 	if namespace != "" {
 		agent.SetNamespace(namespace)
+	}
+
+	registerRules := strings.Split(c.String("register-rules"), ",")
+	for _, rule := range registerRules {
+		switch strings.TrimSpace(rule) {
+		case "processes":
+			logger.Infow("enabled auto register for processes")
+			agent.EnableRegisterProcesses()
+		case "files":
+			logger.Infow("enabled auto register for files")
+			agent.EnableRegisterFiles()
+		case "all":
+			logger.Infow("enabled auto register for all rules")
+			agent.EnableRegisterProcesses()
+			agent.EnableRegisterFiles()
+		}
 	}
 
 	agent.SetFileValidationInterval(c.Duration("file-validation-interval"))

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations:
-    pod-agent.k8s.tarian.dev/register: "true"
+    pod-agent.k8s.tarian.dev/register: "processes"
     pod-agent.k8s.tarian.dev/file-validation-interval: "7s"
   labels:
     run: nginx2
