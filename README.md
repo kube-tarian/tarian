@@ -149,4 +149,5 @@ To disable it, you can set the alertManagerAddress value to empty.
 
 ## Falco Integration
 
-TODO
+See [docs/falco-integration.md](docs/falco-integration.md)
+
