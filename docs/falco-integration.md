@@ -20,7 +20,7 @@ For convenient, you can use [Cert Manager](https://cert-manager.io/) to manage t
 
 2. Setup certs
 
-```
+```yaml
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
