@@ -5,7 +5,9 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"sync"
@@ -53,6 +55,7 @@ type PodAgent struct {
 
 	enableRegisterProcesses bool
 	enableRegisterFiles     bool
+	registerFilePaths       []string
 }
 
 func NewPodAgent(clusterAgentAddress string) *PodAgent {
@@ -87,6 +90,10 @@ func (p *PodAgent) EnableRegisterProcesses() {
 
 func (p *PodAgent) EnableRegisterFiles() {
 	p.enableRegisterFiles = true
+}
+
+func (p *PodAgent) SetRegisterFilePaths(paths []string) {
+	p.registerFilePaths = paths
 }
 
 func (p *PodAgent) Dial() {
@@ -153,10 +160,13 @@ func (p *PodAgent) RunRegister() {
 		}()
 	}
 
-	// go func() {
-	// p.loopValidateFileChecksums(p.cancelCtx)
-	// wg.Done()
-	// }()
+	if p.enableRegisterFiles {
+		wg.Add(1)
+		go func() {
+			p.loopRegisterFileChecksums(p.cancelCtx)
+			wg.Done()
+		}()
+	}
 
 	wg.Wait()
 }
@@ -507,4 +517,96 @@ func matchLabelsFromLabels(labels []*tarianpb.Label) []*tarianpb.MatchLabel {
 	}
 
 	return matchLabels
+}
+
+func (p *PodAgent) loopRegisterFileChecksums(ctx context.Context) error {
+	for {
+		p.registerFileChecksums(ctx)
+
+		select {
+		case <-time.After(p.fileValidationInterval):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+func (p *PodAgent) registerFileChecksums(ctx context.Context) error {
+	registeredSha256Sums := make(map[string]string)
+
+	p.constraintsLock.RLock()
+	for _, constraint := range p.constraints {
+		if constraint.GetAllowedFiles() == nil {
+			continue
+		}
+
+		for _, allowedFile := range constraint.GetAllowedFiles() {
+			if allowedFile.GetName() == "" || allowedFile.GetSha256Sum() == "" {
+				continue
+			}
+
+			registeredSha256Sums[allowedFile.GetName()] = allowedFile.GetSha256Sum()
+		}
+	}
+	p.constraintsLock.RUnlock()
+
+	for _, registerFilePath := range p.registerFilePaths {
+		err := filepath.WalkDir(registerFilePath, func(path string, f fs.DirEntry, err error) error {
+			if f.IsDir() {
+				return nil
+			}
+
+			fd, err2 := os.Open(path)
+			if err2 != nil {
+				logger.Warnw("can not open file to check the sha256 checksum", "file", path, "err", err)
+			}
+
+			s256 := sha256.New()
+			if _, err := io.Copy(s256, fd); err != nil {
+				logger.Errorw("can not read file to check the sha256 checksum", "file", path, "err", err)
+			}
+
+			actualSha256Sum := fmt.Sprintf("%x", s256.Sum(nil))
+			if expectedSha256Sum, ok := registeredSha256Sums[path]; ok {
+				if actualSha256Sum != expectedSha256Sum {
+					// TODO: registered file but checksum doesn't match
+					logger.Infow("violated file", "name", path)
+				}
+			} else {
+				logger.Infow("found new file, going to register", "name", path, "checksum", actualSha256Sum)
+
+				pathSha := sha256.New()
+				pathSha.Write([]byte(path))
+				pathShaStr := fmt.Sprintf("%x", pathSha.Sum(nil))[:10]
+
+				req := &tarianpb.AddConstraintRequest{
+					Constraint: &tarianpb.Constraint{
+						Kind:      tarianpb.KindConstraint,
+						Namespace: p.namespace,
+						Name:      p.podName + "-" + pathShaStr + "-" + actualSha256Sum[:10],
+						Selector: &tarianpb.Selector{
+							MatchLabels: matchLabelsFromLabels(p.podLabels),
+						},
+						AllowedFiles: []*tarianpb.AllowedFileRule{{Name: path, Sha256Sum: &actualSha256Sum}},
+					},
+				}
+
+				response, err := p.configClient.AddConstraint(context.Background(), req)
+
+				if err != nil {
+					logger.Errorw("error while registering file constraint", "name", path, "err", err)
+				} else {
+					logger.Debugw("add constraint response", "response", response)
+				}
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			logger.Errorw("error while traversing registerFilePaths", "path", registerFilePath, "err", err)
+		}
+	}
+
+	return nil
 }

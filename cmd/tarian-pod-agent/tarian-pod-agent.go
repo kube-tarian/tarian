@@ -141,6 +141,11 @@ func getCliApp() *cli.App {
 						Usage: "Type of rules that should be automatically registered.",
 						Value: "processes,files",
 					},
+					&cli.StringFlag{
+						Name:  "register-file-paths",
+						Usage: "The root directories of which pod-agent should register the checksums",
+						Value: "",
+					},
 				},
 				Action: register,
 			},
@@ -257,6 +262,13 @@ func register(c *cli.Context) error {
 			agent.EnableRegisterFiles()
 		}
 	}
+
+	registerFilePathsArg := strings.Split(c.String("register-file-paths"), ",")
+	registerFilePaths := []string{}
+	for _, path := range registerFilePathsArg {
+		registerFilePaths = append(registerFilePaths, strings.TrimSpace(path))
+	}
+	agent.SetRegisterFilePaths(registerFilePaths)
 
 	agent.SetFileValidationInterval(c.Duration("file-validation-interval"))
 

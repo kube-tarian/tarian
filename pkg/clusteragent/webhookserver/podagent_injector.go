@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
@@ -59,8 +60,9 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 		}
 	}
 
+	podInfoPath := "/etc/podinfo"
 	// mount all volumes into pod agent
-	volumeMounts := []corev1.VolumeMount{{Name: "podinfo", MountPath: "/etc/podinfo"}}
+	volumeMounts := []corev1.VolumeMount{{Name: "podinfo", MountPath: podInfoPath}}
 	mountNamesAdded := make(map[string]struct{})
 	for _, c := range pod.Spec.Containers {
 		for _, vm := range c.VolumeMounts {
@@ -91,6 +93,22 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 
 	if registerAnnotationPresent {
 		podAgentArgs = append(podAgentArgs, "--register-rules="+registerAnnotationValue)
+
+		mountPathsAdded := make(map[string]struct{})
+		mountPaths := []string{}
+		for _, vm := range volumeMounts {
+			if _, found := mountPathsAdded[vm.MountPath]; found {
+				continue
+			}
+
+			mountNamesAdded[vm.MountPath] = struct{}{}
+
+			if vm.MountPath != podInfoPath && vm.MountPath != "/var/run/secrets/kubernetes.io/serviceaccount" {
+				mountPaths = append(mountPaths, vm.MountPath)
+			}
+		}
+
+		podAgentArgs = append(podAgentArgs, "--register-file-paths="+strings.Join(mountPaths, ","))
 	}
 
 	if fileValidationInterval, ok := pod.Annotations[FileValidationIntervalAnnotation]; ok {
