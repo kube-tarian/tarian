@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -580,8 +581,24 @@ func (p *PodAgent) registerFileChecksums(ctx context.Context) error {
 			actualSha256Sum := fmt.Sprintf("%x", s256.Sum(nil))
 			if expectedSha256Sum, ok := registeredSha256Sums[path]; ok {
 				if actualSha256Sum != expectedSha256Sum {
-					// TODO: registered file but checksum doesn't match
-					logger.Infow("violated file", "name", path)
+					logger.Infow("found violated file during auto registration, going to replace with the new checksum", "name", path, "old_sha256", expectedSha256Sum, "new_sha256", actualSha256Sum)
+
+					pathSha := sha256.New()
+					pathSha.Write([]byte(path))
+					pathShaStr := fmt.Sprintf("%x", pathSha.Sum(nil))[:10]
+
+					err := p.deleteConstraintByNamePrefix(p.podName + "-" + pathShaStr + "-")
+					if err != nil {
+						logger.Errorw("error while deleting constraint with previous sha256Sum", "file", path, "err", err)
+					}
+
+					response, err := p.createConstraintWithFileRule(p.podName+"-"+pathShaStr+"-"+actualSha256Sum[:10], path, actualSha256Sum)
+
+					if err != nil {
+						logger.Errorw("error while registering file constraint", "name", path, "err", err)
+					} else {
+						logger.Debugw("add constraint response", "response", response)
+					}
 				}
 			} else {
 				logger.Infow("found new file, going to register", "name", path, "checksum", actualSha256Sum)
@@ -590,19 +607,7 @@ func (p *PodAgent) registerFileChecksums(ctx context.Context) error {
 				pathSha.Write([]byte(path))
 				pathShaStr := fmt.Sprintf("%x", pathSha.Sum(nil))[:10]
 
-				req := &tarianpb.AddConstraintRequest{
-					Constraint: &tarianpb.Constraint{
-						Kind:      tarianpb.KindConstraint,
-						Namespace: p.namespace,
-						Name:      p.podName + "-" + pathShaStr + "-" + actualSha256Sum[:10],
-						Selector: &tarianpb.Selector{
-							MatchLabels: matchLabelsFromLabels(p.podLabels),
-						},
-						AllowedFiles: []*tarianpb.AllowedFileRule{{Name: path, Sha256Sum: &actualSha256Sum}},
-					},
-				}
-
-				response, err := p.configClient.AddConstraint(context.Background(), req)
+				response, err := p.createConstraintWithFileRule(p.podName+"-"+pathShaStr+"-"+actualSha256Sum[:10], path, actualSha256Sum)
 
 				if err != nil {
 					logger.Errorw("error while registering file constraint", "name", path, "err", err)
@@ -616,6 +621,43 @@ func (p *PodAgent) registerFileChecksums(ctx context.Context) error {
 
 		if err != nil {
 			logger.Errorw("error while traversing registerFilePaths", "path", registerFilePath, "err", err)
+		}
+	}
+
+	return nil
+}
+
+func (p *PodAgent) createConstraintWithFileRule(constraintName, path, sha256Sum string) (*tarianpb.AddConstraintResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	req := &tarianpb.AddConstraintRequest{
+		Constraint: &tarianpb.Constraint{
+			Kind:      tarianpb.KindConstraint,
+			Namespace: p.namespace,
+			Name:      constraintName,
+			Selector: &tarianpb.Selector{
+				MatchLabels: matchLabelsFromLabels(p.podLabels),
+			},
+			AllowedFiles: []*tarianpb.AllowedFileRule{{Name: path, Sha256Sum: &sha256Sum}},
+		},
+	}
+
+	response, err := p.configClient.AddConstraint(ctx, req)
+
+	return response, err
+}
+
+func (p *PodAgent) deleteConstraintByNamePrefix(prefix string) error {
+	for _, c := range p.constraints {
+		if strings.HasPrefix(c.GetName(), prefix) {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			_, err := p.configClient.RemoveConstraint(ctx, &tarianpb.RemoveConstraintRequest{Namespace: p.namespace, Name: c.GetName()})
+			cancel()
+
+			if err != nil {
+				return err
+			}
 		}
 	}
 
