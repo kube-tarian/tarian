@@ -56,6 +56,7 @@ type PodAgent struct {
 	enableRegisterProcesses bool
 	enableRegisterFiles     bool
 	registerFilePaths       []string
+	registerFileIgnorePaths []string
 }
 
 func NewPodAgent(clusterAgentAddress string) *PodAgent {
@@ -94,6 +95,10 @@ func (p *PodAgent) EnableRegisterFiles() {
 
 func (p *PodAgent) SetRegisterFilePaths(paths []string) {
 	p.registerFilePaths = paths
+}
+
+func (p *PodAgent) SetRegisterFileIgnorePaths(paths []string) {
+	p.registerFileIgnorePaths = paths
 }
 
 func (p *PodAgent) Dial() {
@@ -554,6 +559,12 @@ func (p *PodAgent) registerFileChecksums(ctx context.Context) error {
 		err := filepath.WalkDir(registerFilePath, func(path string, f fs.DirEntry, err error) error {
 			if f.IsDir() {
 				return nil
+			}
+
+			for _, ignoredPattern := range p.registerFileIgnorePaths {
+				if matched, _ := filepath.Match(ignoredPattern, path); matched {
+					return nil
+				}
 			}
 
 			fd, err2 := os.Open(path)

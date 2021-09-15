@@ -4,10 +4,22 @@ metadata:
   annotations:
     pod-agent.k8s.tarian.dev/register: "processes,files"
     pod-agent.k8s.tarian.dev/file-validation-interval: "7s"
+    pod-agent.k8s.tarian.dev/register-file-ignore-paths: "/usr/share/nginx/**/*.txt"
   labels:
     run: nginx2
   name: nginx2
 spec:
+  initContainers:
+  - image: nginx
+    name: init
+    command:
+    - bash
+    args:
+    - -c
+    - echo abc > /usr/share/nginx/html/index.html; echo abcd > /usr/share/nginx/html/index.txt;
+    volumeMounts:
+    - name: nginx-html
+      mountPath: /usr/share/nginx/html
   containers:
   - image: nginx
     name: nginx

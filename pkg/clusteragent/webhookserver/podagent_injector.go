@@ -29,9 +29,10 @@ type PodAgentContainerConfig struct {
 }
 
 const (
-	ThreatScanAnnotation             = "pod-agent.k8s.tarian.dev/threat-scan"
-	RegisterAnnotation               = "pod-agent.k8s.tarian.dev/register"
-	FileValidationIntervalAnnotation = "pod-agent.k8s.tarian.dev/file-validation-interval"
+	ThreatScanAnnotation              = "pod-agent.k8s.tarian.dev/threat-scan"
+	RegisterAnnotation                = "pod-agent.k8s.tarian.dev/register"
+	FileValidationIntervalAnnotation  = "pod-agent.k8s.tarian.dev/file-validation-interval"
+	RegisterFileIgnorePathsAnnotation = "pod-agent.k8s.tarian.dev/register-file-ignore-paths"
 )
 
 // podAnnotator adds an annotation to every incoming pods.
@@ -49,6 +50,7 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 
 	_, threatScanAnnotationPresent := pod.Annotations[ThreatScanAnnotation]
 	registerAnnotationValue, registerAnnotationPresent := pod.Annotations[RegisterAnnotation]
+	registerFileIgnorePathsAnnotationValue, registerFileIgnorePathsAnnotationPresent := pod.Annotations[RegisterFileIgnorePathsAnnotation]
 
 	if !threatScanAnnotationPresent && !registerAnnotationPresent {
 		return admission.Allowed("annotation " + ThreatScanAnnotation + " or " + RegisterAnnotation + " not found")
@@ -109,6 +111,10 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 		}
 
 		podAgentArgs = append(podAgentArgs, "--register-file-paths="+strings.Join(mountPaths, ","))
+	}
+
+	if registerFileIgnorePathsAnnotationPresent {
+		podAgentArgs = append(podAgentArgs, "--register-file-ignore-paths="+registerFileIgnorePathsAnnotationValue)
 	}
 
 	if fileValidationInterval, ok := pod.Annotations[FileValidationIntervalAnnotation]; ok {

@@ -146,6 +146,11 @@ func getCliApp() *cli.App {
 						Usage: "The root directories of which pod-agent should register the checksums",
 						Value: "",
 					},
+					&cli.StringFlag{
+						Name:  "register-file-ignore-paths",
+						Usage: "Paths that should be ignored while registering file checksums",
+						Value: "",
+					},
 				},
 				Action: register,
 			},
@@ -269,6 +274,13 @@ func register(c *cli.Context) error {
 		registerFilePaths = append(registerFilePaths, strings.TrimSpace(path))
 	}
 	agent.SetRegisterFilePaths(registerFilePaths)
+
+	registerFileIgnorePathsArg := strings.Split(c.String("register-file-ignore-paths"), ",")
+	registerFileIgnorePaths := []string{}
+	for _, path := range registerFileIgnorePathsArg {
+		registerFileIgnorePaths = append(registerFileIgnorePaths, strings.TrimSpace(path))
+	}
+	agent.SetRegisterFileIgnorePaths(registerFileIgnorePaths)
 
 	agent.SetFileValidationInterval(c.Duration("file-validation-interval"))
 
