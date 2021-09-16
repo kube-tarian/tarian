@@ -14,6 +14,7 @@ clusterAgent:
     grpcServerHostname:
     grpcServerPort:
     clientTlsSecretName:
+  enableAddConstraint: false
 webhook:
   failurePolicy: Ignore
   podAgentContainerImage:

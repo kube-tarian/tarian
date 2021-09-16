@@ -31,6 +31,9 @@ spec:
         - "--falco-grpc-client-key-file=/etc/tarian/certs/falco-integration/tls.key"
         - "--falco-grpc-client-ca-file=/etc/tarian/certs/falco-integration/ca.crt"
 {{- end }}
+{{- if .Values.clusterAgent.enableAddConstraint }}
+        - --enable-add-constraint
+{{- end }}
         ports:
         - containerPort: 50052
           name: grpc

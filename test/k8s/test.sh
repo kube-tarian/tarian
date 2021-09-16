@@ -49,6 +49,5 @@ test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- 
 
 ./bin/tarianctl --server-address=localhost:31051 get constraints
 
-
 # test register constraint using annotation
 ./bin/tarianctl --server-address=localhost:31051 get constraints | grep run=nginx2

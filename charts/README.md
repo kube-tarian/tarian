@@ -8,3 +8,4 @@ helm install tarian-postgresql bitnami/postgresql -n tarian-system --set postgre
 helm install tarian-server ./charts/tarian-server -n tarian-system
 helm install tarian-cluster-agent ./charts/tarian-cluster-agent/ -n tarian-system
 ```
+
