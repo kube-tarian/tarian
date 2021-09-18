@@ -137,7 +137,7 @@ kubectl wait --for=condition=ready pod nginx
 kubectl exec -ti nginx -c nginx -- sleep 15
 
 # you should see it reported in tarian
-tarianctl --server-address=localhost:41051 get events
+tarianctl get events
 ```
 
 ## Alert Manager Integration
