@@ -19,9 +19,10 @@ func CmdFlags() []cli.Flag {
 			Value: "console",
 		},
 		&cli.StringFlag{
-			Name:  "server-address",
-			Usage: "Tarian server address to communicate with",
-			Value: defaultServerAddress,
+			Name:    "server-address",
+			Usage:   "Tarian server address to communicate with",
+			Value:   defaultServerAddress,
+			EnvVars: []string{"TARIAN_SERVER_ADDRESS"},
 		},
 		&cli.BoolFlag{
 			Name:  "server-tls-enabled",
