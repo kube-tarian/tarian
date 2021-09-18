@@ -84,7 +84,7 @@ See helm chart values for
 
 ### Use tarianctl to control tarian-server
 
-1. Download from Github [release page](https://github.com/devopstoday11/tarian/releases/download/v0.0.2-alpha7/tarian_0.0.2-alpha7_linux_amd64.tar.gz) 
+1. Download from Github [release page](https://github.com/devopstoday11/tarian/releases/download/v0.0.3-alpha2/tarian_0.0.3-alpha2_linux_amd64.tar.gz) 
 2. Extract the file and copy tarianctl to your PATH directory
 3. Expose tarian-server to your machine, through Ingress or port-forward. For this example, we'll use port-forward:
 
@@ -92,30 +92,36 @@ See helm chart values for
 kubectl port-forward svc/tarian-server -n tarian-system 41051:80
 ```
 
-4. To see violation events
+4. Configure server address with env var
+
+```
+export TARIAN_SERVER_ADDRESS=localhost:41051
+```
+
+### To see violation events
 
 ```bash
-tarianctl --server-address=localhost:41051 get events
+tarianctl get events
 ```
 
 ### Add a process constraint
 
 ```bash
-tarianctl --server-address=localhost:41051 add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx 
+tarianctl add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx 
 ```
 
 ```bash
-tarianctl --server-address=localhost:41051 get constraints
+tarianctl get constraints
 ```
 
 ### Add a file constraint
 
 ```bash
-tarianctl --server-address=localhost:41051 add constraint --name nginx-files --namespace default --match-labels run=nginx --allowed-file-sha256sums=/usr/share/nginx/html/index.html=38ffd4972ae513a0c79a8be4573403edcd709f0f572105362b08ff50cf6de521
+tarianctl add constraint --name nginx-files --namespace default --match-labels run=nginx --allowed-file-sha256sums=/usr/share/nginx/html/index.html=38ffd4972ae513a0c79a8be4573403edcd709f0f572105362b08ff50cf6de521
 ```
 
 ```bash
-tarianctl --server-address=localhost:41051 get constraints
+tarianctl get constraints
 ```
 
 ### Try a pod that violates the constraints
