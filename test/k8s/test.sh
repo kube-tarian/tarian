@@ -2,12 +2,15 @@
 
 set -euxo pipefail
 
+export TARIAN_SERVER_ADDRESS=localhost:31051
+export PATH=$PATH:./bin
+
 # run db migration and seed data
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dev seed-data
-./bin/tarianctl --server-address=localhost:31051 add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx 
-./bin/tarianctl --server-address=localhost:31051 add constraint --name nginx-files --namespace default --match-labels run=nginx --allowed-file-sha256sums=/usr/share/nginx/html/index.html=38ffd4972ae513a0c79a8be4573403edcd709f0f572105362b08ff50cf6de521
-./bin/tarianctl --server-address=localhost:31051 get constraints
+tarianctl add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx 
+tarianctl add constraint --name nginx-files --namespace default --match-labels run=nginx --allowed-file-sha256sums=/usr/share/nginx/html/index.html=38ffd4972ae513a0c79a8be4573403edcd709f0f572105362b08ff50cf6de521
+tarianctl get constraints
 kubectl get pods -n tarian-system
 
 kubectl logs deploy/tarian-cluster-agent-controller-manager -n tarian-system
@@ -29,13 +32,13 @@ test $(kubectl get pod nginx -o json | jq -r '.spec.containers | length') -eq 2 
 kubectl exec -ti nginx -c nginx -- sleep 15
 
 # output for debugging
-./bin/tarianctl --server-address=localhost:31051 get events
+tarianctl get events
 
 # assert contains sleep
-./bin/tarianctl --server-address=localhost:31051 get events | grep sleep
+tarianctl get events | grep sleep
 
 # assert contains index.html
-./bin/tarianctl --server-address=localhost:31051 get events | grep index.html
+tarianctl get events | grep index.html
 
 # output for debugging
 kubectl run -ti --restart=Never get-alerts2 --image=curlimages/curl -- http://alertmanager.tarian-system.svc:9093/api/v2/alerts
@@ -47,7 +50,7 @@ echo $'test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/c
 test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- http://alertmanager.tarian-system.svc:9093/api/v2/alerts | jq '. | length') -gt 1 \
   || (echo "expected alerts created" && false)
 
-./bin/tarianctl --server-address=localhost:31051 get constraints
+tarianctl get constraints
 
 # test register constraint using annotation
-./bin/tarianctl --server-address=localhost:31051 get constraints | grep run=nginx2
+tarianctl get constraints | grep run=nginx2
