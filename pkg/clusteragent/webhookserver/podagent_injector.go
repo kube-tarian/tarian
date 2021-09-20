@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,6 +19,7 @@ type PodAgentInjector struct {
 	Client  client.Client
 	decoder *admission.Decoder
 	config  PodAgentContainerConfig
+	logger  *zap.SugaredLogger
 }
 
 type PodAgentContainerConfig struct {
@@ -37,14 +39,18 @@ const (
 
 // podAnnotator adds an annotation to every incoming pods.
 func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) admission.Response {
+	p.logger.Debugw("handling a webhook request")
+
 	pod := &corev1.Pod{}
 
 	err := p.decoder.Decode(req, pod)
 	if err != nil {
+		p.logger.Errorw("error while decoding webhook request payload", "err", err)
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
 	if pod.Annotations == nil {
+		p.logger.Debugw("not injecting container because no annotation is found", "pod_name", pod.GetObjectMeta().GetName())
 		return admission.Allowed("no annotation found")
 	}
 
@@ -53,6 +59,7 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 	registerFileIgnorePathsAnnotationValue, registerFileIgnorePathsAnnotationPresent := pod.Annotations[RegisterFileIgnorePathsAnnotation]
 
 	if !threatScanAnnotationPresent && !registerAnnotationPresent {
+		p.logger.Debugw("not injecting container because no tarian annotation is found", "pod_name", pod.GetObjectMeta().GetName())
 		return admission.Allowed("annotation " + ThreatScanAnnotation + " or " + RegisterAnnotation + " not found")
 	}
 
@@ -153,9 +160,11 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 
 	marshaledPod, err := json.Marshal(pod)
 	if err != nil {
+		p.logger.Errorw("error while marshalling pod into json", "pod_name", pod.GetObjectMeta().GetName(), "err", err)
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
+	p.logger.Infow("responding webhook with a sidecar container", "pod_name", pod.GetObjectMeta().GetName())
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledPod)
 }
 

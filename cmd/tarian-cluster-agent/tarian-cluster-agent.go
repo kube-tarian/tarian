@@ -323,7 +323,7 @@ func runWebhookServer(c *cli.Context) error {
 	go func() {
 		<-isReady
 		// register the rest of the controllers after cert is ready
-		webhookserver.RegisterControllers(mgr, podAgentContainerConfig)
+		webhookserver.RegisterControllers(mgr, podAgentContainerConfig, logger)
 	}()
 
 	logger.Info("starting manager")

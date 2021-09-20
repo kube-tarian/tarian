@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/open-policy-agent/cert-controller/pkg/rotator"
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -61,13 +62,14 @@ func NewManager(port int, healthProbeBindAddress string, leaderElection bool) ma
 
 }
 
-func RegisterControllers(mgr manager.Manager, cfg PodAgentContainerConfig) {
+func RegisterControllers(mgr manager.Manager, cfg PodAgentContainerConfig, logger *zap.SugaredLogger) {
 	mgr.GetWebhookServer().Register(
 		"/inject-pod-agent",
 		&webhook.Admission{
 			Handler: &PodAgentInjector{
 				Client: mgr.GetClient(),
 				config: cfg,
+				logger: logger,
 			},
 		},
 	)
