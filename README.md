@@ -190,7 +190,8 @@ When tarian-pod-agent runs in registration mode, instead of reporting unknown pr
 To enable constraint registration, the cluster-agent needs to be configured.
 
 ```bash
-helm install tarian-cluster-agent tarian/tarian-cluster-agent --devel -n tarian-system --set clusterAgent.enableAddConstraint=true
+helm install tarian-cluster-agent tarian/tarian-cluster-agent --devel -n tarian-system \
+  --set clusterAgent.enableAddConstraint=true
 ```
 
 ```yaml
