@@ -49,7 +49,10 @@ kubectl create namespace tarian-system
 2. Prepare a Postgresql Database. You can use a DB as a service from your Cloud Services or you can also run by yourself in the cluster. For example to install the DB in the cluster, run:
 
 ```bash
-helm install tarian-postgresql bitnami/postgresql -n tarian-system --set postgresqlUsername=postgres --set postgresqlPassword=tarian --set postgresqlDatabase=tarian
+helm install tarian-postgresql bitnami/postgresql -n tarian-system \
+  --set postgresqlUsername=postgres \
+  --set postgresqlPassword=tarian \
+  --set postgresqlDatabase=tarian
 ```
 
 3. Install tarian
@@ -107,7 +110,9 @@ tarianctl get events
 ### Add a process constraint
 
 ```bash
-tarianctl add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx 
+tarianctl add constraint --name nginx --namespace default \
+  --match-labels run=nginx \
+  --allowed-processes=pause,tarian-pod-agent,nginx 
 ```
 
 ```bash
@@ -117,7 +122,9 @@ tarianctl get constraints
 ### Add a file constraint
 
 ```bash
-tarianctl add constraint --name nginx-files --namespace default --match-labels run=nginx --allowed-file-sha256sums=/usr/share/nginx/html/index.html=38ffd4972ae513a0c79a8be4573403edcd709f0f572105362b08ff50cf6de521
+tarianctl add constraint --name nginx-files --namespace default \
+  --match-labels run=nginx \
+  --allowed-file-sha256sums=/usr/share/nginx/html/index.html=38ffd4972ae513a0c79a8be4573403edcd709f0f572105362b08ff50cf6de521
 ```
 
 ```bash
