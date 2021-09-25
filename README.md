@@ -175,3 +175,33 @@ See [docs/falco-integration.md](docs/falco-integration.md)
 ## Troubleshooting
 
 See [docs/troubleshooting.md](docs/troubleshooting.md)
+
+## Automatic Constraint Registration
+
+When tarian-pod-agent runs in registration mode, instead of reporting unknown processes and files as violations, it automatically registers them as a new constraint. This is convenient to save time from registering manually.
+
+To enable constraint registration, the cluster-agent needs to be configured.
+
+```bash
+helm install tarian-cluster-agent tarian/tarian-cluster-agent --devel -n tarian-system --set clusterAgent.enableAddConstraint=true
+```
+
+```yaml
+metadata:
+  annotations:
+    # register both processes and file checksums
+    pod-agent.k8s.tarian.dev/register: "processes,files"
+    # ignore specific paths from automatic registration
+    pod-agent.k8s.tarian.dev/register-file-ignore-paths: "/usr/share/nginx/**/*.txt"
+```
+
+Automatic constraint registration can also be done in a dev/staging cluster, so that there would be less changes in production.
+
+## Other supported annotations
+
+```yaml
+metadata:
+  annotations:
+    # specify how often tarian-pod-agent should verify file checksum
+    pod-agent.k8s.tarian.dev/file-validation-interval: "1m"
+```
