@@ -124,7 +124,22 @@ tarianctl add constraint --name nginx-files --namespace default --match-labels r
 tarianctl get constraints
 ```
 
-### Try a pod that violates the constraints
+### Run tarian agent in a pod
+
+Then after the constraints are created, we inject tarian-pod-agent to the pod by adding an annotation:
+
+```yaml
+metadata:
+  annotations:
+    pod-agent.k8s.tarian.dev/threat-scan: "true"
+```
+
+Pod with this annotation will have an additional container injected (tarian-pod-agent). The tarian-pod-agent container will 
+continuously verify the runtime environment based on the registered constraints. Any violation would be reported, which would be
+accessible with `tarianctl get events`.
+
+
+### Demo: Try a pod that violates the constraints
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/devopstoday11/tarian/main/dev/config/monitored-pod/configmap.yaml
