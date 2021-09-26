@@ -6,10 +6,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/devopstoday11/tarian/pkg/logger"
-	"github.com/devopstoday11/tarian/pkg/tarianctl/client"
-	"github.com/devopstoday11/tarian/pkg/tarianctl/util"
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"github.com/kube-tarian/tarian/pkg/logger"
+	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
+	"github.com/kube-tarian/tarian/pkg/tarianctl/util"
+	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	cli "github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v3"
 )

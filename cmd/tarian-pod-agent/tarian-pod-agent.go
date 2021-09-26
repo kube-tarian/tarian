@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/devopstoday11/tarian/pkg/logger"
-	"github.com/devopstoday11/tarian/pkg/podagent"
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"github.com/kube-tarian/tarian/pkg/logger"
+	"github.com/kube-tarian/tarian/pkg/podagent"
+	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	cli "github.com/urfave/cli/v2"
 )
 

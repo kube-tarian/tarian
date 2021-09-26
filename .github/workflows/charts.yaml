@@ -55,7 +55,7 @@ jobs:
 
           set +e
 
-          IMAGE_EXIST=$(sudo docker manifest inspect ghcr.io/devopstoday11/tarian-server:$APP_VERSION_TAG > /dev/null 2>&1)$?
+          IMAGE_EXIST=$(sudo docker manifest inspect ghcr.io/kube-tarian/tarian-server:$APP_VERSION_TAG > /dev/null 2>&1)$?
           if [ $IMAGE_EXIST -gt 0 ]; then
             CONDITIONAL_SERVER_IMAGE_TAG="--set server.image.tag=latest"
             CONDITIONAL_CLUSTER_AGENT_IMAGE_TAG="--set clusterAgent.image.tag=latest --set webhook.podAgentContainerImage.tag=latest"

@@ -3,10 +3,10 @@ package server
 import (
 	"context"
 
-	"github.com/devopstoday11/tarian/pkg/server/dbstore"
-	"github.com/devopstoday11/tarian/pkg/store"
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"github.com/gogo/status"
+	"github.com/kube-tarian/tarian/pkg/server/dbstore"
+	"github.com/kube-tarian/tarian/pkg/store"
+	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )

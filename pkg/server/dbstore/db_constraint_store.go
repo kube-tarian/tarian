@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"github.com/driftprogramming/pgxpoolmock"
+	"github.com/kube-tarian/tarian/pkg/tarianpb"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 )

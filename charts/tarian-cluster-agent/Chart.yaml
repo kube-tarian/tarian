@@ -21,9 +21,9 @@ keywords:
 - tarian
 - antivirus-software
 - kube-tarian
-home: https://github.com/devopstoday11/tarian
+home: https://github.com/kube-tarian/tarian
 sources:
-- https://github.com/devopstoday11/tarian
+- https://github.com/kube-tarian/tarian
 maintainers:
 - name: devopstoday11
 - name: andylibrian

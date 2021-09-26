@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"github.com/falcosecurity/client-go/pkg/api/outputs"
 	"github.com/falcosecurity/client-go/pkg/client"
+	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )

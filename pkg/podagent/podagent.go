@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	psutil "github.com/shirou/gopsutil/process"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"

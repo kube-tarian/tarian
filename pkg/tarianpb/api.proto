@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package tarianpb.api;
-option go_package = "github.com/devopstoday11/tarian/pkg/tarianpb";
+option go_package = "github.com/kube-tarian/tarian/pkg/tarianpb";
 
 import "tarianpb/types.proto";
 

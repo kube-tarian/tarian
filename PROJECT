@@ -2,5 +2,5 @@ domain: k8s.tarian.dev
 layout:
 - go.kubebuilder.io/v3
 projectName: tarian
-repo: github.com/devopstoday11/tarian
+repo: github.com/kube-tarian/tarian
 version: "3"

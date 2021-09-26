@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"github.com/driftprogramming/pgxpoolmock"
+	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 

@@ -3,7 +3,7 @@ clusterAgent:
     encoding: json
     level: info
   image:
-    name: ghcr.io/devopstoday11/tarian-cluster-agent
+    name: ghcr.io/kube-tarian/tarian-cluster-agent
     # empty = default to app version
     tag:
   serverAddress: tarian-server:80
@@ -18,6 +18,6 @@ clusterAgent:
 webhook:
   failurePolicy: Ignore
   podAgentContainerImage:
-    name: ghcr.io/devopstoday11/tarian-pod-agent
+    name: ghcr.io/kube-tarian/tarian-pod-agent
     # empty = default to app version
     tag:

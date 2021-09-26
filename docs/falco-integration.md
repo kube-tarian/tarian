@@ -136,7 +136,7 @@ helm upgrade -i falco falcosecurity/falco -n falco -f falco-values.yaml
 ### Install Tarian server and Tarian cluster agent
 
 ```bash
-helm repo add tarian https://devopstoday11.github.io/tarian
+helm repo add tarian https://kube-tarian.github.io/tarian
 helm repo update
 
 helm install tarian-postgresql bitnami/postgresql -n tarian-system \

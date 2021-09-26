@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"github.com/gogo/status"
+	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

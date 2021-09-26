@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package tarianpb.types;
-option go_package = "github.com/devopstoday11/tarian/pkg/tarianpb";
+option go_package = "github.com/kube-tarian/tarian/pkg/tarianpb";
 import "google/protobuf/timestamp.proto";
 
 message MatchLabel {

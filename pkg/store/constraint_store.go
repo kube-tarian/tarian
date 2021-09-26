@@ -1,6 +1,6 @@
 package store
 
-import "github.com/devopstoday11/tarian/pkg/tarianpb"
+import "github.com/kube-tarian/tarian/pkg/tarianpb"
 
 type ConstraintStore interface {
 	GetAll() ([]*tarianpb.Constraint, error)

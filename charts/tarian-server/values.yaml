@@ -3,7 +3,7 @@ server:
     encoding: json
     level: info
   image:
-    name: ghcr.io/devopstoday11/tarian-server
+    name: ghcr.io/kube-tarian/tarian-server
     # empty = default to app version
     tag:
   alert:

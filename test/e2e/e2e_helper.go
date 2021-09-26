@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devopstoday11/tarian/pkg/clusteragent"
-	"github.com/devopstoday11/tarian/pkg/podagent"
-	"github.com/devopstoday11/tarian/pkg/server"
-	"github.com/devopstoday11/tarian/pkg/server/dbstore"
 	"github.com/driftprogramming/pgxpoolmock"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/kube-tarian/tarian/pkg/clusteragent"
+	"github.com/kube-tarian/tarian/pkg/podagent"
+	"github.com/kube-tarian/tarian/pkg/server"
+	"github.com/kube-tarian/tarian/pkg/server/dbstore"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 

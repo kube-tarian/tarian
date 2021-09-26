@@ -7,8 +7,8 @@
 
 #
 
-[![Build status](https://img.shields.io/github/workflow/status/devopstoday11/tarian/CI?style=flat)](https://github.com/devopstoday11/tarian/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/devopstoday11/tarian)](https://goreportcard.com/report/github.com/devopstoday11/tarian)
+[![Build status](https://img.shields.io/github/workflow/status/kube-tarian/tarian/CI?style=flat)](https://github.com/kube-tarian/tarian/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kube-tarian/tarian)](https://goreportcard.com/report/github.com/kube-tarian/tarian)
 
 #
 
@@ -34,7 +34,7 @@ Why another new security tool when there are many tools available already, like 
 #### Architecture diagram
 > I will finalize the design diagram soon once I finish talking to some security experts (I already talked to few, and have few more discussions pending). 
 
-![Arch. Diagram](https://github.com/devopstoday11/tarian/blob/5eeed9a0bd5875e6cee423d2d12161a3f7d2d84c/Kube-Tarian.svg)
+![Arch. Diagram](https://github.com/kube-tarian/tarian/blob/5eeed9a0bd5875e6cee423d2d12161a3f7d2d84c/Kube-Tarian.svg)
 
 #
 
@@ -58,7 +58,7 @@ helm install tarian-postgresql bitnami/postgresql -n tarian-system \
 3. Install tarian
 
 ```bash
-helm repo add tarian https://devopstoday11.github.io/tarian
+helm repo add tarian https://kube-tarian.github.io/tarian
 helm repo update
 
 helm install tarian-server tarian/tarian-server --devel -n tarian-system
@@ -80,14 +80,14 @@ kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db mig
 ## Configuration
 
 See helm chart values for
-- [tarian-server](https://github.com/devopstoday11/tarian/blob/main/charts/tarian-server/values.yaml)
-- [tarian-cluster-agent](https://github.com/devopstoday11/tarian/blob/main/charts/tarian-cluster-agent/values.yaml)
+- [tarian-server](https://github.com/kube-tarian/tarian/blob/main/charts/tarian-server/values.yaml)
+- [tarian-cluster-agent](https://github.com/kube-tarian/tarian/blob/main/charts/tarian-cluster-agent/values.yaml)
 
 ## Usage
 
 ### Use tarianctl to control tarian-server
 
-1. Download from Github [release page](https://github.com/devopstoday11/tarian/releases/download/v0.0.3-alpha3/tarian_0.0.3-alpha3_linux_amd64.tar.gz)
+1. Download from Github [release page](https://github.com/kube-tarian/tarian/releases/download/v0.0.3-alpha3/tarian_0.0.3-alpha3_linux_amd64.tar.gz)
 2. Extract the file and copy tarianctl to your PATH directory
 3. Expose tarian-server to your machine, through Ingress or port-forward. For this example, we'll use port-forward:
 
@@ -149,8 +149,8 @@ accessible with `tarianctl get events`.
 ### Demo: Try a pod that violates the constraints
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/devopstoday11/tarian/main/dev/config/monitored-pod/configmap.yaml
-kubectl apply -f https://raw.githubusercontent.com/devopstoday11/tarian/main/dev/config/monitored-pod/pod.yaml
+kubectl apply -f https://raw.githubusercontent.com/kube-tarian/tarian/main/dev/config/monitored-pod/configmap.yaml
+kubectl apply -f https://raw.githubusercontent.com/kube-tarian/tarian/main/dev/config/monitored-pod/pod.yaml
 
 # wait for it to become ready
 kubectl wait --for=condition=ready pod nginx

@@ -10,10 +10,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/devopstoday11/tarian/pkg/clusteragent"
-	"github.com/devopstoday11/tarian/pkg/clusteragent/webhookserver"
-	"github.com/devopstoday11/tarian/pkg/logger"
 	"github.com/go-logr/zapr"
+	"github.com/kube-tarian/tarian/pkg/clusteragent"
+	"github.com/kube-tarian/tarian/pkg/clusteragent/webhookserver"
+	"github.com/kube-tarian/tarian/pkg/logger"
 	cli "github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"

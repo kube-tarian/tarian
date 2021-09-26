@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/devopstoday11/tarian/pkg/store"
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	"github.com/go-openapi/strfmt"
+	"github.com/kube-tarian/tarian/pkg/store"
+	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/prometheus/alertmanager/api/v2/client"
 	"github.com/prometheus/alertmanager/api/v2/client/alert"
 	"github.com/prometheus/alertmanager/api/v2/models"

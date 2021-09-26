@@ -3,7 +3,7 @@ package podagent
 import (
 	"testing"
 
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/stretchr/testify/assert"
 )
 

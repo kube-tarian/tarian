@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/devopstoday11/tarian/pkg/server/dbstore"
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
+	"github.com/kube-tarian/tarian/pkg/server/dbstore"
+	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

@@ -4,5 +4,5 @@ target-branch: main
 chart-dirs:
   - charts
 # chart-repos:
-  # - tarian=https://devopstoday11.github.io/tarian
+  # - tarian=https://kube-tarian.github.io/tarian
 helm-extra-args: --timeout 600s

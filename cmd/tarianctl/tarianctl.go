@@ -4,11 +4,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/devopstoday11/tarian/pkg/tarianctl/cmd"
-	"github.com/devopstoday11/tarian/pkg/tarianctl/cmd/add"
-	"github.com/devopstoday11/tarian/pkg/tarianctl/cmd/get"
-	"github.com/devopstoday11/tarian/pkg/tarianctl/cmd/importcmd"
-	"github.com/devopstoday11/tarian/pkg/tarianctl/cmd/remove"
+	"github.com/kube-tarian/tarian/pkg/tarianctl/cmd"
+	"github.com/kube-tarian/tarian/pkg/tarianctl/cmd/add"
+	"github.com/kube-tarian/tarian/pkg/tarianctl/cmd/get"
+	"github.com/kube-tarian/tarian/pkg/tarianctl/cmd/importcmd"
+	"github.com/kube-tarian/tarian/pkg/tarianctl/cmd/remove"
 	cli "github.com/urfave/cli/v2"
 )
 

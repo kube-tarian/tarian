@@ -1,8 +1,8 @@
 package clusteragent
 
 import (
-	"github.com/devopstoday11/tarian/pkg/tarianpb"
 	falcoclient "github.com/falcosecurity/client-go/pkg/client"
+	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"google.golang.org/grpc"
 )
 

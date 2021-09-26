@@ -1,4 +1,4 @@
-module github.com/devopstoday11/tarian
+module github.com/kube-tarian/tarian
 
 go 1.17
 
