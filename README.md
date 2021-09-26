@@ -79,11 +79,24 @@ kubectl wait --for=condition=ready pod --all -n tarian-system
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
 ```
 
+
 ## Configuration
 
 See helm chart values for
 - [tarian-server](https://github.com/kube-tarian/tarian/blob/main/charts/tarian-server/values.yaml)
 - [tarian-cluster-agent](https://github.com/kube-tarian/tarian/blob/main/charts/tarian-cluster-agent/values.yaml)
+
+
+## Cloud / Vendor specific configuration
+
+### Private GKE cluster
+
+Private GKE cluster by default creates firewall rules to restrict master to nodes communication only on ports 443 and 10250.
+To inject tarian-pod-agent container, tarian uses Mutating admission webhook. The webhook server runs on port 9443. So, we need
+to create a new firewall rule to allow ingress from master IP address range to nodes on tcp port 9443.
+
+For more detail, see GKE docs on this topic: [https://cloud.google.com/kubernetes-engine/docs/how-to/private-clusters#add_firewall_rules](https://cloud.google.com/kubernetes-engine/docs/how-to/private-clusters#add_firewall_rules).
+
 
 ## Usage
 
