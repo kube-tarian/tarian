@@ -49,6 +49,8 @@ kubectl create namespace tarian-system
 2. Prepare a Postgresql Database. You can use a DB as a service from your Cloud Services or you can also run by yourself in the cluster. For example to install the DB in the cluster, run:
 
 ```bash
+helm repo add bitnami https://charts.bitnami.com/bitnami
+
 helm install tarian-postgresql bitnami/postgresql -n tarian-system \
   --set postgresqlUsername=postgres \
   --set postgresqlPassword=tarian \
