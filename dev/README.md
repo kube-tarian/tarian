@@ -3,7 +3,7 @@
 ### Pre-requisites
 
 - [Kind](https://kind.sigs.k8s.io/)
-- [Go 1.16+](https://golang.org/)
+- [Go 1.17+](https://golang.org/)
 - [Kubectl](https://kubernetes.io/docs/tasks/tools/)
 
 ### Setup
