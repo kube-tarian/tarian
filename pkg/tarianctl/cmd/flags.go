@@ -25,19 +25,22 @@ func CmdFlags() []cli.Flag {
 			EnvVars: []string{"TARIAN_SERVER_ADDRESS"},
 		},
 		&cli.BoolFlag{
-			Name:  "server-tls-enabled",
-			Usage: "If enabled, it will communicate with the server using TLS",
-			Value: false,
+			Name:    "server-tls-enabled",
+			Usage:   "If enabled, it will communicate with the server using TLS",
+			Value:   false,
+			EnvVars: []string{"TARIAN_TLS_ENABLED"},
 		},
 		&cli.StringFlag{
-			Name:  "server-tls-ca-file",
-			Usage: "The CA the server uses for TLS connection.",
-			Value: "",
+			Name:    "server-tls-ca-file",
+			Usage:   "The CA the server uses for TLS connection.",
+			Value:   "",
+			EnvVars: []string{"TARIAN_TLS_CA_FILE"},
 		},
 		&cli.BoolFlag{
-			Name:  "server-tls-insecure-skip-verify",
-			Usage: "If set to true, it will skip server's certificate chain and hostname verification",
-			Value: true,
+			Name:    "server-tls-insecure-skip-verify",
+			Usage:   "If set to true, it will skip server's certificate chain and hostname verification",
+			Value:   true,
+			EnvVars: []string{"TARIAN_TLS_INSECURE_SKIP_VERIFY"},
 		},
 	}
 }
