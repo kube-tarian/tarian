@@ -228,3 +228,13 @@ metadata:
     # specify how often tarian-pod-agent should verify file checksum
     pod-agent.k8s.tarian.dev/file-validation-interval: "1m"
 ```
+
+## Securing tarian-server with TLS
+
+To secure tarian-server with TLS, create a secret containing the TLS certificate. You can create the secret manually,
+or using [Cert Manager](https://cert-manager.io/). Once you have the secret, you can pass the name to the helm chart value:
+
+```
+helm upgrade -i tarian-server tarian/tarian-server --devel -n tarian-system \
+  --set server.tlsSecretName=tarian-server-tls
+```
