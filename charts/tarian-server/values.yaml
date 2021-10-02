@@ -19,6 +19,8 @@ server:
   service:
     type: ClusterIP
     nodeport:
+  replicas: 1
+  tlsSecretName:
 
 alertManager:
   install: true

@@ -6,7 +6,7 @@ spec:
   selector:
     matchLabels:
       app: {{ .Release.Name }}
-  replicas: 1
+  replicas: {{ .Values.server.replicas }}
   template:
     metadata:
       labels:
@@ -25,6 +25,10 @@ spec:
 {{- if .Values.server.alert.evaluationInterval }}
         - "--alert-evaluation-interval={{ .Values.server.alert.evaluationInterval }}"
 {{- end }}
+{{- if .Values.server.tlsSecretName }}
+        - "--tls-cert-file=/etc/tarian/tls/tls.crt"
+        - "--tls-private-key-file=/etc/tarian/tls/tls.key"
+{{- end }}
         ports:
         - containerPort: 50051
           name: grpc
@@ -41,3 +45,15 @@ spec:
           value: {{ .Values.server.postgresql.dbname | quote }}
         - name: POSTGRES_SSLMODE
           value: {{ .Values.server.postgresql.sslmode | quote }}
+        volumeMounts:
+{{- if .Values.server.tlsSecretName }}
+        - name: tls
+          readOnly: true
+          mountPath: "/etc/tarian/tls"
+{{- end }}
+      volumes:
+{{- if .Values.server.tlsSecretName }}
+      - name: tls
+        secret:
+          secretName: {{ .Values.server.tlsSecretName }}
+{{- end }}
