@@ -6,9 +6,10 @@ import (
 
 func NewRemoveCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "remove",
-		Usage: "Remove resources from the Tarian Server.",
-		Flags: []cli.Flag{},
+		Name:    "remove",
+		Usage:   "Remove resources from the Tarian Server.",
+		Aliases: []string{"delete"},
+		Flags:   []cli.Flag{},
 		Subcommands: []*cli.Command{
 			NewRemoveConstraintsCommand(),
 			NewRemoveActionsCommand(),
