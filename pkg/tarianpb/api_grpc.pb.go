@@ -21,6 +21,8 @@ type ConfigClient interface {
 	GetConstraints(ctx context.Context, in *GetConstraintsRequest, opts ...grpc.CallOption) (*GetConstraintsResponse, error)
 	AddConstraint(ctx context.Context, in *AddConstraintRequest, opts ...grpc.CallOption) (*AddConstraintResponse, error)
 	RemoveConstraint(ctx context.Context, in *RemoveConstraintRequest, opts ...grpc.CallOption) (*RemoveConstraintResponse, error)
+	AddAction(ctx context.Context, in *AddActionRequest, opts ...grpc.CallOption) (*AddActionResponse, error)
+	GetActions(ctx context.Context, in *GetActionsRequest, opts ...grpc.CallOption) (*GetActionsResponse, error)
 }
 
 type configClient struct {
@@ -58,6 +60,24 @@ func (c *configClient) RemoveConstraint(ctx context.Context, in *RemoveConstrain
 	return out, nil
 }
 
+func (c *configClient) AddAction(ctx context.Context, in *AddActionRequest, opts ...grpc.CallOption) (*AddActionResponse, error) {
+	out := new(AddActionResponse)
+	err := c.cc.Invoke(ctx, "/tarianpb.api.Config/AddAction", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) GetActions(ctx context.Context, in *GetActionsRequest, opts ...grpc.CallOption) (*GetActionsResponse, error) {
+	out := new(GetActionsResponse)
+	err := c.cc.Invoke(ctx, "/tarianpb.api.Config/GetActions", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServer is the server API for Config service.
 // All implementations must embed UnimplementedConfigServer
 // for forward compatibility
@@ -65,6 +85,8 @@ type ConfigServer interface {
 	GetConstraints(context.Context, *GetConstraintsRequest) (*GetConstraintsResponse, error)
 	AddConstraint(context.Context, *AddConstraintRequest) (*AddConstraintResponse, error)
 	RemoveConstraint(context.Context, *RemoveConstraintRequest) (*RemoveConstraintResponse, error)
+	AddAction(context.Context, *AddActionRequest) (*AddActionResponse, error)
+	GetActions(context.Context, *GetActionsRequest) (*GetActionsResponse, error)
 	mustEmbedUnimplementedConfigServer()
 }
 
@@ -80,6 +102,12 @@ func (UnimplementedConfigServer) AddConstraint(context.Context, *AddConstraintRe
 }
 func (UnimplementedConfigServer) RemoveConstraint(context.Context, *RemoveConstraintRequest) (*RemoveConstraintResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveConstraint not implemented")
+}
+func (UnimplementedConfigServer) AddAction(context.Context, *AddActionRequest) (*AddActionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddAction not implemented")
+}
+func (UnimplementedConfigServer) GetActions(context.Context, *GetActionsRequest) (*GetActionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetActions not implemented")
 }
 func (UnimplementedConfigServer) mustEmbedUnimplementedConfigServer() {}
 
@@ -148,6 +176,42 @@ func _Config_RemoveConstraint_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_AddAction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddActionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).AddAction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tarianpb.api.Config/AddAction",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).AddAction(ctx, req.(*AddActionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_GetActions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetActionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).GetActions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tarianpb.api.Config/GetActions",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).GetActions(ctx, req.(*GetActionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Config_ServiceDesc is the grpc.ServiceDesc for Config service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -166,6 +230,14 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveConstraint",
 			Handler:    _Config_RemoveConstraint_Handler,
+		},
+		{
+			MethodName: "AddAction",
+			Handler:    _Config_AddAction_Handler,
+		},
+		{
+			MethodName: "GetActions",
+			Handler:    _Config_GetActions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

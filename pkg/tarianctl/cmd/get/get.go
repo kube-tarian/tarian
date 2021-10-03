@@ -12,6 +12,7 @@ func NewGetCommand() *cli.Command {
 		Subcommands: []*cli.Command{
 			NewGetConstraintsCommand(),
 			NewGetEventsCommand(),
+			NewGetActionsCommand(),
 		},
 	}
 }

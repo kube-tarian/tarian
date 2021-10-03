@@ -80,3 +80,15 @@ message Event {
 
 	repeated Target targets = 7;
 }
+
+message Action {
+	string kind = 1;
+	string namespace = 2;
+	string name = 3;
+
+	Selector selector = 4;
+	bool onViolatedProcess = 5;
+	bool onViolatedFile = 6;
+
+	string action = 7;
+}

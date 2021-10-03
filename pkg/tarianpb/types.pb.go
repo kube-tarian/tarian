@@ -793,6 +793,101 @@ func (x *Event) GetTargets() []*Target {
 	return nil
 }
 
+type Action struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Kind              string    `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
+	Namespace         string    `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Name              string    `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Selector          *Selector `protobuf:"bytes,4,opt,name=selector,proto3" json:"selector,omitempty"`
+	OnViolatedProcess bool      `protobuf:"varint,5,opt,name=onViolatedProcess,proto3" json:"onViolatedProcess,omitempty"`
+	OnViolatedFile    bool      `protobuf:"varint,6,opt,name=onViolatedFile,proto3" json:"onViolatedFile,omitempty"`
+	Action            string    `protobuf:"bytes,7,opt,name=action,proto3" json:"action,omitempty"`
+}
+
+func (x *Action) Reset() {
+	*x = Action{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_tarianpb_types_proto_msgTypes[12]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Action) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Action) ProtoMessage() {}
+
+func (x *Action) ProtoReflect() protoreflect.Message {
+	mi := &file_tarianpb_types_proto_msgTypes[12]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Action.ProtoReflect.Descriptor instead.
+func (*Action) Descriptor() ([]byte, []int) {
+	return file_tarianpb_types_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *Action) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *Action) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
+func (x *Action) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Action) GetSelector() *Selector {
+	if x != nil {
+		return x.Selector
+	}
+	return nil
+}
+
+func (x *Action) GetOnViolatedProcess() bool {
+	if x != nil {
+		return x.OnViolatedProcess
+	}
+	return false
+}
+
+func (x *Action) GetOnViolatedFile() bool {
+	if x != nil {
+		return x.OnViolatedFile
+	}
+	return false
+}
+
+func (x *Action) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
 var File_tarianpb_types_proto protoreflect.FileDescriptor
 
 var file_tarianpb_types_proto_rawDesc = []byte{
@@ -908,11 +1003,26 @@ var file_tarianpb_types_proto_rawDesc = []byte{
 	0x6c, 0x65, 0x72, 0x74, 0x53, 0x65, 0x6e, 0x74, 0x41, 0x74, 0x12, 0x30, 0x0a, 0x07, 0x74, 0x61,
 	0x72, 0x67, 0x65, 0x74, 0x73, 0x18, 0x07, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x74, 0x61,
 	0x72, 0x69, 0x61, 0x6e, 0x70, 0x62, 0x2e, 0x74, 0x79, 0x70, 0x65, 0x73, 0x2e, 0x54, 0x61, 0x72,
-	0x67, 0x65, 0x74, 0x52, 0x07, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x73, 0x42, 0x2c, 0x5a, 0x2a,
-	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6b, 0x75, 0x62, 0x65, 0x2d,
-	0x74, 0x61, 0x72, 0x69, 0x61, 0x6e, 0x2f, 0x74, 0x61, 0x72, 0x69, 0x61, 0x6e, 0x2f, 0x70, 0x6b,
-	0x67, 0x2f, 0x74, 0x61, 0x72, 0x69, 0x61, 0x6e, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x67, 0x65, 0x74, 0x52, 0x07, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x73, 0x22, 0xf2, 0x01, 0x0a,
+	0x06, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x6b, 0x69, 0x6e, 0x64, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6b, 0x69, 0x6e, 0x64, 0x12, 0x1c, 0x0a, 0x09, 0x6e,
+	0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09,
+	0x6e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d,
+	0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x34, 0x0a,
+	0x08, 0x73, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x18, 0x2e, 0x74, 0x61, 0x72, 0x69, 0x61, 0x6e, 0x70, 0x62, 0x2e, 0x74, 0x79, 0x70, 0x65, 0x73,
+	0x2e, 0x53, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x52, 0x08, 0x73, 0x65, 0x6c, 0x65, 0x63,
+	0x74, 0x6f, 0x72, 0x12, 0x2c, 0x0a, 0x11, 0x6f, 0x6e, 0x56, 0x69, 0x6f, 0x6c, 0x61, 0x74, 0x65,
+	0x64, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x52, 0x11,
+	0x6f, 0x6e, 0x56, 0x69, 0x6f, 0x6c, 0x61, 0x74, 0x65, 0x64, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73,
+	0x73, 0x12, 0x26, 0x0a, 0x0e, 0x6f, 0x6e, 0x56, 0x69, 0x6f, 0x6c, 0x61, 0x74, 0x65, 0x64, 0x46,
+	0x69, 0x6c, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0e, 0x6f, 0x6e, 0x56, 0x69, 0x6f,
+	0x6c, 0x61, 0x74, 0x65, 0x64, 0x46, 0x69, 0x6c, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x61, 0x63, 0x74,
+	0x69, 0x6f, 0x6e, 0x18, 0x07, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x61, 0x63, 0x74, 0x69, 0x6f,
+	0x6e, 0x42, 0x2c, 0x5a, 0x2a, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
+	0x6b, 0x75, 0x62, 0x65, 0x2d, 0x74, 0x61, 0x72, 0x69, 0x61, 0x6e, 0x2f, 0x74, 0x61, 0x72, 0x69,
+	0x61, 0x6e, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x74, 0x61, 0x72, 0x69, 0x61, 0x6e, 0x70, 0x62, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -927,7 +1037,7 @@ func file_tarianpb_types_proto_rawDescGZIP() []byte {
 	return file_tarianpb_types_proto_rawDescData
 }
 
-var file_tarianpb_types_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_tarianpb_types_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_tarianpb_types_proto_goTypes = []interface{}{
 	(*MatchLabel)(nil),            // 0: tarianpb.types.MatchLabel
 	(*Selector)(nil),              // 1: tarianpb.types.Selector
@@ -941,8 +1051,9 @@ var file_tarianpb_types_proto_goTypes = []interface{}{
 	(*FalcoAlert)(nil),            // 9: tarianpb.types.FalcoAlert
 	(*Target)(nil),                // 10: tarianpb.types.Target
 	(*Event)(nil),                 // 11: tarianpb.types.Event
-	nil,                           // 12: tarianpb.types.FalcoAlert.OutputFieldsEntry
-	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
+	(*Action)(nil),                // 12: tarianpb.types.Action
+	nil,                           // 13: tarianpb.types.FalcoAlert.OutputFieldsEntry
+	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
 }
 var file_tarianpb_types_proto_depIdxs = []int32{
 	0,  // 0: tarianpb.types.Selector.match_labels:type_name -> tarianpb.types.MatchLabel
@@ -950,20 +1061,21 @@ var file_tarianpb_types_proto_depIdxs = []int32{
 	2,  // 2: tarianpb.types.Constraint.allowed_processes:type_name -> tarianpb.types.AllowedProcessRule
 	3,  // 3: tarianpb.types.Constraint.allowed_files:type_name -> tarianpb.types.AllowedFileRule
 	7,  // 4: tarianpb.types.Pod.labels:type_name -> tarianpb.types.Label
-	12, // 5: tarianpb.types.FalcoAlert.outputFields:type_name -> tarianpb.types.FalcoAlert.OutputFieldsEntry
+	13, // 5: tarianpb.types.FalcoAlert.outputFields:type_name -> tarianpb.types.FalcoAlert.OutputFieldsEntry
 	8,  // 6: tarianpb.types.Target.pod:type_name -> tarianpb.types.Pod
 	5,  // 7: tarianpb.types.Target.violatedProcesses:type_name -> tarianpb.types.Process
 	6,  // 8: tarianpb.types.Target.violatedFiles:type_name -> tarianpb.types.ViolatedFile
 	9,  // 9: tarianpb.types.Target.falcoAlert:type_name -> tarianpb.types.FalcoAlert
-	13, // 10: tarianpb.types.Event.serverTimestamp:type_name -> google.protobuf.Timestamp
-	13, // 11: tarianpb.types.Event.clientTimestamp:type_name -> google.protobuf.Timestamp
-	13, // 12: tarianpb.types.Event.alertSentAt:type_name -> google.protobuf.Timestamp
+	14, // 10: tarianpb.types.Event.serverTimestamp:type_name -> google.protobuf.Timestamp
+	14, // 11: tarianpb.types.Event.clientTimestamp:type_name -> google.protobuf.Timestamp
+	14, // 12: tarianpb.types.Event.alertSentAt:type_name -> google.protobuf.Timestamp
 	10, // 13: tarianpb.types.Event.targets:type_name -> tarianpb.types.Target
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	1,  // 14: tarianpb.types.Action.selector:type_name -> tarianpb.types.Selector
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_tarianpb_types_proto_init() }
@@ -1116,6 +1228,18 @@ func file_tarianpb_types_proto_init() {
 				return nil
 			}
 		}
+		file_tarianpb_types_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Action); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	file_tarianpb_types_proto_msgTypes[2].OneofWrappers = []interface{}{}
 	file_tarianpb_types_proto_msgTypes[3].OneofWrappers = []interface{}{}
@@ -1126,7 +1250,7 @@ func file_tarianpb_types_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_tarianpb_types_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

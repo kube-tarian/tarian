@@ -7,10 +7,11 @@ import (
 func NewAddCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "add",
-		Usage: "Add resources from the Tarian Server.",
+		Usage: "Add resources to the Tarian Server.",
 		Flags: []cli.Flag{},
 		Subcommands: []*cli.Command{
 			NewAddConstraintCommand(),
+			NewAddActionCommand(),
 		},
 	}
 }

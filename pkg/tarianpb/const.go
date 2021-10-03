@@ -1,6 +1,7 @@
 package tarianpb
 
 const KindConstraint = "Constraint"
+const KindAction = "Action"
 const KindEvent = "Event"
 
 const EventTypeViolation = "violation"

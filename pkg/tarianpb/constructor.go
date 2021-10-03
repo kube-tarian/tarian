@@ -5,6 +5,11 @@ func NewConstraint() *Constraint {
 	return c
 }
 
+func NewAction() *Action {
+	a := &Action{Kind: KindAction}
+	return a
+}
+
 func NewEvent() *Event {
 	e := &Event{Kind: KindEvent}
 	return e

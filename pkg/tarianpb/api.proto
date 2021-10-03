@@ -9,6 +9,9 @@ service Config {
 	rpc GetConstraints(GetConstraintsRequest) returns (GetConstraintsResponse) {}
 	rpc AddConstraint(AddConstraintRequest) returns (AddConstraintResponse) {}
 	rpc RemoveConstraint(RemoveConstraintRequest) returns (RemoveConstraintResponse) {}
+
+	rpc AddAction(AddActionRequest) returns (AddActionResponse) {}
+	rpc GetActions(GetActionsRequest) returns (GetActionsResponse) {}
 }
 
 service Event {
@@ -41,6 +44,24 @@ message RemoveConstraintRequest {
 
 message RemoveConstraintResponse {
 	bool success = 1;
+}
+
+message AddActionRequest {
+	tarianpb.types.Action action = 1;
+}
+
+message AddActionResponse {
+	bool success = 1;
+}
+
+message GetActionsRequest {
+	string namespace = 1;
+
+	repeated tarianpb.types.Label labels = 2;
+}
+
+message GetActionsResponse {
+	repeated tarianpb.types.Action actions = 1;
 }
 
 message IngestEventRequest {
