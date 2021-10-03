@@ -12,6 +12,7 @@ service Config {
 
 	rpc AddAction(AddActionRequest) returns (AddActionResponse) {}
 	rpc GetActions(GetActionsRequest) returns (GetActionsResponse) {}
+	rpc RemoveAction(RemoveActionRequest) returns (RemoveActionResponse) {}
 }
 
 service Event {
@@ -62,6 +63,15 @@ message GetActionsRequest {
 
 message GetActionsResponse {
 	repeated tarianpb.types.Action actions = 1;
+}
+
+message RemoveActionRequest {
+	string namespace = 1;
+	string name = 2;
+}
+
+message RemoveActionResponse {
+	bool success = 1;
 }
 
 message IngestEventRequest {

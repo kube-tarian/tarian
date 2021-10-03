@@ -220,3 +220,27 @@ func (cs *ConfigServer) GetActions(ctx context.Context, request *tarianpb.GetAct
 		Actions: matchedActions,
 	}, nil
 }
+
+func (cs *ConfigServer) RemoveAction(ctx context.Context, request *tarianpb.RemoveActionRequest) (*tarianpb.RemoveActionResponse, error) {
+	if request.GetNamespace() == "" || request.GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "required namespace or name is empty")
+	}
+
+	exist, err := cs.actionStore.NamespaceAndNameExist(request.GetNamespace(), request.GetName())
+	if err != nil {
+		logger.Errorw("error while handling remove action RPC", "err", err)
+		return nil, status.Error(codes.Internal, "internal server error")
+	}
+
+	if !exist {
+		return &tarianpb.RemoveActionResponse{Success: false}, status.Error(codes.NotFound, "Action not found")
+	}
+
+	err = cs.actionStore.RemoveByNamespaceAndName(request.GetNamespace(), request.GetName())
+	if err != nil {
+		logger.Errorw("error while handling remove action RPC", "err", err)
+		return nil, status.Error(codes.Internal, "internal server error")
+	}
+
+	return &tarianpb.RemoveActionResponse{Success: true}, nil
+}

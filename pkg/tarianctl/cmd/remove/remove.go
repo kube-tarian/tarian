@@ -11,6 +11,7 @@ func NewRemoveCommand() *cli.Command {
 		Flags: []cli.Flag{},
 		Subcommands: []*cli.Command{
 			NewRemoveConstraintsCommand(),
+			NewRemoveActionsCommand(),
 		},
 	}
 }
