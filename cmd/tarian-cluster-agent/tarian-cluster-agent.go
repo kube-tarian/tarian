@@ -223,6 +223,8 @@ func run(c *cli.Context) error {
 		grpcServer.GracefulStop()
 	}()
 
+	go clusterAgent.LoopSyncActions()
+
 	if clusterAgent.GetFalcoAlertsSubscriber() != nil {
 		logger.Infow("falco: start subscribing to falco grpc servers")
 		go clusterAgent.GetFalcoAlertsSubscriber().Start()

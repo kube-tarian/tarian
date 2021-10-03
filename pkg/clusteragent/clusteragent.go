@@ -67,3 +67,7 @@ func (ca *ClusterAgent) GetGrpcServer() *grpc.Server {
 func (ca *ClusterAgent) GetFalcoAlertsSubscriber() *FalcoAlertsSubscriber {
 	return ca.falcoAlertsSubsriber
 }
+
+func (ca *ClusterAgent) LoopSyncActions() error {
+	return ca.eventServer.LoopSyncActions()
+}

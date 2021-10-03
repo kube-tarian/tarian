@@ -2,6 +2,7 @@ package clusteragent
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/gogo/status"
@@ -97,8 +98,15 @@ func (cs *ConfigServer) Close() {
 type EventServer struct {
 	tarianpb.UnimplementedEventServer
 
-	grpcConn    *grpc.ClientConn
-	eventClient tarianpb.EventClient
+	grpcConn     *grpc.ClientConn
+	configClient tarianpb.ConfigClient
+	eventClient  tarianpb.EventClient
+
+	actions     []*tarianpb.Action
+	actionsLock sync.RWMutex
+
+	cancelFunc context.CancelFunc
+	cancelCtx  context.Context
 }
 
 func NewEventServer(tarianServerAddress string, opts []grpc.DialOption) *EventServer {
@@ -110,8 +118,14 @@ func NewEventServer(tarianServerAddress string, opts []grpc.DialOption) *EventSe
 	}
 
 	logger.Info("connected to the tarian server")
+	ctx, cancel := context.WithCancel(context.Background())
 
-	return &EventServer{grpcConn: grpcConn, eventClient: tarianpb.NewEventClient(grpcConn)}
+	return &EventServer{
+		grpcConn:     grpcConn,
+		configClient: tarianpb.NewConfigClient(grpcConn),
+		eventClient:  tarianpb.NewEventClient(grpcConn),
+		cancelFunc:   cancel, cancelCtx: ctx,
+	}
 }
 
 func (es *EventServer) IngestEvent(requestContext context.Context, request *tarianpb.IngestEventRequest) (*tarianpb.IngestEventResponse, error) {
@@ -127,4 +141,39 @@ func (es *EventServer) IngestEvent(requestContext context.Context, request *tari
 
 func (es *EventServer) Close() {
 	es.grpcConn.Close()
+	es.cancelFunc()
+}
+
+func (es *EventServer) LoopSyncActions() error {
+	for {
+		es.SyncActions()
+
+		select {
+		case <-time.After(3 * time.Second):
+		case <-es.cancelCtx.Done():
+			return es.cancelCtx.Err()
+		}
+	}
+}
+
+func (es *EventServer) SyncActions() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+	r, err := es.configClient.GetActions(ctx, &tarianpb.GetActionsRequest{})
+
+	if err != nil {
+		logger.Errorw("error while getting actions from the server", "err", err)
+	}
+
+	logger.Debugw("received actions from the server", "actions", r.GetActions())
+	cancel()
+
+	es.SetActions(r.GetActions())
+}
+
+func (es *EventServer) SetActions(actions []*tarianpb.Action) {
+	es.actionsLock.Lock()
+	defer es.actionsLock.Unlock()
+
+	es.actions = actions
 }
