@@ -24,6 +24,7 @@ spec:
         ports:
         - containerPort: 50052
           name: grpc
+      serviceAccountName: tarian-cluster-agent
 ---
 apiVersion: v1
 kind: Service
