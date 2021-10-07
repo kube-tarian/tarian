@@ -1,7 +1,6 @@
 package clusteragent
 
 import (
-	"flag"
 	"os"
 	"path/filepath"
 
@@ -46,25 +45,30 @@ func NewClusterAgent(config *ClusterAgentConfig) *ClusterAgent {
 			logger.Fatalw("error configuring kubernetes clientset config", "err", err)
 		}
 	} else {
-		var kubeconfig *string
+		var kubeconfig string
 		var err error
 
-		if home := homedir.HomeDir(); home != "" {
-			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		if os.Getenv("KUBECONFIG") != "" {
+			kubeconfig = os.Getenv("KUBECONFIG")
 		} else {
-			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+			kubeconfig = filepath.Join(homedir.HomeDir(), ".kube", "config")
 		}
 
 		// use the current context in kubeconfig
-		k8sClientConfig, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		k8sClientConfig, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 		if err != nil {
-			logger.Fatalw("error configuring kubernetes clientset config", "err", err)
+			logger.Warnw("error configuring kubernetes clientset config", "err", err)
 		}
 	}
 
-	k8sClientset, err := kubernetes.NewForConfig(k8sClientConfig)
-	if err != nil {
-		logger.Fatalw("error configuring kubernetes clientset", "err", err)
+	var k8sClientset *kubernetes.Clientset
+	if k8sClientConfig != nil {
+		var err error
+
+		k8sClientset, err = kubernetes.NewForConfig(k8sClientConfig)
+		if err != nil {
+			logger.Warnw("error configuring kubernetes clientset", "err", err)
+		}
 	}
 
 	eventServer := NewEventServer(config.ServerAddress, config.ServerGrpcDialOptions, k8sClientset)
