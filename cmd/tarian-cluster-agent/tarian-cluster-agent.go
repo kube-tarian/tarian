@@ -21,6 +21,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	falcoclient "github.com/falcosecurity/client-go/pkg/client"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 const (
