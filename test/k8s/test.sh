@@ -54,3 +54,18 @@ tarianctl get constraints
 
 # test register constraint using annotation
 tarianctl get constraints | grep run=nginx2
+
+# action
+tarianctl add action --name nginx-delete --match-labels=run=nginx --action=delete-pod
+
+tarianctl get actions
+
+# expect the pod to be killed
+kubectl exec -ti nginx -c nginx -- sleep 15 || true
+
+kubectl get pods
+sleep 10s
+kubectl get pods
+
+echo $'(kubectl get pods -o  json | jq \'.items | any(.metadata.name=="nginx")\') == "false"'
+test $(kubectl get pods -o  json | jq '.items | any(.metadata.name=="nginx")') == "false"
