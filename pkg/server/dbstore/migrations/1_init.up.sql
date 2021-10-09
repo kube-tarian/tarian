@@ -30,6 +30,8 @@ CREATE TABLE actions (
   selector JSONB,
   on_violated_process boolean,
   on_violated_file boolean,
+  on_falco_alert boolean,
+  falco_alert_priority integer,
   action CHARACTER VARYING(255) NOT NULL
 );
 

@@ -55,9 +55,37 @@ message Pod {
 	repeated Label labels = 4;
 }
 
+enum FalcoPriority {
+	option allow_alias = true;
+	EMERGENCY = 0;
+	emergency = 0;
+	Emergency = 0;
+	ALERT = 1;
+	alert = 1;
+	Alert = 1;
+	CRITICAL = 2;
+	critical = 2;
+	Critical = 2;
+	ERROR = 3;
+	error = 3;
+	Error = 3;
+	WARNING = 4;
+	warning = 4;
+	Warning = 4;
+	NOTICE = 5;
+	notice = 5;
+	Notice = 5;
+	INFORMATIONAL = 6;
+	informational = 6;
+	Informational = 6;
+	DEBUG = 7;
+	debug = 7;
+	Debug = 7;
+}
+
 message FalcoAlert {
 	string rule = 1;
-	string priority = 2;
+	FalcoPriority priority = 2;
 	string output = 3;
 	map<string, string> outputFields = 4;
 }
@@ -89,6 +117,8 @@ message Action {
 	Selector selector = 4;
 	bool onViolatedProcess = 5;
 	bool onViolatedFile = 6;
+	bool onFalcoAlert = 7;
+	FalcoPriority falcoPriority = 8;
 
-	string action = 7;
+	string action = 9;
 }

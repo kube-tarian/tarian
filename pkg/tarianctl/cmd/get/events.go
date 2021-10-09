@@ -138,5 +138,5 @@ func falcoAlertToString(f *tarianpb.FalcoAlert) string {
 		return ""
 	}
 
-	return f.GetOutput()
+	return f.GetPriority().ToString() + ": " + f.GetOutput()
 }

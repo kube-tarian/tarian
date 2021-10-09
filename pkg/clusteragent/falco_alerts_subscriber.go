@@ -17,9 +17,11 @@ type FalcoAlertsSubscriber struct {
 	eventClient tarianpb.EventClient
 	cancelCtx   context.Context
 	cancelFunc  context.CancelFunc
+
+	eventServer *EventServer
 }
 
-func NewFalcoAlertsSubscriber(tarianServerAddress string, opts []grpc.DialOption, config *client.Config) (*FalcoAlertsSubscriber, error) {
+func NewFalcoAlertsSubscriber(tarianServerAddress string, opts []grpc.DialOption, config *client.Config, eventServer *EventServer) (*FalcoAlertsSubscriber, error) {
 	falcoClient, err := client.NewForConfig(context.Background(), config)
 
 	if err != nil {
@@ -39,6 +41,7 @@ func NewFalcoAlertsSubscriber(tarianServerAddress string, opts []grpc.DialOption
 		eventClient: tarianpb.NewEventClient(grpcConn),
 		cancelCtx:   ctx,
 		cancelFunc:  cancel,
+		eventServer: eventServer,
 	}, nil
 }
 
@@ -87,7 +90,7 @@ func (f *FalcoAlertsSubscriber) ProcessFalcoOutput(res *outputs.Response) error 
 				Pod: pod,
 				FalcoAlert: &tarianpb.FalcoAlert{
 					Rule:         res.GetRule(),
-					Priority:     res.GetPriority().String(),
+					Priority:     tarianpb.FalcoPriority(res.GetPriority()),
 					Output:       res.GetOutput(),
 					OutputFields: res.GetOutputFields(),
 				},
@@ -107,6 +110,8 @@ func (f *FalcoAlertsSubscriber) ProcessFalcoOutput(res *outputs.Response) error 
 		logger.Errorw("error while reporting falco alerts", "err", err)
 	} else {
 		logger.Debugw("ingest event response", "response", response)
+
+		f.eventServer.ProcessActions(event)
 	}
 
 	return nil

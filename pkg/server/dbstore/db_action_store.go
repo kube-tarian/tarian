@@ -40,13 +40,15 @@ func NewDbActionStore(dsn string) (*DbActionStore, error) {
 
 // constraintRow represents a row of database table actions
 type actionRow struct {
-	id                int
-	namespace         string
-	name              string
-	selector          string
-	onViolatedProcess bool
-	onViolatedFile    bool
-	action            string
+	id                 int
+	namespace          string
+	name               string
+	selector           string
+	onViolatedProcess  bool
+	onViolatedFile     bool
+	onFalcoAlert       bool
+	falcoAlertPriority int32
+	action             string
 }
 
 func (a *actionRow) toAction() *tarianpb.Action {
@@ -56,6 +58,9 @@ func (a *actionRow) toAction() *tarianpb.Action {
 	json.Unmarshal([]byte(a.selector), &action.Selector)
 	action.OnViolatedProcess = a.onViolatedProcess
 	action.OnViolatedFile = a.onViolatedFile
+	action.OnFalcoAlert = a.onFalcoAlert
+
+	action.FalcoPriority = tarianpb.FalcoPriority(a.falcoAlertPriority)
 	action.Action = a.action
 
 	return action
@@ -74,7 +79,7 @@ func (d *DbActionStore) GetAll() ([]*tarianpb.Action, error) {
 	for rows.Next() {
 		r := actionRow{}
 
-		err := rows.Scan(&r.id, &r.namespace, &r.name, &r.selector, &r.onViolatedProcess, &r.onViolatedFile, &r.action)
+		err := rows.Scan(&r.id, &r.namespace, &r.name, &r.selector, &r.onViolatedProcess, &r.onViolatedFile, &r.onFalcoAlert, &r.falcoAlertPriority, &r.action)
 		if err != nil {
 			return nil, err
 		}
@@ -100,7 +105,7 @@ func (d *DbActionStore) FindByNamespace(namespace string) ([]*tarianpb.Action, e
 	for rows.Next() {
 		r := actionRow{}
 
-		err := rows.Scan(&r.id, &r.namespace, &r.name, &r.selector, &r.onViolatedProcess, &r.onViolatedFile, &r.action)
+		err := rows.Scan(&r.id, &r.namespace, &r.name, &r.selector, &r.onViolatedProcess, &r.onViolatedFile, &r.onFalcoAlert, &r.falcoAlertPriority, &r.action)
 		if err != nil {
 			return nil, err
 		}
@@ -123,8 +128,8 @@ func (d *DbActionStore) Add(action *tarianpb.Action) error {
 	err = d.pool.
 		QueryRow(
 			context.Background(),
-			"INSERT INTO actions(namespace, name, selector, on_violated_process, on_violated_file, action) VALUES($1, $2, $3, $4, $5, $6) RETURNING id",
-			action.GetNamespace(), action.GetName(), selectorJSON, action.GetOnViolatedProcess(), action.GetOnViolatedFile(), action.GetAction()).
+			"INSERT INTO actions(namespace, name, selector, on_violated_process, on_violated_file, on_falco_alert, falco_alert_priority, action) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+			action.GetNamespace(), action.GetName(), selectorJSON, action.GetOnViolatedProcess(), action.GetOnViolatedFile(), action.GetOnFalcoAlert(), action.GetFalcoPriority(), action.GetAction()).
 		Scan(&id)
 	if err != nil {
 		return err

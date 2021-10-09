@@ -141,12 +141,12 @@ func (es *EventServer) IngestEvent(requestContext context.Context, request *tari
 
 	r, err := es.eventClient.IngestEvent(ctx, request)
 
-	es.processActions(request.GetEvent())
+	es.ProcessActions(request.GetEvent())
 
 	return r, err
 }
 
-func (es *EventServer) processActions(event *tarianpb.Event) {
+func (es *EventServer) ProcessActions(event *tarianpb.Event) {
 	if event.GetTargets() == nil {
 		return
 	}
@@ -160,7 +160,23 @@ func (es *EventServer) processActions(event *tarianpb.Event) {
 
 		es.actionsLock.RLock()
 		for _, action := range es.actions {
-			if actionMatchesPod(action, pod) {
+			actionEventFulfilled := false
+
+			if action.OnViolatedProcess && len(target.GetViolatedProcesses()) > 0 {
+				actionEventFulfilled = true
+			}
+
+			if action.OnViolatedFile && len(target.GetViolatedFiles()) > 0 {
+				actionEventFulfilled = true
+			}
+
+			if action.OnFalcoAlert && target.GetFalcoAlert() != nil {
+				if target.GetFalcoAlert().GetPriority() <= action.GetFalcoPriority() {
+					actionEventFulfilled = true
+				}
+			}
+
+			if actionEventFulfilled && actionMatchesPod(action, pod) {
 				es.runAction(action, pod)
 			}
 		}

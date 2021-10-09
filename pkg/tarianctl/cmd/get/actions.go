@@ -83,5 +83,14 @@ func formatActionTrigger(action *tarianpb.Action) string {
 		str.WriteString("onViolatedFile")
 	}
 
+	if action.GetOnFalcoAlert() {
+		if str.Len() > 0 {
+			str.WriteString(delimiter)
+		}
+
+		str.WriteString("onFalcoAlert=")
+		str.WriteString(action.GetFalcoPriority().ToString())
+	}
+
 	return str.String()
 }

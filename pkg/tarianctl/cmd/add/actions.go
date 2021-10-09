@@ -54,6 +54,10 @@ func NewAddActionCommand() *cli.Command {
 				Usage: "If true, the action will run on violated file",
 				Value: true,
 			},
+			&cli.StringFlag{
+				Name:  "on-falco-alert",
+				Usage: "If specified, the action will run on falco alert with the specified priority and above. Valid values: alert, critical, emergency",
+			},
 		},
 		Action: runAddAction,
 	}
@@ -81,6 +85,11 @@ func runAddAction(c *cli.Context) error {
 			OnViolatedFile:    c.Bool("on-violated-file"),
 			Action:            c.String("action"),
 		},
+	}
+
+	if c.String("on-falco-alert") != "" {
+		req.Action.OnFalcoAlert = true
+		req.Action.FalcoPriority = tarianpb.FalcoPriorityFromString(c.String("on-falco-alert"))
 	}
 
 	if req != nil {
