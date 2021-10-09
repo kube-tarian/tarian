@@ -40,7 +40,7 @@ func newActionHandler(tarianServerAddress string, opts []grpc.DialOption, k8sCli
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	ah := &actionHandler{eventsChan: make(chan *tarianpb.Event), configClient: configClient, k8sClientset: k8sClientset, cancelFunc: cancel, cancelCtx: ctx}
+	ah := &actionHandler{eventsChan: make(chan *tarianpb.Event, 4096), configClient: configClient, k8sClientset: k8sClientset, cancelFunc: cancel, cancelCtx: ctx}
 
 	return ah
 }
