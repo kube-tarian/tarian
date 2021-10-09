@@ -26,6 +26,7 @@ type ClusterAgent struct {
 	configServer         *ConfigServer
 	eventServer          *EventServer
 	falcoAlertsSubsriber *FalcoAlertsSubscriber
+	actionHandler        *actionHandler
 }
 
 func NewClusterAgent(config *ClusterAgentConfig) *ClusterAgent {
@@ -71,21 +72,23 @@ func NewClusterAgent(config *ClusterAgentConfig) *ClusterAgent {
 		}
 	}
 
-	eventServer := NewEventServer(config.ServerAddress, config.ServerGrpcDialOptions, k8sClientset)
+	actionHandler := newActionHandler(config.ServerAddress, config.ServerGrpcDialOptions, k8sClientset)
+	eventServer := NewEventServer(config.ServerAddress, config.ServerGrpcDialOptions, actionHandler)
 
 	tarianpb.RegisterConfigServer(grpcServer, configServer)
 	tarianpb.RegisterEventServer(grpcServer, eventServer)
 
 	ca := &ClusterAgent{
-		grpcServer:   grpcServer,
-		configServer: configServer,
-		eventServer:  eventServer,
+		grpcServer:    grpcServer,
+		configServer:  configServer,
+		eventServer:   eventServer,
+		actionHandler: actionHandler,
 	}
 
 	if config.EnableFalcoIntegration {
 		var err error
 
-		ca.falcoAlertsSubsriber, err = NewFalcoAlertsSubscriber(config.ServerAddress, config.ServerGrpcDialOptions, config.FalcoClientConfig, eventServer)
+		ca.falcoAlertsSubsriber, err = NewFalcoAlertsSubscriber(config.ServerAddress, config.ServerGrpcDialOptions, config.FalcoClientConfig, actionHandler)
 
 		if err != nil {
 			logger.Fatalw("falco: unable to connect to falco grpc server", "err", err)
@@ -112,6 +115,6 @@ func (ca *ClusterAgent) GetFalcoAlertsSubscriber() *FalcoAlertsSubscriber {
 	return ca.falcoAlertsSubsriber
 }
 
-func (ca *ClusterAgent) LoopSyncActions() error {
-	return ca.eventServer.LoopSyncActions()
+func (ca *ClusterAgent) RunActionHandler() {
+	ca.actionHandler.Run()
 }

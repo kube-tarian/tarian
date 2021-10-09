@@ -18,10 +18,10 @@ type FalcoAlertsSubscriber struct {
 	cancelCtx   context.Context
 	cancelFunc  context.CancelFunc
 
-	eventServer *EventServer
+	actionHandler *actionHandler
 }
 
-func NewFalcoAlertsSubscriber(tarianServerAddress string, opts []grpc.DialOption, config *client.Config, eventServer *EventServer) (*FalcoAlertsSubscriber, error) {
+func NewFalcoAlertsSubscriber(tarianServerAddress string, opts []grpc.DialOption, config *client.Config, actionHandler *actionHandler) (*FalcoAlertsSubscriber, error) {
 	falcoClient, err := client.NewForConfig(context.Background(), config)
 
 	if err != nil {
@@ -36,12 +36,12 @@ func NewFalcoAlertsSubscriber(tarianServerAddress string, opts []grpc.DialOption
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &FalcoAlertsSubscriber{
-		client:      falcoClient,
-		grpcConn:    grpcConn,
-		eventClient: tarianpb.NewEventClient(grpcConn),
-		cancelCtx:   ctx,
-		cancelFunc:  cancel,
-		eventServer: eventServer,
+		client:        falcoClient,
+		grpcConn:      grpcConn,
+		eventClient:   tarianpb.NewEventClient(grpcConn),
+		cancelCtx:     ctx,
+		cancelFunc:    cancel,
+		actionHandler: actionHandler,
 	}, nil
 }
 
@@ -111,7 +111,7 @@ func (f *FalcoAlertsSubscriber) ProcessFalcoOutput(res *outputs.Response) error 
 	} else {
 		logger.Debugw("ingest event response", "response", response)
 
-		f.eventServer.ProcessActions(event)
+		f.actionHandler.QueueEvent(event)
 	}
 
 	return nil
