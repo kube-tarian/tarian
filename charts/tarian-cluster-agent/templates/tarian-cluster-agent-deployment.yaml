@@ -48,3 +48,4 @@ spec:
         secret:
           secretName: {{ .Values.clusterAgent.falco.clientTlsSecretName }}
 {{- end }}
+      serviceAccountName: {{ .Release.Name }}
