@@ -64,7 +64,9 @@ tarianctl get actions
 kubectl exec -ti nginx -c nginx -- sleep 15 || true
 
 kubectl get pods
-sleep 10s
+
+# wait for terminating pod to be completely deleted
+sleep 30s
 kubectl get pods
 
 echo $'(kubectl get pods -o  json | jq \'.items | any(.metadata.name=="nginx")\') == "false"'
