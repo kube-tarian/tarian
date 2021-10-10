@@ -102,7 +102,7 @@ For more detail, see GKE docs on this topic: [https://cloud.google.com/kubernete
 
 ### Use tarianctl to control tarian-server
 
-1. Download from Github [release page](https://github.com/kube-tarian/tarian/releases/download/v0.0.4-alpha1/tarian_0.0.4-alpha1_linux_amd64.tar.gz)
+1. Download from Github [release page](https://github.com/kube-tarian/tarian/releases)
 2. Extract the file and copy tarianctl to your PATH directory
 3. Expose tarian-server to your machine, through Ingress or port-forward. For this example, we'll use port-forward:
 
