@@ -238,3 +238,8 @@ or using [Cert Manager](https://cert-manager.io/). Once you have the secret, you
 helm upgrade -i tarian-server tarian/tarian-server --devel -n tarian-system \
   --set server.tlsSecretName=tarian-server-tls
 ```
+
+## Contributing
+
+See [docs/contributing.md](docs/contributing.md)
+

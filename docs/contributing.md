@@ -75,15 +75,26 @@ See there are violation events shortly:
 ./bin/tarianctl --server-address=localhost:31051 get events
 ```
 
+
 ## Understanding Tarian components
 
 ### tarian-server
 
+`tarian-server` is the central component that stores configurations such as constraints, actions, event logs. This allows us to use a central tarian-server for 
+multiple clusters. For example, one wants to run tarian in staging and production cluster. In staging it registers the known / detected processes, then in production it detect unknown processes.
+
 ### tarian-cluster-agent
+
+`tarian-cluster-agent` is the component that's installed in each cluster. It syncs configurations from `tarian-server`, coordinates with pod-agents, and execute actions.
 
 ### tarian-pod-agent
 
+`tarian-pod-agent` is a sidecar container that's injected to pods by `tarian-cluster-agent`. The pod agent periodically scans for threat in the main container, and report to the `tarian-cluster-agent`.
+
 ### tarianctl
+
+`tarianctl` is CLI application that users can use to interact with `tarian-server`.
+
 
 ## How to run the test suite
 
@@ -95,11 +106,13 @@ make unit-test
 make e2e-test
 ```
 
+
 ### Test suite with Kubernetes
 
 ```bash
 make k8s-test
 ```
+
 
 ## Acceptance policy
 
