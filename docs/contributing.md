@@ -1,4 +1,8 @@
-## Development Setup
+# Contributing
+
+We welcome and accepts contributions via GitHub pull requests.
+
+## Run locally
 
 ### Pre-requisites
 
@@ -70,3 +74,33 @@ See there are violation events shortly:
 ```bash
 ./bin/tarianctl --server-address=localhost:31051 get events
 ```
+
+## Understanding Tarian components
+
+### tarian-server
+
+### tarian-cluster-agent
+
+### tarian-pod-agent
+
+### tarianctl
+
+## How to run the test suite
+
+### Test suite without Kubernetes
+
+```bash
+docker-compose up -d
+make unit-test
+make e2e-test
+```
+
+### Test suite with Kubernetes
+
+```bash
+make k8s-test
+```
+
+## Acceptance policy
+
+## Commit Message format
