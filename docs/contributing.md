@@ -41,15 +41,9 @@ Once the pods are running (`kubectl get pods -n tarian-system`),
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
 ```
 
-5. Install seed data:
+Test a scenario:
 
-```bash
-kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dev seed-data
-```
-
-To test that it's working:
-
-6. Run pod:
+5. Run pod:
 
 ```bash
 kubectl run nginx --image=nginx --annotations=pod-agent.k8s.tarian.dev/threat-scan=true
@@ -57,13 +51,13 @@ kubectl run nginx --image=nginx --annotations=pod-agent.k8s.tarian.dev/threat-sc
 
 There should be a container injected in nginx pod.
 
-7. Add constraint for that pod:
+6. Add constraint for that pod:
 
 ```bash
 ./bin/tarianctl --server-address=localhost:31051 add constraint --name=nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx
 ```
 
-8. Test the violation event
+7. Test the violation event
 
 ```bash
 kubectl exec -ti nginx -c nginx -- sleep 10

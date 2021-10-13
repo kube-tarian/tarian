@@ -11,7 +11,6 @@ import (
 	"github.com/kube-tarian/tarian/pkg/logger"
 	"github.com/kube-tarian/tarian/pkg/server"
 	"github.com/kube-tarian/tarian/pkg/server/dbstore"
-	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	cli "github.com/urfave/cli/v2"
 
 	"github.com/kelseyhightower/envconfig"
@@ -105,17 +104,6 @@ func getCliApp() *cli.App {
 					},
 				},
 			},
-			{
-				Name:  "dev",
-				Usage: "Command group for development environment. Do not do this on production.",
-				Subcommands: []*cli.Command{
-					{
-						Name:   "seed-data",
-						Usage:  "Add development data to the database",
-						Action: devSeedData,
-					},
-				},
-			},
 		},
 	}
 }
@@ -187,50 +175,6 @@ func dbmigrate(c *cli.Context) error {
 	} else {
 		logger.Infow("completed database migration", "applied", count)
 	}
-
-	return nil
-}
-
-func devSeedData(c *cli.Context) error {
-	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
-
-	var cfg server.PostgresqlConfig
-	err := envconfig.Process("Postgres", &cfg)
-	if err != nil {
-		logger.Fatalw("database config error", "err", err)
-	}
-
-	dbStore, err := dbstore.NewDbConstraintStore(cfg.GetDsn())
-	if err != nil {
-		logger.Fatalw("error creating database store", "err", err)
-	}
-
-	regexes := []string{"ssh", "worker", "swap", "scsi", "loop", "gvfs", "idle", "injection", "nvme", "jbd", "snap", "cpu", "soft", "bash", "integrity", "kcryptd", "krfcommd", "kcompactd0", "wpa_supplican", "oom_reaper", "registryd", "migration", "kblockd", "gsd-", "kdevtmpfs", "pipewire"}
-
-	for _, r := range regexes {
-		exampleConstraint := tarianpb.Constraint{Namespace: "tarian-system", Name: "nginx-" + r, Selector: &tarianpb.Selector{MatchLabels: []*tarianpb.MatchLabel{{Key: "app", Value: "nginx"}}}}
-		allowedProcessRegex := "(.*)" + r + "(.*)"
-		exampleConstraint.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
-		err := dbStore.Add(&exampleConstraint)
-		if err != nil {
-			logger.Fatalw("error while adding seed data: constraint", "err", err)
-		}
-	}
-
-	regexes2 := []string{"sleep", "pause", "tarian-pod-agent"}
-
-	for _, r := range regexes2 {
-		exampleConstraint := tarianpb.Constraint{Namespace: "tarian-system", Name: "nginx2-" + r, Selector: &tarianpb.Selector{MatchLabels: []*tarianpb.MatchLabel{{Key: "app", Value: "nginx2"}, {Key: "app2", Value: "nginx3"}}}}
-		allowedProcessRegex := "(.*)" + r + "(.*)"
-		exampleConstraint.AllowedProcesses = []*tarianpb.AllowedProcessRule{{Regex: &allowedProcessRegex}}
-		err := dbStore.Add(&exampleConstraint)
-		if err != nil {
-			logger.Fatalw("error while adding seed data: constraint", "err", err)
-			return err
-		}
-	}
-
-	logger.Infow("finished adding seed data")
 
 	return nil
 }
