@@ -80,20 +80,20 @@ See there are violation events shortly:
 
 ### tarian-server
 
-`tarian-server` is the central component that stores configurations such as constraints, actions, event logs. This allows us to use a central tarian-server for 
-multiple clusters. For example, one wants to run tarian in staging and production cluster. In staging it registers the known / detected processes, then in production it detect unknown processes.
+`tarian-server` is the central component that stores configurations such as constraints, actions and event logs. This allows us to use a central tarian-server for 
+multiple clusters. For example, we want to use tarian in the staging and the production cluster. If tarian registers the known / detected processes in the staging cluster - it can detect the same processes in the production cluster without additional configuration.
 
 ### tarian-cluster-agent
 
-`tarian-cluster-agent` is the component that's installed in each cluster. It syncs configurations from `tarian-server`, coordinates with pod-agents, and execute actions.
+`tarian-cluster-agent` is the component that's installed in each cluster and syncs the configurations from `tarian-server`, coordinates with pod-agents, and executes actions.
 
 ### tarian-pod-agent
 
-`tarian-pod-agent` is a sidecar container that's injected to pods by `tarian-cluster-agent`. The pod agent periodically scans for threat in the main container, and report to the `tarian-cluster-agent`.
+`tarian-pod-agent` is a sidecar container that's injected to pods by `tarian-cluster-agent`. The pod agent periodically scans for threats in the main container, and reports to the `tarian-cluster-agent`.
 
 ### tarianctl
 
-`tarianctl` is CLI application that users can use to interact with `tarian-server`.
+`tarianctl` is the CLI application that users can use to interact with the `tarian-server`.
 
 
 ## How to run the test suite
