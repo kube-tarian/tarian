@@ -12,7 +12,7 @@
 
 #
 
-How does Tarian works?
+How does Tarian work?
 > Tarian runs as sidecar container in your main application's pod watching for changes in process IDs, number of processes running, parent & child processes relation changes, files & directories in the file system which belong to your application, changes applied to your files' signatures, etc. Tarian will be a part of your Application's pod from dev to prod environment, hence you can register to your Tarian DB what is supposed to happening & running in your container + what can be watched + what can be notified + action to take (self destroy the pod) based on changes detected. Shift-left your detection mechanism! 
 
 What if an unknown change happens inside the container which is not in Tarian's registration DB, how does Tarian react to it? 
