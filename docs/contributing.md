@@ -63,7 +63,7 @@ There should be a container injected in nginx pod.
 kubectl exec -ti nginx -c nginx -- sleep 10
 ```
 
-See there are violation events shortly:
+See that there are violation events:
 
 ```bash
 ./bin/tarianctl --server-address=localhost:31051 get events
