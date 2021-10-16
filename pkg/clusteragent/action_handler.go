@@ -8,6 +8,7 @@ import (
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/scylladb/go-set/strset"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -23,6 +24,8 @@ type actionHandler struct {
 	actionsLock sync.RWMutex
 
 	configClient tarianpb.ConfigClient
+	eventClient  tarianpb.EventClient
+
 	k8sClientset *kubernetes.Clientset
 
 	cancelFunc context.CancelFunc
@@ -33,6 +36,7 @@ func newActionHandler(tarianServerAddress string, opts []grpc.DialOption, k8sCli
 	logger.Infow("connecting to the tarian server", "address", tarianServerAddress)
 	grpcConn, err := grpc.Dial(tarianServerAddress, opts...)
 	configClient := tarianpb.NewConfigClient(grpcConn)
+	eventClient := tarianpb.NewEventClient(grpcConn)
 
 	if err != nil {
 		logger.Fatalw("couldn't not connect to tarian-server", "err", err)
@@ -40,7 +44,7 @@ func newActionHandler(tarianServerAddress string, opts []grpc.DialOption, k8sCli
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	ah := &actionHandler{eventsChan: make(chan *tarianpb.Event, 4096), configClient: configClient, k8sClientset: k8sClientset, cancelFunc: cancel, cancelCtx: ctx}
+	ah := &actionHandler{eventsChan: make(chan *tarianpb.Event, 4096), configClient: configClient, eventClient: eventClient, k8sClientset: k8sClientset, cancelFunc: cancel, cancelCtx: ctx}
 
 	return ah
 }
@@ -137,9 +141,38 @@ func (ah *actionHandler) runAction(action *tarianpb.Action, pod *tarianpb.Pod) {
 	defer cancel()
 
 	err := ah.k8sClientset.CoreV1().Pods(pod.GetNamespace()).Delete(ctx, pod.GetName(), metaV1.DeleteOptions{})
-	if err != nil {
+	if err == nil {
+		err2 := ah.ingestPodDeletedEvent(pod)
+
+		if err2 != nil {
+			logger.Errorw("error while logging pod-deleted event", "actionName", action.GetName(), "action", action.GetAction(), "pod", pod.GetNamespace(), "namespace", pod.GetNamespace(), "error", err)
+		}
+	} else {
 		logger.Infow("error while executing delete-pod action", "actionName", action.GetName(), "action", action.GetAction(), "pod", pod.GetNamespace(), "namespace", pod.GetNamespace(), "error", err)
 	}
+}
+
+func (ah *actionHandler) ingestPodDeletedEvent(pod *tarianpb.Pod) error {
+	event := &tarianpb.Event{
+		Type:            tarianpb.EventTypePodDeleted,
+		ClientTimestamp: timestamppb.Now(),
+		Targets: []*tarianpb.Target{
+			{
+				Pod: pod,
+			},
+		},
+	}
+
+	req := &tarianpb.IngestEventRequest{
+		Event: event,
+	}
+
+	ctx2, cancel2 := context.WithTimeout(ah.cancelCtx, 10*time.Second)
+	defer cancel2()
+
+	_, err := ah.eventClient.IngestEvent(ctx2, req)
+
+	return err
 }
 
 func (ah *actionHandler) LoopSyncActions() error {

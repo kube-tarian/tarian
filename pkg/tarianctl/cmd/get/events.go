@@ -64,6 +64,11 @@ func NewGetEventsCommand() *cli.Command {
 						evt.WriteString("falco alert\n")
 						evt.WriteString(falcoAlertToString(t.GetFalcoAlert()))
 					}
+
+					if e.GetType() == tarianpb.EventTypePodDeleted {
+						evt.WriteString("pod deleted")
+					}
+
 					evt.WriteString("\n")
 
 					table.Append(

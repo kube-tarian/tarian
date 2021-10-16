@@ -6,3 +6,4 @@ const KindEvent = "Event"
 
 const EventTypeViolation = "violation"
 const EventTypeFalcoAlert = "falco_alert"
+const EventTypePodDeleted = "pod_deleted"
