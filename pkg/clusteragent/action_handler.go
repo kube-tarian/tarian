@@ -144,7 +144,7 @@ func actionMatchesPod(action *tarianpb.Action, pod *tarianpb.Pod) bool {
 		podLabels.Add(l.GetKey() + "=" + l.GetValue())
 	}
 
-	return actionLabels.IsSubset(podLabels)
+	return podLabels.IsSubset(actionLabels)
 }
 
 func (ah *actionHandler) runAction(action *tarianpb.Action, pod *tarianpb.Pod) {
