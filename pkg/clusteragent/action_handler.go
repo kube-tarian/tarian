@@ -95,11 +95,34 @@ func (ah *actionHandler) ProcessActions(event *tarianpb.Event) {
 			}
 
 			if actionEventFulfilled && actionMatchesPod(action, pod) {
-				ah.runAction(action, pod)
+				// check if action timestamp is greater than pod's creation timestamp
+				// to prevent the pod from being terminated multiple times
+				if ah.isEventTimestampRecent(event.GetClientTimestamp(), pod) {
+					ah.runAction(action, pod)
+				}
 			}
 		}
 		ah.actionsLock.RUnlock()
 	}
+}
+
+func (ah *actionHandler) isEventTimestampRecent(t *timestamppb.Timestamp, podInfo *tarianpb.Pod) bool {
+	if ah.k8sClientset == nil {
+		logger.Warnw("about to determine action timestamp is recent, but kubernetes client is nil", "pod", podInfo.GetNamespace(), "namespace", podInfo.GetNamespace())
+		return false
+	}
+
+	ctx, cancel := context.WithTimeout(ah.cancelCtx, 10*time.Second)
+	defer cancel()
+
+	pod, err := ah.k8sClientset.CoreV1().Pods(podInfo.GetNamespace()).Get(ctx, podInfo.GetName(), metaV1.GetOptions{})
+
+	if err != nil {
+		logger.Errorw("error while calling get pod to check the created timestamp", "pod", pod.GetNamespace(), "namespace", pod.GetNamespace(), "err", err)
+		return false
+	}
+
+	return t.AsTime().After(pod.CreationTimestamp.Time)
 }
 
 func actionMatchesPod(action *tarianpb.Action, pod *tarianpb.Pod) bool {

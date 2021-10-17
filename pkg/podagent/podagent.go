@@ -49,6 +49,8 @@ type PodAgent struct {
 
 	constraints            []*tarianpb.Constraint
 	constraintsLock        sync.RWMutex
+	constraintsInitialized bool
+
 	fileValidationInterval time.Duration
 
 	cancelFunc context.CancelFunc
@@ -63,7 +65,7 @@ type PodAgent struct {
 func NewPodAgent(clusterAgentAddress string) *PodAgent {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return &PodAgent{clusterAgentAddress: clusterAgentAddress, cancelCtx: ctx, cancelFunc: cancel}
+	return &PodAgent{clusterAgentAddress: clusterAgentAddress, cancelCtx: ctx, cancelFunc: cancel, constraintsInitialized: false}
 }
 
 func (p *PodAgent) SetPodLabels(labels []*tarianpb.Label) {
@@ -213,10 +215,22 @@ func (p *PodAgent) SyncConstraints() {
 	cancel()
 
 	p.SetConstraints(r.GetConstraints())
+
+	p.constraintsInitialized = true
 }
 
 func (p *PodAgent) loopValidateProcesses(ctx context.Context) error {
 	for {
+		select {
+		case <-time.After(3 * time.Second):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+
+		if !p.constraintsInitialized {
+			continue
+		}
+
 		ps, _ := psutil.Processes()
 		processes := NewProcessesFromPsutil(ps)
 
@@ -231,17 +245,21 @@ func (p *PodAgent) loopValidateProcesses(ctx context.Context) error {
 		if len(violations) > 0 {
 			p.ReportViolationsToClusterAgent(violations)
 		}
-
-		select {
-		case <-time.After(3 * time.Second):
-		case <-ctx.Done():
-			return ctx.Err()
-		}
 	}
 }
 
 func (p *PodAgent) loopValidateFileChecksums(ctx context.Context) error {
 	for {
+		select {
+		case <-time.After(p.fileValidationInterval):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+
+		if !p.constraintsInitialized {
+			continue
+		}
+
 		violatedFiles := p.validateFileChecksums()
 
 		for _, violation := range violatedFiles {
@@ -250,12 +268,6 @@ func (p *PodAgent) loopValidateFileChecksums(ctx context.Context) error {
 
 		if len(violatedFiles) > 0 {
 			p.ReportViolatedFilesToClusterAgent(violatedFiles)
-		}
-
-		select {
-		case <-time.After(p.fileValidationInterval):
-		case <-ctx.Done():
-			return ctx.Err()
 		}
 	}
 }
