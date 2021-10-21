@@ -18,11 +18,6 @@ func NewImportCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "import",
 		Usage: "Import resources to the Tarian Server.",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name: "output",
-			},
-		},
 		Action: func(c *cli.Context) error {
 			logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
 			util.SetLogger(logger)
