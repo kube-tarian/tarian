@@ -8,7 +8,6 @@ import (
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -146,7 +145,6 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 		VolumeMounts: volumeMounts,
 	}
 	pod.Spec.Containers = append(pod.Spec.Containers, podAgentContainer)
-	pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 
 	podInfoVolume := corev1.Volume{
 		Name: "podinfo",

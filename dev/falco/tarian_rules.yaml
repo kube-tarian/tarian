@@ -1,0 +1,9 @@
+- macro: pod_name_exists
+  condition: (k8s.pod.name!="<NA>")
+
+- rule: falco.tarian.dev/v1 detect spawned_process
+  desc: Used by tarian to detect spawned process.
+  condition: spawned_process and pod_name_exists
+  output: "falco.tarian.dev/v1 detect spawned process (proc.pid=%proc.pid proc.name=%proc.name proc.cmdline=%proc.cmdline)"
+  priority: DEBUG
+

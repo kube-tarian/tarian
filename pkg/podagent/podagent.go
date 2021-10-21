@@ -136,7 +136,7 @@ func (p *PodAgent) RunThreatScan() {
 	}()
 
 	go func() {
-		p.loopValidateProcesses(p.cancelCtx)
+		// p.loopValidateProcesses(p.cancelCtx)
 		wg.Done()
 	}()
 
@@ -217,35 +217,6 @@ func (p *PodAgent) SyncConstraints() {
 	p.SetConstraints(r.GetConstraints())
 
 	p.constraintsInitialized = true
-}
-
-func (p *PodAgent) loopValidateProcesses(ctx context.Context) error {
-	for {
-		select {
-		case <-time.After(3 * time.Second):
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-
-		if !p.constraintsInitialized {
-			continue
-		}
-
-		ps, _ := psutil.Processes()
-		processes := NewProcessesFromPsutil(ps)
-
-		violations := p.ValidateProcesses(processes)
-
-		for _, violation := range violations {
-			name := violation.GetName()
-
-			logger.Debugw("found process that violates regex", "process", name)
-		}
-
-		if len(violations) > 0 {
-			p.ReportViolationsToClusterAgent(violations)
-		}
-	}
 }
 
 func (p *PodAgent) loopValidateFileChecksums(ctx context.Context) error {

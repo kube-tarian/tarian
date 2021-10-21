@@ -1,8 +1,0 @@
-customRules:
-  nginx.yaml: |-
-    - rule: Bahaya Write
-      desc: Bahaya write
-      condition: k8s.pod.name in ("nginx")
-      output: "Bahaya write (user=%user.name command=%proc.cmdline file=%fd.name evt=%evt.type)"
-      priority: ERROR
-

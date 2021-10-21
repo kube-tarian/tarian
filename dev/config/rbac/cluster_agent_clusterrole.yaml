@@ -11,3 +11,5 @@ rules:
   verbs:
   - delete
   - get
+  - list
+  - watch

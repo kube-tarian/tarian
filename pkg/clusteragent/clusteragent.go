@@ -1,12 +1,15 @@
 package clusteragent
 
 import (
+	"context"
 	"os"
 	"path/filepath"
+	"time"
 
 	falcoclient "github.com/falcosecurity/client-go/pkg/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"google.golang.org/grpc"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -27,9 +30,16 @@ type ClusterAgent struct {
 	eventServer          *EventServer
 	falcoAlertsSubsriber *FalcoAlertsSubscriber
 	actionHandler        *actionHandler
+	configCache          *ConfigCache
+
+	k8sInformers informers.SharedInformerFactory
+	context      context.Context
+	cancelFunc   context.CancelFunc
 }
 
 func NewClusterAgent(config *ClusterAgentConfig) *ClusterAgent {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	grpcServer := grpc.NewServer()
 
 	configServer := NewConfigServer(config.ServerAddress, config.ServerGrpcDialOptions)
@@ -78,17 +88,31 @@ func NewClusterAgent(config *ClusterAgentConfig) *ClusterAgent {
 	tarianpb.RegisterConfigServer(grpcServer, configServer)
 	tarianpb.RegisterEventServer(grpcServer, eventServer)
 
+	grpcConn, err := grpc.Dial(config.ServerAddress, config.ServerGrpcDialOptions...)
+	if err != nil {
+		logger.Warnw("error creating grpc conn", "err", err)
+	}
+	configClient := tarianpb.NewConfigClient(grpcConn)
+	configCache := NewConfigCache(ctx, configClient)
+
 	ca := &ClusterAgent{
+		configCache:   configCache,
 		grpcServer:    grpcServer,
 		configServer:  configServer,
 		eventServer:   eventServer,
 		actionHandler: actionHandler,
+		k8sInformers:  informers.NewSharedInformerFactory(k8sClientset, 12*time.Hour),
+		context:       ctx,
+		cancelFunc:    cancel,
 	}
+
+	// Not sure why this is needed, but it doesn't work without this.
+	ca.k8sInformers.Core().V1().Pods().Informer()
 
 	if config.EnableFalcoIntegration {
 		var err error
 
-		ca.falcoAlertsSubsriber, err = NewFalcoAlertsSubscriber(config.ServerAddress, config.ServerGrpcDialOptions, config.FalcoClientConfig, actionHandler)
+		ca.falcoAlertsSubsriber, err = NewFalcoAlertsSubscriber(config.ServerAddress, config.ServerGrpcDialOptions, config.FalcoClientConfig, actionHandler, k8sClientset, ca.k8sInformers, ca.configCache)
 
 		if err != nil {
 			logger.Fatalw("falco: unable to connect to falco grpc server", "err", err)
@@ -105,6 +129,8 @@ func (ca *ClusterAgent) Close() {
 	if ca.falcoAlertsSubsriber != nil {
 		ca.falcoAlertsSubsriber.Close()
 	}
+
+	ca.cancelFunc()
 }
 
 func (ca *ClusterAgent) GetGrpcServer() *grpc.Server {
@@ -115,6 +141,8 @@ func (ca *ClusterAgent) GetFalcoAlertsSubscriber() *FalcoAlertsSubscriber {
 	return ca.falcoAlertsSubsriber
 }
 
-func (ca *ClusterAgent) RunActionHandler() {
-	ca.actionHandler.Run()
+func (ca *ClusterAgent) Run() {
+	go ca.configCache.Run()
+	go ca.actionHandler.Run()
+	go ca.k8sInformers.Start(ca.context.Done())
 }

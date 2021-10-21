@@ -21,6 +21,6 @@ sleep 10
 __dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 kubectl apply -f "$__dir/k8s" -R
 
-helm upgrade -i falco falcosecurity/falco -n falco -f "$__dir/falco-values.yaml" -f "$__dir/custom-rules.yaml"
+helm upgrade -i falco falcosecurity/falco -n falco -f "$__dir/falco-values.yaml" --set-file customRules."tarian_rules\.yaml"="$__dir/tarian_rules.yaml"
 
 
