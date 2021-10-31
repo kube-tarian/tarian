@@ -97,6 +97,7 @@ jobs:
           kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=5m || true
           kubectl get pods --all-namespaces
           kubectl get deployment --all-namespaces
+          kubectl get svc --all-namespaces
           sleep 5s
 
       - run: make k8s-test

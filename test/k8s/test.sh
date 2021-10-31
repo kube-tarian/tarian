@@ -49,6 +49,13 @@ echo $'test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/c
 test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- http://alertmanager.tarian-system.svc:9093/api/v2/alerts | jq '. | length') -gt 1 \
   || (echo "expected alerts created" && false)
 
+# run command to registering constraints
+kubectl exec -ti nginx2 -c nginx -- pwd
+kubectl exec -ti nginx2 -c nginx -- ls /
+
+# give time for tarian-cluser-agent to process the falco alerts
+sleep 5
+
 tarianctl get constraints
 
 # test register constraint using annotation
