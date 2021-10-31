@@ -99,7 +99,7 @@ func getCliApp() *cli.App {
 			},
 			{
 				Name:  "register",
-				Usage: "Run the pod agent to register known processes and files as a constraint",
+				Usage: "Run the pod agent to register file checksum as a constraint",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "host",
@@ -139,7 +139,7 @@ func getCliApp() *cli.App {
 					&cli.StringFlag{
 						Name:  "register-rules",
 						Usage: "Type of rules that should be automatically registered.",
-						Value: "processes,files",
+						Value: "files",
 					},
 					&cli.StringFlag{
 						Name:  "register-file-paths",
@@ -255,15 +255,11 @@ func register(c *cli.Context) error {
 	registerRules := strings.Split(c.String("register-rules"), ",")
 	for _, rule := range registerRules {
 		switch strings.TrimSpace(rule) {
-		case "processes":
-			logger.Infow("enabled auto register for processes")
-			agent.EnableRegisterProcesses()
 		case "files":
 			logger.Infow("enabled auto register for files")
 			agent.EnableRegisterFiles()
 		case "all":
 			logger.Infow("enabled auto register for all rules")
-			agent.EnableRegisterProcesses()
 			agent.EnableRegisterFiles()
 		}
 	}

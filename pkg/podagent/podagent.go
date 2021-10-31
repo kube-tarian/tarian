@@ -8,14 +8,11 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
-	psutil "github.com/shirou/gopsutil/process"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -56,7 +53,6 @@ type PodAgent struct {
 	cancelFunc context.CancelFunc
 	cancelCtx  context.Context
 
-	enableRegisterProcesses bool
 	enableRegisterFiles     bool
 	registerFilePaths       []string
 	registerFileIgnorePaths []string
@@ -86,10 +82,6 @@ func (p *PodAgent) SetNamespace(namespace string) {
 
 func (p *PodAgent) SetFileValidationInterval(t time.Duration) {
 	p.fileValidationInterval = t
-}
-
-func (p *PodAgent) EnableRegisterProcesses() {
-	p.enableRegisterProcesses = true
 }
 
 func (p *PodAgent) EnableRegisterFiles() {
@@ -128,15 +120,10 @@ func (p *PodAgent) RunThreatScan() {
 	defer p.grpcConn.Close()
 
 	wg := sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(2)
 
 	go func() {
 		p.loopSyncConstraints(p.cancelCtx)
-		wg.Done()
-	}()
-
-	go func() {
-		// p.loopValidateProcesses(p.cancelCtx)
 		wg.Done()
 	}()
 
@@ -159,14 +146,6 @@ func (p *PodAgent) RunRegister() {
 		p.loopSyncConstraints(p.cancelCtx)
 		wg.Done()
 	}()
-
-	if p.enableRegisterProcesses {
-		wg.Add(1)
-		go func() {
-			p.loopRegisterProcesses(p.cancelCtx)
-			wg.Done()
-		}()
-	}
 
 	if p.enableRegisterFiles {
 		wg.Add(1)
@@ -241,96 +220,6 @@ func (p *PodAgent) loopValidateFileChecksums(ctx context.Context) error {
 			p.ReportViolatedFilesToClusterAgent(violatedFiles)
 		}
 	}
-}
-
-func (p *PodAgent) ReportViolationsToClusterAgent(processes map[int32]*Process) {
-	violatedProcesses := make([]*tarianpb.Process, len(processes))
-
-	i := 0
-	for _, p := range processes {
-		violatedProcesses[i] = &tarianpb.Process{Pid: p.GetPid(), Name: p.GetName()}
-		i++
-	}
-
-	req := &tarianpb.IngestEventRequest{
-		Event: &tarianpb.Event{
-			Type:            tarianpb.EventTypeViolation,
-			ClientTimestamp: timestamppb.Now(),
-			Targets: []*tarianpb.Target{
-				{
-					Pod: &tarianpb.Pod{
-						Uid:       p.podUID,
-						Name:      p.podName,
-						Namespace: p.namespace,
-						Labels:    p.podLabels,
-					},
-					ViolatedProcesses: violatedProcesses,
-				},
-			},
-		},
-	}
-
-	response, err := p.eventClient.IngestEvent(context.Background(), req)
-
-	if err != nil {
-		logger.Errorw("error while reporting violation events", "err", err)
-	} else {
-		logger.Debugw("ingest event response", "response", response)
-	}
-}
-
-func (p *PodAgent) ValidateProcesses(processes []*Process) map[int32]*Process {
-	p.constraintsLock.RLock()
-
-	// map[pid]*process
-	violations := make(map[int32]*Process)
-	allowedProcesses := make(map[int32]*Process)
-
-	for _, process := range processes {
-		violations[process.GetPid()] = process
-	}
-
-	for _, constraint := range p.constraints {
-		if constraint.GetAllowedProcesses() == nil {
-			continue
-		}
-
-		for _, allowedProcess := range constraint.GetAllowedProcesses() {
-			if allowedProcess.GetRegex() == "" {
-				continue
-			}
-
-			rgx, err := regexp.Compile(allowedProcess.GetRegex())
-
-			if err != nil {
-				logger.Errorw("can not compile regex", "err", err)
-				continue
-			}
-
-			logger.Debugw("looking for running processes that violate regex", "expr", rgx.String())
-
-			for _, process := range processes {
-				name := process.GetName()
-
-				if err != nil {
-					logger.Errorw("can not read process name", "err", err)
-					continue
-				}
-
-				if rgx.MatchString(name) {
-					allowedProcesses[process.GetPid()] = process
-				}
-			}
-		}
-	}
-
-	p.constraintsLock.RUnlock()
-
-	for pid := range allowedProcesses {
-		delete(violations, pid)
-	}
-
-	return violations
 }
 
 type violatedFile struct {
@@ -431,68 +320,6 @@ func (p *PodAgent) ReportViolatedFilesToClusterAgent(violatedFiles map[string]*v
 		logger.Errorw("error while reporting violation events", "err", err)
 	} else {
 		logger.Debugw("ingest event response", "response", response)
-	}
-}
-
-func (p *PodAgent) loopRegisterProcesses(ctx context.Context) error {
-	for {
-		logger.Debugw("loop register processes")
-		ps, _ := psutil.Processes()
-		processes := NewProcessesFromPsutil(ps)
-
-		violations := p.ValidateProcesses(processes)
-
-		for _, violation := range violations {
-			name := violation.GetName()
-
-			logger.Debugw("found process that violates regex", "process", name)
-		}
-
-		if len(violations) > 0 {
-			p.RegisterViolationsAsNewConstraint(violations)
-		}
-
-		select {
-		case <-time.After(3 * time.Second):
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
-}
-
-func (p *PodAgent) RegisterViolationsAsNewConstraint(processes map[int32]*Process) {
-	allowedProcessRules := []*tarianpb.AllowedProcessRule{}
-
-	deduplicateProcessName := make(map[string]struct{})
-
-	for _, p := range processes {
-		name := regexp.QuoteMeta(p.GetName())
-		if _, ok := deduplicateProcessName[name]; ok {
-			continue
-		}
-
-		allowedProcessRules = append(allowedProcessRules, &tarianpb.AllowedProcessRule{Regex: &name})
-		deduplicateProcessName[name] = struct{}{}
-	}
-
-	req := &tarianpb.AddConstraintRequest{
-		Constraint: &tarianpb.Constraint{
-			Kind:      tarianpb.KindConstraint,
-			Namespace: p.namespace,
-			Name:      p.podName + "-" + strconv.FormatInt(time.Now().UnixNano()/time.Hour.Milliseconds(), 10),
-			Selector: &tarianpb.Selector{
-				MatchLabels: matchLabelsFromLabels(p.podLabels),
-			},
-			AllowedProcesses: allowedProcessRules,
-		},
-	}
-
-	response, err := p.configClient.AddConstraint(context.Background(), req)
-
-	if err != nil {
-		logger.Errorw("error while registering process constraint", "err", err)
-	} else {
-		logger.Debugw("add constraint response", "response", response)
 	}
 }
 

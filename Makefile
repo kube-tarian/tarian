@@ -86,6 +86,15 @@ create-kind-cluster:
 delete-kind-cluster:
 	kind delete cluster
 
+create-minikube-cluster:
+	minikube start --driver=virtualbox --insecure-registry "10.0.0.0/8"
+	minikube addons enable registry
+	bash -c 'docker start minikube-registry || docker run --name=minikube-registry --rm -ti -d --network=host alpine /bin/ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:`minikube ip`:5000"'
+
+delete-minikube-cluster:
+	docker rm minikube-registry -f
+	minikube delete
+
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
 controller-test: manifests generate fmt vet ## Run tests.
 	mkdir -p ${ENVTEST_ASSETS_DIR}
