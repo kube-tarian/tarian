@@ -1,24 +1,42 @@
 # Contributing
 
-We welcome and accepts contributions via GitHub pull requests.
+Tarian welcomes and accepts contributions via GitHub pull requests.
 
-## Run locally
+## Pre-requisites
 
-### Pre-requisites
-
-- [Kind](https://kind.sigs.k8s.io/)
+- [A kubernetes cluster that is able to run falco](https://falco.org/docs/getting-started/third-party/learning/) 
+  - minikube
+  - or kind, with falco installed on the host
+  - or a managed (cloud) kubernetes cluster with ability to run falco
 - [Go 1.17+](https://golang.org/)
 - [Kubectl](https://kubernetes.io/docs/tasks/tools/)
+- Docker for developing with local cluster
 
-### Setup
+If you want to go with local cluster, we have makefile targets to help you:
 
+### Kind
 
-Go to the root directory of this project.
-
-1. Create a kind cluster
+After installing falco on the host (https://falco.org/docs/getting-started/installation/), run the following command:
 
 ```bash
 make create-kind-cluster
+```
+
+### Minikube
+
+```bash
+make create-minikube-cluster
+```
+
+
+## Setup
+
+1. Prepare build tools
+
+```bash
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.26
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
+make protoc bin/goreleaser kustomize
 ```
 
 2. Build local images
@@ -41,9 +59,9 @@ Once the pods are running (`kubectl get pods -n tarian-system`),
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
 ```
 
-Test a scenario:
+## See if it's working
 
-5. Run pod:
+1. Run a pod:
 
 ```bash
 kubectl run nginx --image=nginx --annotations=pod-agent.k8s.tarian.dev/threat-scan=true
@@ -51,13 +69,13 @@ kubectl run nginx --image=nginx --annotations=pod-agent.k8s.tarian.dev/threat-sc
 
 There should be a container injected in nginx pod.
 
-6. Add constraint for that pod:
+2. Add constraint for that pod:
 
 ```bash
 ./bin/tarianctl --server-address=localhost:31051 add constraint --name=nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx
 ```
 
-7. Test the violation event
+3. Test the violation event
 
 ```bash
 kubectl exec -ti nginx -c nginx -- sleep 10
