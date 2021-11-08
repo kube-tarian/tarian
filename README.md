@@ -37,15 +37,150 @@ Why another new security tool when there are many tools available already, like 
 
 #
 
+## Prerequisites
+
+A kubernetes cluster that supports running [Falco](https://falco.org/docs/getting-started/)
+
 ## Install
 
-1. Create tarian-system namespace
+Tarian integrates with Falco by subscribing Falco Alerts via [gRPC API](https://falco.org/docs/grpc/). Falco support running gRPC API with mandatory mutual TLS (mTLS). So, firstly we need to prepare the certificates.
+
+### Prepare Namespaces
 
 ```bash
 kubectl create namespace tarian-system
+kubectl create namespace falco
 ```
 
-2. Prepare a Postgresql Database. You can use a DB as a service from your Cloud Services or you can also run by yourself in the cluster. For example to install the DB in the cluster, run:
+### Prepare Certificate for mTLS
+
+You can setup certificates manually and save those certs to secrets accessible from Falco and Tarian pods. For convenient, you can use Cert Manager to manage the certs.
+
+1. Install Cert Manager by following this guide https://cert-manager.io/docs/installation/
+2. Wait for cert manager pods to be ready
+
+```bash
+kubectl wait --for=condition=ready pods --all -n cert-manager --timeout=3m
+```
+
+3. Setup certs
+
+Save this to `tarian-falco-certs.yaml`, then run `kubectl apply -f tarian-falco-certs.yaml`.
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: root-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: root-ca
+  secretName: root-secret
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ca-issuer
+spec:
+  ca:
+    secretName: root-secret
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: falco-grpc-server
+  namespace: falco
+spec:
+  isCA: false
+  commonName: falco-grpc
+  dnsNames:
+  - falco-grpc.falco.svc
+  - falco-grpc
+  secretName: falco-grpc-server-cert
+  usages:
+  - server auth
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: falco-integration-cert
+  namespace: tarian-system
+spec:
+  isCA: false
+  commonName: tarian-falco-integration
+  dnsNames:
+  - tarian-falco-integration
+  usages:
+  - client auth
+  secretName: tarian-falco-integration
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+```
+
+### Install Falco
+
+Save this to `falco-values.yaml`
+
+```yaml
+extraVolumes:
+- name: grpc-cert
+  secret:
+    secretName: falco-grpc-server-cert
+extraVolumeMounts:
+- name: grpc-cert
+  mountPath: /etc/falco/grpc-cert
+falco:
+  grpc:
+    enabled: true
+    unixSocketPath: ""
+    threadiness: 1
+    listenPort: 5060
+    privateKey: /etc/falco/grpc-cert/tls.key
+    certChain: /etc/falco/grpc-cert/tls.crt
+    rootCerts: /etc/falco/grpc-cert/ca.crt
+  grpcOutput:
+    enabled: true
+```
+
+Then install Falco using Helm:
+
+```bash
+helm repo add falcosecurity https://falcosecurity.github.io/charts
+helm repo update
+
+helm upgrade -i falco falcosecurity/falco -n falco -f falco-values.yaml
+```
+
+### Setup a Postgresql Database
+
+You can use a DB as a service from your Cloud Services or you can also run by yourself in the cluster. For example to install the DB in the cluster, run:
 
 ```bash
 helm repo add bitnami https://charts.bitnami.com/bitnami
@@ -56,27 +191,36 @@ helm install tarian-postgresql bitnami/postgresql -n tarian-system \
   --set postgresqlDatabase=tarian
 ```
 
-3. Install tarian
+### Install tarian
+
+1. Install tarian using Helm
 
 ```bash
 helm repo add tarian https://kube-tarian.github.io/tarian
 helm repo update
 
-helm install tarian-server tarian/tarian-server --devel -n tarian-system
-helm install tarian-cluster-agent tarian/tarian-cluster-agent --devel -n tarian-system
+helm upgrade -i tarian-server tarian/tarian-server --devel -n tarian-system
+helm upgrade -i tarian-cluster-agent tarian/tarian-cluster-agent --devel -n tarian-system \
+  --set clusterAgent.falco.clientTlsSecretName=tarian-falco-integration \
+  --set clusterAgent.falco.grpcServerHostname=falco-grpc.falco.svc \
+  --set clusterAgent.falco.grpcServerPort=5060
 ```
 
-4. Wait for all the pods to be ready
+2. Wait for all the pods to be ready
 
 ```bash
 kubectl wait --for=condition=ready pod --all -n tarian-system
 ```
 
-5. Run database migration to create the required tables
+3. Run database migration to create the required tables
 
 ```bash
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
 ```
+
+4. Verify
+
+After the above step, you should see falco alert in tarianctl get events (See the following Usage sections).
 
 
 ## Configuration
@@ -188,10 +332,6 @@ helm install tarian-server tarian/tarian-server --devel \
 ```
 
 To disable it, you can set the alertManagerAddress value to empty.
-
-## Falco Integration
-
-See [docs/falco-integration.md](docs/falco-integration.md)
 
 ## Troubleshooting
 
