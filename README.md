@@ -54,6 +54,8 @@ kubectl create namespace falco
 
 ### Prepare Certificate for mTLS
 
+#### With Cert Manager
+
 You can setup certificates manually and save those certs to secrets accessible from Falco and Tarian pods. For convenient, you can use Cert Manager to manage the certs.
 
 1. Install Cert Manager by following this guide https://cert-manager.io/docs/installation/
@@ -64,6 +66,8 @@ kubectl wait --for=condition=ready pods --all -n cert-manager --timeout=3m
 ```
 
 3. Setup certs
+
+##### A. If you don't have an existing cluster issuer, you can create one using a self-signed issuer
 
 Save this to `tarian-falco-certs.yaml`, then run `kubectl apply -f tarian-falco-certs.yaml`.
 
@@ -143,6 +147,66 @@ spec:
     kind: ClusterIssuer
     group: cert-manager.io
 ```
+
+##### B. If you have an existing cluster issuer
+
+Save this to `tarian-falco-certs.yaml`, then run `kubectl apply -f tarian-falco-certs.yaml`.
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: falco-grpc-server
+  namespace: falco
+spec:
+  isCA: false
+  commonName: falco-grpc
+  dnsNames:
+  - falco-grpc.falco.svc
+  - falco-grpc
+  secretName: falco-grpc-server-cert
+  usages:
+  - server auth
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: your-issuer # change this to yours
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: falco-integration-cert
+  namespace: tarian-system
+spec:
+  isCA: false
+  commonName: tarian-falco-integration
+  dnsNames:
+  - tarian-falco-integration
+  usages:
+  - client auth
+  secretName: tarian-falco-integration
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: your-issuer # change this to yours
+    kind: ClusterIssuer
+    group: cert-manager.io
+```
+
+#### Setup certificates manually
+
+If you have other ways to setup the certificates, that would work too. You can create kubernetes secrets containing those certificates.
+The following steps expect that the secrets are named:
+
+- `tarian-falco-integration` in namespace `tarian-system`
+- `falco-grpc-server-cert` in namespace `falco`
+
+For mTLS to work, those certificates need to be signed by the same CA.
+
 
 ### Install Falco
 
