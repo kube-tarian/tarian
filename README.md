@@ -208,7 +208,7 @@ The following steps expect that the secrets are named:
 For mTLS to work, those certificates need to be signed by the same CA.
 
 
-### Install Falco
+### Install Falco with custom rules from Tarian
 
 Save this to `falco-values.yaml`
 
@@ -239,7 +239,8 @@ Then install Falco using Helm:
 helm repo add falcosecurity https://falcosecurity.github.io/charts
 helm repo update
 
-helm upgrade -i falco falcosecurity/falco -n falco -f falco-values.yaml
+helm upgrade -i falco falcosecurity/falco -n falco -f falco-values.yaml \
+  --set-file customRules."tarian_rules\.yaml"=https://raw.githubusercontent.com/kube-tarian/tarian/main/dev/falco/tarian_rules.yaml
 ```
 
 ### Setup a Postgresql Database
@@ -264,10 +265,7 @@ helm repo add tarian https://kube-tarian.github.io/tarian
 helm repo update
 
 helm upgrade -i tarian-server tarian/tarian-server --devel -n tarian-system
-helm upgrade -i tarian-cluster-agent tarian/tarian-cluster-agent --devel -n tarian-system \
-  --set clusterAgent.falco.clientTlsSecretName=tarian-falco-integration \
-  --set clusterAgent.falco.grpcServerHostname=falco-grpc.falco.svc \
-  --set clusterAgent.falco.grpcServerPort=5060
+helm upgrade -i tarian-cluster-agent tarian/tarian-cluster-agent --devel -n tarian-system
 ```
 
 2. Wait for all the pods to be ready
