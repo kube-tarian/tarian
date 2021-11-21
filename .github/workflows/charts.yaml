@@ -51,7 +51,22 @@ jobs:
           config: 'dev/cluster-config.yaml'
 
       - name: Create namespace
-        run: kubectl create namespace tarian-system
+        run: | 
+          kubectl create namespace tarian-system
+          kubectl create namespace falco
+
+      - name: Setup certs
+        run: |
+          kubectl apply -f https://github.com/jetstack/cert-manager/releases/latest/download/cert-manager.yaml
+          kubectl wait --for=condition=ready pods --all -n cert-manager --timeout=3m || true
+          sleep 10
+          kubectl apply -f "./dev/falco/k8s" -R
+
+      - name: Setup falco
+        run: |
+        	helm repo add falcosecurity https://falcosecurity.github.io/charts
+          helm repo update
+          helm upgrade -i falco falcosecurity/falco -n falco -f "./dev/falco/falco-values.yaml" --set-file customRules."tarian_rules\.yaml"="./dev/falco/tarian_rules.yaml"
 
       - name: Install postgresql
         run: |
