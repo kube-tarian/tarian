@@ -32,6 +32,8 @@ kubectl exec -ti nginx -c nginx -- sleep 15
 
 # output for debugging
 tarianctl get events
+kubectl logs ds/falco -n falco
+kubectl logs deploy/tarian-cluster-agent -n tarian-system
 
 # assert contains sleep
 tarianctl get events | grep sleep
