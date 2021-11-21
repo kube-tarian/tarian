@@ -64,7 +64,7 @@ jobs:
 
       - name: Setup falco
         run: |
-        	helm repo add falcosecurity https://falcosecurity.github.io/charts
+          helm repo add falcosecurity https://falcosecurity.github.io/charts
           helm repo update
           helm upgrade -i falco falcosecurity/falco -n falco -f "./dev/falco/falco-values.yaml" --set-file customRules."tarian_rules\.yaml"="./dev/falco/tarian_rules.yaml"
 
