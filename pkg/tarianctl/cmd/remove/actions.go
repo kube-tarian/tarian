@@ -14,8 +14,9 @@ import (
 
 func NewRemoveActionsCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "actions",
-		Usage: "Remove actions from the Tarian Server.",
+		Name:    "actions",
+		Usage:   "Remove actions from the Tarian Server.",
+		Aliases: []string{"action"},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "namespace",
