@@ -173,6 +173,18 @@ func threatScan(c *cli.Context) error {
 			logger.Errorw("failed reading pod-labels-file", "err", err)
 		}
 
+		// delete pod-template-hash
+		for i, e := range podLabels {
+			if e.GetKey() == "pod-template-hash" {
+				newPodLabels := make([]*tarianpb.Label, 0)
+				newPodLabels = append(newPodLabels, podLabels[:i]...)
+				newPodLabels = append(newPodLabels, podLabels[i+1:]...)
+				podLabels = newPodLabels
+
+				break
+			}
+		}
+
 		agent.SetPodLabels(podLabels)
 	}
 
@@ -227,6 +239,18 @@ func register(c *cli.Context) error {
 
 		if err != nil {
 			logger.Errorw("failed reading pod-labels-file", "err", err)
+		}
+
+		// delete pod-template-hash
+		for i, e := range podLabels {
+			if e.GetKey() == "pod-template-hash" {
+				newPodLabels := make([]*tarianpb.Label, 0)
+				newPodLabels = append(newPodLabels, podLabels[:i]...)
+				newPodLabels = append(newPodLabels, podLabels[i+1:]...)
+				podLabels = newPodLabels
+
+				break
+			}
 		}
 
 		agent.SetPodLabels(podLabels)
