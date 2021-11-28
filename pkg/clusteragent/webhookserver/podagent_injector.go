@@ -99,6 +99,12 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 		"--pod-labels-file=/etc/podinfo/labels",
 	}
 
+	ignorePaths := []string{}
+
+	if registerFileIgnorePathsAnnotationPresent {
+		ignorePaths = append(ignorePaths, strings.Split(registerFileIgnorePathsAnnotationValue, ",")...)
+	}
+
 	if registerAnnotationPresent {
 		podAgentArgs = append(podAgentArgs, "--register-rules="+registerAnnotationValue)
 
@@ -113,14 +119,18 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 
 			if vm.MountPath != podInfoPath && vm.MountPath != "/var/run/secrets/kubernetes.io/serviceaccount" {
 				mountPaths = append(mountPaths, vm.MountPath)
+
+				// Ignore config map links
+				ignorePaths = append(ignorePaths, vm.MountPath+"/..*")
+				ignorePaths = append(ignorePaths, vm.MountPath+"/..**/*")
 			}
 		}
 
 		podAgentArgs = append(podAgentArgs, "--register-file-paths="+strings.Join(mountPaths, ","))
 	}
 
-	if registerFileIgnorePathsAnnotationPresent {
-		podAgentArgs = append(podAgentArgs, "--register-file-ignore-paths="+registerFileIgnorePathsAnnotationValue)
+	if len(ignorePaths) > 0 {
+		podAgentArgs = append(podAgentArgs, "--register-file-ignore-paths="+strings.Join(ignorePaths, ","))
 	}
 
 	if fileValidationInterval, ok := pod.Annotations[FileValidationIntervalAnnotation]; ok {
