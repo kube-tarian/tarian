@@ -164,13 +164,17 @@ func (f *FalcoAlertsSubscriber) registerConstraintFromTarianRuleSpawnedProcessAl
 
 	procName := outputFields["proc.name"]
 	allowedProcessRules := []*tarianpb.AllowedProcessRule{{Regex: &procName}}
+
+	podLabels := pod.GetLabels()
+	delete(podLabels, "pod-template-hash")
+
 	req := &tarianpb.AddConstraintRequest{
 		Constraint: &tarianpb.Constraint{
 			Kind:      tarianpb.KindConstraint,
 			Namespace: k8sNsName,
 			Name:      k8sPodName + "-" + strconv.FormatInt(time.Now().UnixNano()/time.Hour.Milliseconds(), 10),
 			Selector: &tarianpb.Selector{
-				MatchLabels: matchLabelsFromPodLabels(pod.GetLabels()),
+				MatchLabels: matchLabelsFromPodLabels(podLabels),
 			},
 			AllowedProcesses: allowedProcessRules,
 		},
