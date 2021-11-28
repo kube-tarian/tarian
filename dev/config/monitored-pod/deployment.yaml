@@ -3,19 +3,16 @@ kind: Deployment
 metadata:
   labels:
     run: nginx
-  name: nginx
+  name: web
 spec:
   replicas: 2
   selector:
     matchLabels:
-      run: nginx
+      run: web
   template:
     metadata:
       labels:
-        run: nginx
-      annotations:
-        pod-agent.k8s.tarian.dev/threat-scan: "true"
-        pod-agent.k8s.tarian.dev/file-validation-interval: "7s"
+        run: web
     spec:
       containers:
       - image: nginx
