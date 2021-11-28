@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: nginx
+  name: nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      run: nginx
+  template:
+    metadata:
+      labels:
+        run: nginx
+      annotations:
+        pod-agent.k8s.tarian.dev/register: "processes,files"
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        volumeMounts:
+        - name: nginx-html
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: nginx-html
+        configMap:
+          name: nginx-html
+
