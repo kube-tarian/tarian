@@ -12,6 +12,7 @@ spec:
         - --log-level=debug
         - run
         - "--server-address=tarian-server:80"
+        - "--enable-add-constraint"
         - "--falco-grpc-server-hostname=falco-grpc.falco.svc"
         - "--falco-grpc-server-port=5060"
         - "--falco-grpc-client-cert-file=/etc/tarian/certs/falco-integration/tls.crt"
