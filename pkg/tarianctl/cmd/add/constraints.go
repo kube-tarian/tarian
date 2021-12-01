@@ -76,6 +76,11 @@ func NewAddConstraintCommand() *cli.Command {
 
 			var req *tarianpb.AddConstraintRequest
 
+			// validate required fields
+			if fromViolatedPod == "" && c.String("name") == "" {
+				cli.ShowSubcommandHelpAndExit(c, 1)
+			}
+
 			if fromViolatedPod != "" {
 				constraint := buildConstraintFromViolatedPod(fromViolatedPod, c, eventClient, configClient, logger)
 
