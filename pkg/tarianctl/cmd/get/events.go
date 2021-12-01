@@ -17,8 +17,9 @@ import (
 
 func NewGetEventsCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "events",
-		Usage: "Get events from the Tarian Server.",
+		Name:    "events",
+		Aliases: []string{"event"},
+		Usage:   "Get events from the Tarian Server.",
 		Flags: []cli.Flag{
 			&cli.UintFlag{
 				Name:  "limit",

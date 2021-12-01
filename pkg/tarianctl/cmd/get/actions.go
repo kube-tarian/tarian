@@ -17,8 +17,9 @@ import (
 
 func NewGetActionsCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "actions",
-		Usage: "Get actions from the Tarian Server.",
+		Name:    "actions",
+		Aliases: []string{"action"},
+		Usage:   "Get actions from the Tarian Server.",
 		Flags: []cli.Flag{&cli.StringFlag{
 			Name:    "output",
 			Aliases: []string{"o"},

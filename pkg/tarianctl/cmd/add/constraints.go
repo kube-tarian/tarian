@@ -18,8 +18,9 @@ import (
 
 func NewAddConstraintCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "constraint",
-		Usage: "Add a constraint to the Tarian Server.",
+		Name:    "constraint",
+		Aliases: []string{"constraints"},
+		Usage:   "Add a constraint to the Tarian Server.",
 		UsageText: `tarianctl add constraint --name NAME --namespace NAMESPACE --match-labels=KEY_1=VAL_1,... --allowed-processes=REGEX_1,...
    tarianctl add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx
    tarianctl add constraint --name nginx --namespace default --match-labels run=nginx --allowed-file-sha256sums=/etc/nginx/nginx.conf=c01b39c7a35ccc3b081a3e83d2c71fa9a767ebfeb45c69f08e17dfe3ef375a7b`,

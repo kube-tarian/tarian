@@ -17,8 +17,9 @@ import (
 
 func NewGetConstraintsCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "constraints",
-		Usage: "Get constraints from the Tarian Server.",
+		Name:    "constraints",
+		Aliases: []string{"constraint"},
+		Usage:   "Get constraints from the Tarian Server.",
 		Flags: []cli.Flag{&cli.StringFlag{
 			Name:    "output",
 			Aliases: []string{"o"},

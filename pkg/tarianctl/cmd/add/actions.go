@@ -15,6 +15,7 @@ import (
 func NewAddActionCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "action",
+		Aliases:   []string{"actions"},
 		Usage:     "Add an action to the Tarian Server.",
 		UsageText: `tarianctl add action --name NAME --namespace NAMESPACE --match-labels=KEY_1=VAL_1,... --action=delete-pod`,
 		Flags: []cli.Flag{
