@@ -281,8 +281,14 @@ func buildConstraintFromViolatedPod(podName string, c *cli.Context, eventClient 
 		return nil
 	}
 
+	ignoredLabel := "pod-template-hash"
+
 	matchLabels := []*tarianpb.MatchLabel{}
 	for _, l := range labels {
+		if l.GetKey() == ignoredLabel {
+			continue
+		}
+
 		matchLabels = append(matchLabels, &tarianpb.MatchLabel{Key: l.GetKey(), Value: l.GetValue()})
 	}
 
