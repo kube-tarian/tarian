@@ -25,12 +25,12 @@ type ClusterAgentConfig struct {
 }
 
 type ClusterAgent struct {
-	grpcServer           *grpc.Server
-	configServer         *ConfigServer
-	eventServer          *EventServer
-	falcoAlertsSubsriber *FalcoAlertsSubscriber
-	actionHandler        *actionHandler
-	configCache          *ConfigCache
+	grpcServer            *grpc.Server
+	configServer          *ConfigServer
+	eventServer           *EventServer
+	actionHandler         *actionHandler
+	configCache           *ConfigCache
+	falcoSidekickListener *FalcoSidekickListener
 
 	k8sInformers informers.SharedInformerFactory
 	context      context.Context
@@ -109,15 +109,7 @@ func NewClusterAgent(config *ClusterAgentConfig) *ClusterAgent {
 	// Not sure why this is needed, but it doesn't work without this.
 	ca.k8sInformers.Core().V1().Pods().Informer()
 
-	if config.EnableFalcoIntegration {
-		var err error
-
-		ca.falcoAlertsSubsriber, err = NewFalcoAlertsSubscriber(config.ServerAddress, config.ServerGrpcDialOptions, config.FalcoClientConfig, actionHandler, k8sClientset, ca.k8sInformers, ca.configCache)
-
-		if err != nil {
-			logger.Fatalw("falco: unable to connect to falco grpc server", "err", err)
-		}
-	}
+	ca.falcoSidekickListener = NewFalcoSidekickListener(":8088", config.ServerAddress, config.ServerGrpcDialOptions, ca.k8sInformers, ca.configCache, actionHandler)
 
 	return ca
 }
@@ -126,10 +118,6 @@ func (ca *ClusterAgent) Close() {
 	ca.configServer.Close()
 	ca.eventServer.Close()
 
-	if ca.falcoAlertsSubsriber != nil {
-		ca.falcoAlertsSubsriber.Close()
-	}
-
 	ca.cancelFunc()
 }
 
@@ -137,12 +125,14 @@ func (ca *ClusterAgent) GetGrpcServer() *grpc.Server {
 	return ca.grpcServer
 }
 
-func (ca *ClusterAgent) GetFalcoAlertsSubscriber() *FalcoAlertsSubscriber {
-	return ca.falcoAlertsSubsriber
-}
-
 func (ca *ClusterAgent) Run() {
 	go ca.configCache.Run()
 	go ca.actionHandler.Run()
 	go ca.k8sInformers.Start(ca.context.Done())
+
+	go func() {
+		if err := ca.falcoSidekickListener.server.ListenAndServe(); err != nil {
+			logger.Fatalw("error running falco sidekick listener", "err", err)
+		}
+	}()
 }

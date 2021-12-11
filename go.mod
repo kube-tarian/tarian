@@ -18,9 +18,7 @@ require (
 	github.com/prometheus/alertmanager v0.22.2
 	github.com/satori/go.uuid v1.2.0
 	github.com/scylladb/go-set v1.0.2
-	github.com/shirou/gopsutil v3.21.6+incompatible
 	github.com/stretchr/testify v1.7.0
-	github.com/tklauser/go-sysconf v0.3.6 // indirect
 	github.com/urfave/cli/v2 v2.3.0
 	go.uber.org/zap v1.18.1
 	golang.org/x/tools v0.1.1 // indirect
@@ -30,13 +28,12 @@ require (
 	k8s.io/api v0.21.3
 	k8s.io/apimachinery v0.21.3
 	k8s.io/client-go v0.21.3
-	k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471
 	sigs.k8s.io/controller-runtime v0.9.5
 )
 
 require (
 	4d63.com/gochecknoglobals v0.0.0-20201008074935-acfc0b28355a // indirect
-	cloud.google.com/go v0.60.0 // indirect
+	cloud.google.com/go v0.75.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.12 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.5 // indirect
@@ -49,7 +46,6 @@ require (
 	github.com/OpenPeeDeeP/depguard v1.0.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
-	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
 	github.com/ashanbrown/forbidigo v1.1.0 // indirect
@@ -66,6 +62,7 @@ require (
 	github.com/denis-tingajkin/go-header v0.4.2 // indirect
 	github.com/esimonov/ifshort v1.0.2 // indirect
 	github.com/evanphx/json-patch v4.11.0+incompatible // indirect
+	github.com/falcosecurity/falcosidekick v0.0.0-20211206092417-aef760059143
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
@@ -74,7 +71,6 @@ require (
 	github.com/go-bindata/go-bindata/v3 v3.1.3 // indirect
 	github.com/go-critic/go-critic v0.5.5 // indirect
 	github.com/go-logr/logr v0.4.0 // indirect
-	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-openapi/analysis v0.20.0 // indirect
 	github.com/go-openapi/errors v0.20.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
@@ -111,7 +107,7 @@ require (
 	github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 // indirect
 	github.com/google/go-cmp v0.5.5 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
-	github.com/google/uuid v1.1.2 // indirect
+	github.com/google/uuid v1.2.0 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/gordonklaus/ineffassign v0.0.0-20210225214923-2e10b2664254 // indirect
 	github.com/gostaticanalysis/analysisutil v0.4.1 // indirect
@@ -200,7 +196,6 @@ require (
 	github.com/tdakkota/asciicheck v0.0.0-20200416200610-e657995f937b // indirect
 	github.com/tetafro/godot v1.4.4 // indirect
 	github.com/timakin/bodyclose v0.0.0-20200424151742-cb6215831a94 // indirect
-	github.com/tklauser/numcpus v0.2.2 // indirect
 	github.com/tomarrell/wrapcheck v1.0.0 // indirect
 	github.com/tommy-muehle/go-mnd/v2 v2.3.1 // indirect
 	github.com/ultraware/funlen v0.0.3 // indirect
@@ -212,10 +207,10 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e // indirect
-	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
+	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781 // indirect
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
+	golang.org/x/oauth2 v0.0.0-20210220000619-9bb904979d93 // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
 	golang.org/x/text v0.3.6 // indirect
@@ -223,7 +218,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20201110150050-8816d57aaa9a // indirect
+	google.golang.org/genproto v0.0.0-20210226172003-ab064af71705 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.51.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -239,3 +234,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
+
+require k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471 // indirect

@@ -16,4 +16,8 @@ falco:
     rootCerts: /etc/falco/grpc-cert/ca.crt
   grpcOutput:
     enabled: true
-
+falcosidekick:
+  enabled: true
+  config:
+    webhook:
+      address: http://tarian-cluster-agent.tarian-system.svc:8088

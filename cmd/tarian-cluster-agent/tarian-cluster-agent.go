@@ -29,6 +29,8 @@ const (
 	defaultHost = ""
 
 	defaultServerAddress = "localhost:50051"
+
+	defaultSidekickListenerHttpPort = "8088"
 )
 
 // nolint: gochecknoglobals
@@ -130,6 +132,11 @@ func getCliApp() *cli.App {
 						Usage: "Enable add constraint RPC. This is needed to support pod agent running in register mode.",
 						Value: false,
 					},
+					&cli.StringFlag{
+						Name:  "falco-listener-http-port",
+						Usage: "Falco listener http port",
+						Value: defaultSidekickListenerHttpPort,
+					},
 				},
 				Action: run,
 			},
@@ -225,11 +232,6 @@ func run(c *cli.Context) error {
 	}()
 
 	go clusterAgent.Run()
-
-	if clusterAgent.GetFalcoAlertsSubscriber() != nil {
-		logger.Infow("falco: start subscribing to falco grpc servers")
-		go clusterAgent.GetFalcoAlertsSubscriber().Start()
-	}
 
 	logger.Infow("tarian-cluster-agent is listening at", "address", listener.Addr())
 
