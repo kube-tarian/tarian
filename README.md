@@ -41,9 +41,6 @@ Why another new security tool when there are many tools available already, like 
 
 A kubernetes cluster that supports running [Falco](https://falco.org/docs/getting-started/)
 
-## Install
-
-Tarian integrates with Falco by subscribing Falco Alerts via [gRPC API](https://falco.org/docs/grpc/). Falco support running gRPC API with mandatory mutual TLS (mTLS). So, firstly we need to prepare the certificates.
 
 ### Prepare Namespaces
 
@@ -52,185 +49,16 @@ kubectl create namespace tarian-system
 kubectl create namespace falco
 ```
 
-### Prepare Certificate for mTLS
-
-#### With Cert Manager
-
-You can setup certificates manually and save those certs to secrets accessible from Falco and Tarian pods. For convenient, you can use Cert Manager to manage the certs.
-
-1. Install Cert Manager by following this guide https://cert-manager.io/docs/installation/
-2. Wait for cert manager pods to be ready
-
-```bash
-kubectl wait --for=condition=ready pods --all -n cert-manager --timeout=3m
-```
-
-3. Setup certs
-
-##### A. If you don't have an existing cluster issuer, you can create one using a self-signed issuer
-
-Save this to `tarian-falco-certs.yaml`, then run `kubectl apply -f tarian-falco-certs.yaml`.
-
-```yaml
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: selfsigned-issuer
-spec:
-  selfSigned: {}
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: root-ca
-  namespace: cert-manager
-spec:
-  isCA: true
-  commonName: root-ca
-  secretName: root-secret
-  privateKey:
-    algorithm: ECDSA
-    size: 256
-  issuerRef:
-    name: selfsigned-issuer
-    kind: ClusterIssuer
-    group: cert-manager.io
----
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: ca-issuer
-spec:
-  ca:
-    secretName: root-secret
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: falco-grpc-server
-  namespace: falco
-spec:
-  isCA: false
-  commonName: falco-grpc
-  dnsNames:
-  - falco-grpc.falco.svc
-  - falco-grpc
-  secretName: falco-grpc-server-cert
-  usages:
-  - server auth
-  privateKey:
-    algorithm: ECDSA
-    size: 256
-  issuerRef:
-    name: ca-issuer
-    kind: ClusterIssuer
-    group: cert-manager.io
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: falco-integration-cert
-  namespace: tarian-system
-spec:
-  isCA: false
-  commonName: tarian-falco-integration
-  dnsNames:
-  - tarian-falco-integration
-  usages:
-  - client auth
-  secretName: tarian-falco-integration
-  privateKey:
-    algorithm: ECDSA
-    size: 256
-  issuerRef:
-    name: ca-issuer
-    kind: ClusterIssuer
-    group: cert-manager.io
-```
-
-##### B. If you have an existing cluster issuer
-
-Save this to `tarian-falco-certs.yaml`, then run `kubectl apply -f tarian-falco-certs.yaml`.
-
-```yaml
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: falco-grpc-server
-  namespace: falco
-spec:
-  isCA: false
-  commonName: falco-grpc
-  dnsNames:
-  - falco-grpc.falco.svc
-  - falco-grpc
-  secretName: falco-grpc-server-cert
-  usages:
-  - server auth
-  privateKey:
-    algorithm: ECDSA
-    size: 256
-  issuerRef:
-    name: your-issuer # change this to yours
-    kind: ClusterIssuer
-    group: cert-manager.io
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: falco-integration-cert
-  namespace: tarian-system
-spec:
-  isCA: false
-  commonName: tarian-falco-integration
-  dnsNames:
-  - tarian-falco-integration
-  usages:
-  - client auth
-  secretName: tarian-falco-integration
-  privateKey:
-    algorithm: ECDSA
-    size: 256
-  issuerRef:
-    name: your-issuer # change this to yours
-    kind: ClusterIssuer
-    group: cert-manager.io
-```
-
-#### Setup certificates manually
-
-If you have other ways to setup the certificates, that would work too. You can create kubernetes secrets containing those certificates.
-The following steps expect that the secrets are named:
-
-- `tarian-falco-integration` in namespace `tarian-system`
-- `falco-grpc-server-cert` in namespace `falco`
-
-For mTLS to work, those certificates need to be signed by the same CA.
-
-
 ### Install Falco with custom rules from Tarian
 
 Save this to `falco-values.yaml`
 
 ```yaml
-extraVolumes:
-- name: grpc-cert
-  secret:
-    secretName: falco-grpc-server-cert
-extraVolumeMounts:
-- name: grpc-cert
-  mountPath: /etc/falco/grpc-cert
-falco:
-  grpc:
-    enabled: true
-    unixSocketPath: ""
-    threadiness: 1
-    listenPort: 5060
-    privateKey: /etc/falco/grpc-cert/tls.key
-    certChain: /etc/falco/grpc-cert/tls.crt
-    rootCerts: /etc/falco/grpc-cert/ca.crt
-  grpcOutput:
-    enabled: true
+falcosidekick:
+  enabled: true
+  config:
+    webhook:
+      address: http://tarian-cluster-agent.tarian-system.svc:8088
 ```
 
 Then install Falco using Helm:
