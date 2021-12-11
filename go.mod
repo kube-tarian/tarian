@@ -5,7 +5,6 @@ go 1.17
 require (
 	github.com/Boostport/migration v0.21.2
 	github.com/driftprogramming/pgxpoolmock v1.1.0
-	github.com/falcosecurity/client-go v0.3.0
 	github.com/go-logr/zapr v0.4.0
 	github.com/go-openapi/runtime v0.19.29
 	github.com/go-openapi/strfmt v0.20.1

@@ -20,7 +20,6 @@ import (
 	"google.golang.org/grpc/credentials"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	falcoclient "github.com/falcosecurity/client-go/pkg/client"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
@@ -101,31 +100,6 @@ func getCliApp() *cli.App {
 						Name:  "server-tls-insecure-skip-verify",
 						Usage: "If set to true, it will skip server's certificate chain and hostname verification",
 						Value: true,
-					},
-					&cli.StringFlag{
-						Name:  "falco-grpc-server-hostname",
-						Usage: "The server hostname of falco grpc server to integrate with. Setting this will enable falco integration.",
-						Value: "",
-					},
-					&cli.UintFlag{
-						Name:  "falco-grpc-server-port",
-						Usage: "Falco grpc server port",
-						Value: 5060,
-					},
-					&cli.StringFlag{
-						Name:  "falco-grpc-client-cert-file",
-						Usage: "File containing x509 certificate to communicate with falco grpc server",
-						Value: "",
-					},
-					&cli.StringFlag{
-						Name:  "falco-grpc-client-key-file",
-						Usage: "Private key file in x509 matching --falco-grpc-client-cert-file",
-						Value: "",
-					},
-					&cli.StringFlag{
-						Name:  "falco-grpc-client-ca-file",
-						Usage: "CA file in x509 matching --falco-grpc-client-cert-file",
-						Value: "",
 					},
 					&cli.BoolFlag{
 						Name:  "enable-add-constraint",
@@ -274,26 +248,10 @@ func newClusterAgentConfigFromCliContext(c *cli.Context, logger *zap.SugaredLogg
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	}
 
-	enableFalcoIntegration := c.String("falco-grpc-server-hostname") != ""
-
-	falcoClientConfig := &falcoclient.Config{
-		Hostname:   c.String("falco-grpc-server-hostname"),
-		Port:       uint16(c.Uint("falco-grpc-server-port")),
-		CertFile:   c.String("falco-grpc-client-cert-file"),
-		KeyFile:    c.String("falco-grpc-client-key-file"),
-		CARootFile: c.String("falco-grpc-client-ca-file"),
-	}
-
-	if enableFalcoIntegration {
-		enableFalcoIntegration = true
-	}
-
 	config := &clusteragent.ClusterAgentConfig{
-		ServerAddress:          c.String("server-address"),
-		ServerGrpcDialOptions:  dialOpts,
-		EnableFalcoIntegration: enableFalcoIntegration,
-		FalcoClientConfig:      falcoClientConfig,
-		EnableAddConstraint:    c.Bool("enable-add-constraint"),
+		ServerAddress:         c.String("server-address"),
+		ServerGrpcDialOptions: dialOpts,
+		EnableAddConstraint:   c.Bool("enable-add-constraint"),
 	}
 
 	return config

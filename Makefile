@@ -108,10 +108,6 @@ deploy-falco:
 	helm repo add falcosecurity https://falcosecurity.github.io/charts
 	helm repo update
 	kubectl create namespace falco --dry-run=client -o yaml | kubectl apply -f -
-	kubectl apply -f https://github.com/jetstack/cert-manager/releases/latest/download/cert-manager.yaml
-	kubectl wait --for=condition=ready pods --all -n cert-manager --timeout=3m || true
-	sleep 10
-	kubectl apply -f "./dev/falco/k8s" -R
 	helm upgrade -i falco falcosecurity/falco -n falco -f "./dev/falco/falco-values.yaml" --set-file customRules."tarian_rules\.yaml"="./dev/falco/tarian_rules.yaml"
 
 deploy: manifests kustomize deploy-falco ## Deploy controller to the K8s cluster specified in ~/.kube/config.

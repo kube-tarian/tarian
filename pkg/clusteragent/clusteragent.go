@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"time"
 
-	falcoclient "github.com/falcosecurity/client-go/pkg/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/informers"
@@ -17,11 +16,9 @@ import (
 )
 
 type ClusterAgentConfig struct {
-	ServerAddress          string
-	ServerGrpcDialOptions  []grpc.DialOption
-	EnableFalcoIntegration bool
-	EnableAddConstraint    bool
-	FalcoClientConfig      *falcoclient.Config
+	ServerAddress         string
+	ServerGrpcDialOptions []grpc.DialOption
+	EnableAddConstraint   bool
 }
 
 type ClusterAgent struct {

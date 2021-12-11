@@ -8,11 +8,9 @@ bases:
 patchesStrategicMerge:
 - manager_patch.yaml
 - webhook_patch.yaml
-- falco_integration.yaml
 
 resources:
 - manager_resources.yaml
-- falco_integration_cert.yaml
 
 patches:
 - target:
