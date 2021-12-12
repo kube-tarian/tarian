@@ -55,14 +55,6 @@ jobs:
           kubectl create namespace tarian-system
           kubectl create namespace falco
 
-      - name: Setup certs
-        run: |
-          kubectl apply -f https://github.com/jetstack/cert-manager/releases/latest/download/cert-manager.yaml
-          kubectl wait --for=condition=ready pods --all -n cert-manager --timeout=3m || true
-          sleep 10
-          kubectl apply -f ./dev/falco/k8s -R
-          kubectl apply -f ./dev/config/default/falco_integration_cert.yaml
-
       - name: Setup falco
         run: |
           helm repo add falcosecurity https://falcosecurity.github.io/charts

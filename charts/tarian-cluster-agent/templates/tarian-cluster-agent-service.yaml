@@ -12,6 +12,9 @@ spec:
     nodePort: {{ .Values.clusterAgent.service.nodePort }}
 {{- end }}
     name: grpc
+  - port: 8088
+    targetPort: 8088
+    name: falco
   selector:
     app: {{ .Release.Name }}
   type: {{ .Values.clusterAgent.service.type }}

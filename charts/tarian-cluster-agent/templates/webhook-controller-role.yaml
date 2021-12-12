@@ -37,7 +37,7 @@ rules:
   - create
   - patch
 ---
-# permissions to do renew tls secret
+# permissions to renew tls secret
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
