@@ -71,6 +71,15 @@ helm upgrade -i falco falcosecurity/falco -n falco -f falco-values.yaml \
   --set-file customRules."tarian_rules\.yaml"=https://raw.githubusercontent.com/kube-tarian/tarian/main/dev/falco/tarian_rules.yaml
 ```
 
+On GKE, falco uses ebpf, so you will need to add
+
+```
+--set ebpf.enabled=true
+```
+
+to the helm command above. See also [Falco docs](https://falco.org/docs/getting-started/third-party/production/).
+
+
 ### Setup a Postgresql Database
 
 You can use a DB as a service from your Cloud Services or you can also run by yourself in the cluster. For example to install the DB in the cluster, run:
