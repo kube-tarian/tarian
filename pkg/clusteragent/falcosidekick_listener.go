@@ -152,7 +152,18 @@ func (f *FalcoSidekickListener) processFalcoPayload(payload *types.FalcoPayload)
 			}
 		}
 	} else {
-		event, err := f.ingestEventFromGenericFalcoAlert(payload)
+		outputFields := payload.OutputFields
+		k8sPodName := fmt.Sprintf("%s", outputFields["k8s.pod.name"])
+		k8sNsName := fmt.Sprintf("%s", outputFields["k8s.ns.name"])
+
+		k8sPod, err := f.informers.Core().V1().Pods().Lister().Pods(k8sNsName).Get(k8sPodName)
+
+		if err != nil {
+			logger.Errorw("error while getting pod by name and namespace", "err", err, "name", k8sPodName, "namespace", k8sNsName)
+			return nil
+		}
+
+		event, err := f.ingestEventFromGenericFalcoAlert(payload, k8sPod)
 		if err == nil {
 			f.actionHandler.QueueEvent(event)
 		}
@@ -317,13 +328,19 @@ func (f *FalcoSidekickListener) ingestEventFromTarianRuleSpawnedProcessAlert(pay
 	return event, err
 }
 
-func (f *FalcoSidekickListener) ingestEventFromGenericFalcoAlert(payload *types.FalcoPayload) (*tarianpb.Event, error) {
+func (f *FalcoSidekickListener) ingestEventFromGenericFalcoAlert(payload *types.FalcoPayload, k8sPod *v1.Pod) (*tarianpb.Event, error) {
 	outputFields := payload.OutputFields
 	var pod *tarianpb.Pod
 	if outputFields != nil {
+		labels := []*tarianpb.Label{}
+		for k, v := range k8sPod.GetLabels() {
+			labels = append(labels, &tarianpb.Label{Key: k, Value: v})
+		}
+
 		pod = &tarianpb.Pod{
 			Name:      fmt.Sprintf("%s", outputFields["k8s.pod.name"]),
 			Namespace: fmt.Sprintf("%s", outputFields["k8s.ns.name"]),
+			Labels:    labels,
 		}
 	}
 
