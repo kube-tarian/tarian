@@ -2,6 +2,42 @@ apiVersion: v1
 entries:
   tarian-cluster-agent:
   - apiVersion: v1
+    appVersion: 0.0.9
+    created: "2021-12-19T13:53:23.455309055Z"
+    description: Anti-Virus for K8s. Protect your Applications running on Kubernetes
+      from malicious attacks with pre-registered source code, runtime processes monitoring,
+      analytics, alerting and also sharing detections with community. Maybe save from
+      Ransomware.
+    digest: 750a39d7789c3ca60216a98a88e09fe414b64af1ee2bcf8e855b74a117424d01
+    home: https://github.com/kube-tarian/tarian
+    keywords:
+    - security
+    - microservices
+    - containers
+    - anti-virus
+    - antivirus
+    - anti-viruses
+    - cloud-native
+    - cloudnative
+    - security-hardening
+    - pods
+    - security-tools
+    - devsecops
+    - runtime-security
+    - kubernetes
+    - tarian
+    - antivirus-software
+    - kube-tarian
+    maintainers:
+    - name: devopstoday11
+    - name: andylibrian
+    name: tarian-cluster-agent
+    sources:
+    - https://github.com/kube-tarian/tarian
+    urls:
+    - https://github.com/kube-tarian/tarian/releases/download/chart-tarian-cluster-agent-0.0.9/tarian-cluster-agent-0.0.9.tgz
+    version: 0.0.9
+  - apiVersion: v1
     appVersion: 0.0.8
     created: "2021-12-12T07:15:30.47433955Z"
     description: Anti-Virus for K8s. Protect your Applications running on Kubernetes
@@ -507,6 +543,42 @@ entries:
     version: 0.0.2-alpha3
   tarian-server:
   - apiVersion: v1
+    appVersion: 0.0.9
+    created: "2021-12-19T13:53:23.793268483Z"
+    description: Anti-Virus for K8s. Protect your Applications running on Kubernetes
+      from malicious attacks with pre-registered source code, runtime processes monitoring,
+      analytics, alerting and also sharing detections with community. Maybe save from
+      Ransomware.
+    digest: c5f0219d945fd0e5c859aec03bbc7757a27405cd495d28ae01d220473d8ba277
+    home: https://github.com/kube-tarian/tarian
+    keywords:
+    - security
+    - microservices
+    - containers
+    - anti-virus
+    - antivirus
+    - anti-viruses
+    - cloud-native
+    - cloudnative
+    - security-hardening
+    - pods
+    - security-tools
+    - devsecops
+    - runtime-security
+    - kubernetes
+    - tarian
+    - antivirus-software
+    - kube-tarian
+    maintainers:
+    - name: devopstoday11
+    - name: andylibrian
+    name: tarian-server
+    sources:
+    - https://github.com/kube-tarian/tarian
+    urls:
+    - https://github.com/kube-tarian/tarian/releases/download/chart-tarian-server-0.0.9/tarian-server-0.0.9.tgz
+    version: 0.0.9
+  - apiVersion: v1
     appVersion: 0.0.8
     created: "2021-12-12T07:15:30.824499562Z"
     description: Anti-Virus for K8s. Protect your Applications running on Kubernetes
@@ -974,4 +1046,4 @@ entries:
     urls:
     - https://github.com/devopstoday11/tarian/releases/download/tarian-server-0.0.2-alpha3/tarian-server-0.0.2-alpha3.tgz
     version: 0.0.2-alpha3
-generated: "2021-12-12T07:15:30.824796257Z"
+generated: "2021-12-19T13:53:23.79360397Z"
