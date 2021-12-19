@@ -10,10 +10,6 @@ clusterAgent:
   service:
     type: ClusterIP
     nodeport:
-  falco:
-    grpcServerHostname: falco-grpc.falco.svc
-    grpcServerPort: 5060
-    clientTlsSecretName: tarian-falco-integration
   enableAddConstraint: false
 webhook:
   failurePolicy: Ignore
