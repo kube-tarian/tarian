@@ -1,9 +1,8 @@
 # Tarian
 
-> ###### We want to maintain this as an open-source project to fight against the attacks on our favorite Kubernetes ecosystem. By continuous contribution, we can fight threats together as a community.
-
-
 ##### Protect your Applications running on Kubernetes from malicious attacks by pre-registering your source code signatures, runtime processes monitoring, runtime source code monitoring, change detection, alerting, pre-configured & instant respond actions based on detections and also sharing detections with community. Save your K8s environment from Ransomware! 
+
+We want to maintain this as an open-source project to fight against the attacks on our favorite Kubernetes ecosystem. By continuous contribution, we can fight threats together as a community.
 
 #
 
@@ -33,7 +32,7 @@ Why another new security tool when there are many tools available already, like 
 
 #### Architecture diagram
 
-![Arch. Diagram](https://github.com/kube-tarian/tarian/blob/5eeed9a0bd5875e6cee423d2d12161a3f7d2d84c/Kube-Tarian.svg)
+![Arch. Diagram](./docs/architecture-diagram.png)
 
 #
 
