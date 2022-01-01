@@ -29,7 +29,10 @@ spec:
         - name: POSTGRES_USER
           value: {{ .Values.server.postgresql.user | quote }}
         - name: POSTGRES_PASSWORD
-          value: {{ .Values.server.postgresql.password | quote }}
+          valueFrom:
+            secretKeyRef:
+              name: tarian-server-db-migrate
+              key: postgresql_password
         - name: POSTGRES_DBNAME
           value: {{ .Values.server.postgresql.dbname | quote }}
         - name: POSTGRES_SSLMODE
