@@ -27,3 +27,8 @@ sources:
 maintainers:
 - name: devopstoday11
 - name: andylibrian
+dependencies:
+- name: "alertmanager"
+  condition: alertManager.install
+  repository: "https://prometheus-community.github.io/helm-charts"
+  version: "^0.14.0"

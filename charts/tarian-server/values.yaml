@@ -7,7 +7,7 @@ server:
     # empty = default to app version
     tag:
   alert:
-    alertManagerAddress: http://alertmanager:9093
+    alertManagerAddress: http://tarian-server-alertmanager:9093
     evaluationInterval: 5s
   postgresql:
     host: tarian-postgresql
