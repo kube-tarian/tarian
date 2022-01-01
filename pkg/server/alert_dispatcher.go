@@ -107,9 +107,9 @@ func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) error {
 		status, err := a.amClient.Alert.PostAlerts(alertParams)
 
 		if err != nil {
-			logger.Error("error while sending alerts", "err", err)
+			logger.Errorw("error while sending alerts", "err", err)
 		} else {
-			logger.Info("alerts sent to alertmanager", "result", status.Error())
+			logger.Infow("alerts sent to alertmanager", "result", status.Error())
 		}
 
 		return err
