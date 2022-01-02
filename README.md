@@ -281,3 +281,8 @@ helm upgrade -i tarian-server tarian/tarian-server --devel -n tarian-system \
 
 See [docs/contributing.md](docs/contributing.md)
 
+## Code of Conduct
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+
+## CodeOwners & Maintainers list
+See [MAINTAINERS.md](MAINTAINERS.md)
