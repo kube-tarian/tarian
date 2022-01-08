@@ -286,3 +286,6 @@ See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 ## CodeOwners & Maintainers list
 See [MAINTAINERS.md](MAINTAINERS.md)
+
+## Join our Slack channel " tarian "
+[Kube-Tarian-Slack](https://kube-tarian.slack.com/)
