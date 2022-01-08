@@ -288,4 +288,4 @@ See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 See [MAINTAINERS.md](MAINTAINERS.md)
 
 ## Join our Slack channel " tarian "
-[Kube-Tarian-Slack](https://kube-tarian.slack.com/)
+[Kube-Tarian-Slack](https://join.slack.com/t/kube-tarian/shared_invite/zt-118iqu4g6-wopEIyjqD_uy5uXRDChaLA)
