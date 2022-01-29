@@ -10,6 +10,8 @@ on:
       - charts/**
       - .github/**
 
+permissions: read-all
+
 jobs:
   lint-test:
     runs-on: self-hosted
