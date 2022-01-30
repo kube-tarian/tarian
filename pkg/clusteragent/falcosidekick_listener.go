@@ -1,6 +1,7 @@
 package clusteragent
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/falcosecurity/falcosidekick/types"
 	"github.com/kube-tarian/tarian/pkg/clusteragent/webhookserver"
+	"github.com/kube-tarian/tarian/pkg/stringutil"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/scylladb/go-set/strset"
 	"google.golang.org/grpc"
@@ -79,20 +81,28 @@ func (f *FalcoSidekickListener) handleFalcoAlert(w http.ResponseWriter, r *http.
 		return
 	}
 
-	falcopayload, err := newFalcoPayload(r.Body)
+	body, _ := io.ReadAll(r.Body)
+	falcopayload, err := newFalcoPayload(bytes.NewBuffer(body))
 
 	if err != nil {
-		logger.Errorw("error while decoding falco payload", "payload", falcopayload, "err", err)
+		logger.Errorw("error while decoding falco payload", "err", err)
 		http.Error(w, "Error encountered while decoding falco payload", http.StatusBadRequest)
 
 		return
 	}
 
-	logger.Debugw("handling falco alert", "payload", falcopayload, "err", err)
 	f.processFalcoPayload(&falcopayload)
 
 	w.WriteHeader(200)
 	w.Write([]byte("OK"))
+}
+
+// sanitizeK8sResourceName sanitizes input from falco for additional security and satisfies codeql analysis:
+// "This log write receives unsanitized user input from"
+func sanitizeK8sResourceName(str string) string {
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
+	// RFC 1123 Label Names, contain no more than 253 characters
+	return strings.Replace(stringutil.Truncate(str, 253), "\n", "", -1)
 }
 
 func (f *FalcoSidekickListener) processFalcoPayload(payload *types.FalcoPayload) error {
@@ -110,7 +120,8 @@ func (f *FalcoSidekickListener) processFalcoPayload(payload *types.FalcoPayload)
 		k8sPod, err := f.informers.Core().V1().Pods().Lister().Pods(k8sNsName).Get(k8sPodName)
 
 		if err != nil {
-			logger.Errorw("error while getting pod by name and namespace", "err", err, "name", k8sPodName, "namespace", k8sNsName)
+			logger.Errorw("error while getting pod by name and namespace", "err", err, "name",
+				sanitizeK8sResourceName(k8sPodName), "namespace", sanitizeK8sResourceName(k8sNsName))
 			return nil
 		}
 
@@ -159,7 +170,8 @@ func (f *FalcoSidekickListener) processFalcoPayload(payload *types.FalcoPayload)
 		k8sPod, err := f.informers.Core().V1().Pods().Lister().Pods(k8sNsName).Get(k8sPodName)
 
 		if err != nil {
-			logger.Errorw("error while getting pod by name and namespace", "err", err, "name", k8sPodName, "namespace", k8sNsName)
+			logger.Errorw("error while getting pod by name and namespace", "err", err,
+				"name", sanitizeK8sResourceName(k8sPodName), "namespace", sanitizeK8sResourceName(k8sNsName))
 			return nil
 		}
 
@@ -294,9 +306,11 @@ func (f *FalcoSidekickListener) ingestEventFromTarianRuleSpawnedProcessAlert(pay
 	}
 
 	violatedProcesses := make([]*tarianpb.Process, 1)
-	pid, err := strconv.Atoi(fmt.Sprintf("%v", outputFields["proc.pid"]))
+	pid, err := strconv.ParseInt(fmt.Sprintf("%v", outputFields["proc.pid"]), 10, 32)
 	if err != nil {
-		logger.Warnw("expected proc.pid to be int value, but got non-int", "proc.pid", outputFields["proc.pid"], "err", err)
+		procPid := fmt.Sprintf("%s", outputFields["proc.pid"])
+		procPid = strings.Replace(procPid, "\n", "", -1)
+		logger.Warnw("expected proc.pid to be int value, but got non-int", "proc.pid", procPid, "err", err)
 	}
 	violatedProcesses[0] = &tarianpb.Process{Pid: int32(pid), Name: fmt.Sprintf("%s", outputFields["proc.name"])}
 
