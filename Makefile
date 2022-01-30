@@ -49,7 +49,7 @@ build: bin/goreleaser generate proto
 	./bin/goreleaser build --single-target --snapshot --rm-dist --single-target
 	cp dist/*/tarian* ./bin/
 
-proto:
+proto: protoc
 	$(PROTOC) --experimental_allow_proto3_optional=true -I=./.local/include -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/types.proto
 	$(PROTOC) --experimental_allow_proto3_optional=true -I=./.local/include -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/api.proto
 
