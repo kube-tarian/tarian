@@ -48,7 +48,7 @@ jobs:
         run: ct lint --config ct.yaml
 
       - name: Create kind cluster
-        uses: helm/kind-action@v94729529f85113b88f4f819c17ce61382e6d8478 # @v1.2.0
+        uses: helm/kind-action@94729529f85113b88f4f819c17ce61382e6d8478 # @v1.2.0
         with:
           config: 'dev/cluster-config.yaml'
 
