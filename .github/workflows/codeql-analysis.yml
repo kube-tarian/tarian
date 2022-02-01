@@ -72,9 +72,9 @@ jobs:
     #    uses a compiled language
 
     - run: |
-       go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.26
-       go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
-       make build
+        go install google.golang.org/protobuf/cmd/protoc-gen-go@f2d1f6cbe10b90d22296ea09a7217081c2798009 # @v1.26
+        go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
+        make build
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@1a927e9307bc11970b2c679922ebc4d03a5bd980 # @v1.0.31
