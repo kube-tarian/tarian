@@ -49,7 +49,7 @@ build: bin/goreleaser generate proto
 	./bin/goreleaser build --single-target --snapshot --rm-dist --single-target
 	cp dist/*/tarian* ./bin/
 
-proto: protoc
+proto: bin/protoc
 	$(PROTOC) --experimental_allow_proto3_optional=true -I=./.local/include -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/types.proto
 	$(PROTOC) --experimental_allow_proto3_optional=true -I=./.local/include -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/api.proto
 
@@ -128,7 +128,7 @@ kustomize: ## Download kustomize locally if necessary.
 
 PROTOC = $(shell pwd)/bin/protoc
 PROTOC_ZIP = protoc-3.17.3-linux-x86_64.zip
-protoc:
+bin/protoc:
 	curl -LO "https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/$(PROTOC_ZIP)" 
 	unzip -o $(PROTOC_ZIP) -d ./ bin/protoc
 	unzip -o $(PROTOC_ZIP) -d ./.local 'include/*'
