@@ -66,7 +66,7 @@ jobs:
       - name: Install postgresql
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
-          helm install tarian-postgresql bitnami/postgresql -n tarian-system --set postgresqlUsername=postgres --set postgresqlPassword=tarian --set postgresqlDatabase=tarian
+          helm install tarian-postgresql bitnami/postgresql -n tarian-system --set auth.postgresPassword=tarian --set auth.database=tarian
 
       - name: Install charts
         run: |

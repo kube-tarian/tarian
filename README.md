@@ -88,9 +88,8 @@ You can use a DB as a service from your Cloud Services or you can also run by yo
 helm repo add bitnami https://charts.bitnami.com/bitnami
 
 helm install tarian-postgresql bitnami/postgresql -n tarian-system \
-  --set postgresqlUsername=postgres \
-  --set postgresqlPassword=tarian \
-  --set postgresqlDatabase=tarian
+  --set auth.postgresPassword=tarian \
+  --set auth.database=tarian
 ```
 
 ### Install tarian
