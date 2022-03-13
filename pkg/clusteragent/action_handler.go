@@ -94,7 +94,7 @@ func (ah *actionHandler) ProcessActions(event *tarianpb.Event) {
 				}
 			}
 
-			if actionEventFulfilled && actionMatchesPod(action, pod) {
+			if actionEventFulfilled && ActionMatchesPod(action, pod) {
 				// check if action timestamp is greater than pod's creation timestamp
 				// to prevent the pod from being terminated multiple times
 				if ah.isEventTimestampRecent(event.GetClientTimestamp(), pod) {
@@ -125,7 +125,7 @@ func (ah *actionHandler) isEventTimestampRecent(t *timestamppb.Timestamp, podInf
 	return t.AsTime().After(pod.CreationTimestamp.Time)
 }
 
-func actionMatchesPod(action *tarianpb.Action, pod *tarianpb.Pod) bool {
+func ActionMatchesPod(action *tarianpb.Action, pod *tarianpb.Pod) bool {
 	if action.GetNamespace() != pod.GetNamespace() {
 		return false
 	}
