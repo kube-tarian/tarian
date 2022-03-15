@@ -285,7 +285,7 @@ func (f *FalcoSidekickListener) registerConstraintFromTarianRuleSpawnedProcessAl
 	}
 }
 
-func (f *FalcoSidekickListener) ingestEventFromTarianRuleSpawnedProcessAlert(payload *types.FalcoPayload, pod *v1.Pod) (*tarianpb.Event, error) {
+func NewEventFromTarianRuleSpawnedProcessAlert(payload *types.FalcoPayload, pod *v1.Pod) *tarianpb.Event {
 	outputFields := payload.OutputFields
 	k8sPodName := fmt.Sprintf("%s", outputFields["k8s.pod.name"])
 	k8sNsName := fmt.Sprintf("%s", outputFields["k8s.ns.name"])
@@ -324,6 +324,12 @@ func (f *FalcoSidekickListener) ingestEventFromTarianRuleSpawnedProcessAlert(pay
 			},
 		},
 	}
+
+	return event
+}
+
+func (f *FalcoSidekickListener) ingestEventFromTarianRuleSpawnedProcessAlert(payload *types.FalcoPayload, pod *v1.Pod) (*tarianpb.Event, error) {
+	event := NewEventFromTarianRuleSpawnedProcessAlert(payload, pod)
 
 	req := &tarianpb.IngestEventRequest{
 		Event: event,
