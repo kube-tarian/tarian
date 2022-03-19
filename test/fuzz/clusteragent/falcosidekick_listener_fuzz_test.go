@@ -37,3 +37,28 @@ func FuzzNewEventFromTarianRuleSpawnedProcessAlert(f *testing.F) {
 		clusteragent.NewEventFromTarianRuleSpawnedProcessAlert(falcoPayload, pod)
 	})
 }
+
+func FuzzNewEventFromGenericFalcoAlert(f *testing.F) {
+	seedPodName := "nginx-abcdef-ghijklm"
+	seedNamespace := "ns1"
+	seedLabelKey := "app"
+	seedLabelValue := "nginx"
+	seedExtraKey := "extraKey"
+	seedExtraValue := "extraValue"
+
+	f.Add(seedPodName, seedNamespace, seedLabelKey, seedLabelValue, seedExtraKey, seedExtraValue)
+
+	f.Fuzz(func(t *testing.T, podName string, namespace string, labelKey string, labelValue string, extraKey string, extraValue string) {
+
+		falcoPayload := &types.FalcoPayload{Time: time.Time{}, OutputFields: make(map[string]interface{}, 0)}
+		falcoPayload.OutputFields["k8s.pod.name"] = podName
+		falcoPayload.OutputFields["k8s.ns.name"] = namespace
+
+		pod := &v1.Pod{}
+		pod.ObjectMeta.Labels = make(map[string]string)
+		pod.ObjectMeta.Labels[labelKey] = labelValue
+		pod.ObjectMeta.Labels[extraKey] = extraValue
+
+		clusteragent.NewEventFromGenericFalcoAlert(falcoPayload, pod)
+	})
+}

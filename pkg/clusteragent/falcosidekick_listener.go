@@ -348,7 +348,7 @@ func (f *FalcoSidekickListener) ingestEventFromTarianRuleSpawnedProcessAlert(pay
 	return event, err
 }
 
-func (f *FalcoSidekickListener) ingestEventFromGenericFalcoAlert(payload *types.FalcoPayload, k8sPod *v1.Pod) (*tarianpb.Event, error) {
+func NewEventFromGenericFalcoAlert(payload *types.FalcoPayload, k8sPod *v1.Pod) *tarianpb.Event {
 	outputFields := payload.OutputFields
 	var pod *tarianpb.Pod
 	if outputFields != nil {
@@ -385,6 +385,11 @@ func (f *FalcoSidekickListener) ingestEventFromGenericFalcoAlert(payload *types.
 		},
 	}
 
+	return event
+}
+
+func (f *FalcoSidekickListener) ingestEventFromGenericFalcoAlert(payload *types.FalcoPayload, k8sPod *v1.Pod) (*tarianpb.Event, error) {
+	event := NewEventFromGenericFalcoAlert(payload, k8sPod)
 	req := &tarianpb.IngestEventRequest{
 		Event: event,
 	}
