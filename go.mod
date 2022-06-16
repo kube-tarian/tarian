@@ -234,4 +234,6 @@ require (
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
+require github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0
+
 require k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471 // indirect

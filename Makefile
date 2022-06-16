@@ -36,8 +36,8 @@ help: ## Display this help.
 
 ##@ Development
 
-generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+generate: bin/controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/..."
 
 fmt: ## Run go fmt against code.
 	go fmt ./...
@@ -45,7 +45,7 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
-build: bin/goreleaser generate proto
+build: bin/goreleaser generate proto ## Build binaries and copy to ./bin/
 	./bin/goreleaser build --single-target --snapshot --rm-dist --single-target
 	cp dist/*/tarian* ./bin/
 
@@ -76,8 +76,8 @@ e2e-test:
 k8s-test:
 	./test/k8s/test.sh
 
-manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) webhook paths="./..." output:webhook:artifacts:config=dev/config/webhook
+manifests: bin/controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+	$(CONTROLLER_GEN) webhook paths="./pkg/..." output:webhook:artifacts:config=dev/config/webhook
 
 create-kind-cluster:
 	./dev/run-kind-registry.sh
@@ -110,7 +110,7 @@ deploy-falco:
 	kubectl create namespace falco --dry-run=client -o yaml | kubectl apply -f -
 	helm upgrade -i falco falcosecurity/falco -n falco -f "./dev/falco/falco-values.yaml" --set-file customRules."tarian_rules\.yaml"="./dev/falco/tarian_rules.yaml"
 
-deploy: manifests kustomize deploy-falco ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+deploy: manifests bin/kustomize deploy-falco ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd dev/config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build dev/config/default | kubectl apply -f -
 
@@ -119,12 +119,15 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
-controller-gen: ## Download controller-gen locally if necessary.
+bin/controller-gen: ## Download controller-gen locally if necessary.
 	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1)
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
-kustomize: ## Download kustomize locally if necessary.
-	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.3.0)
+bin/kustomize: ## Download kustomize locally if necessary.
+	curl -o kustomize_v4.4.1_linux_amd64.tar.gz -L0 "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v4.4.1/kustomize_v4.4.1_linux_amd64.tar.gz"
+	mkdir -p bin
+	tar -C ./bin/ -xvf kustomize_v4.4.1_linux_amd64.tar.gz
+	rm -f kustomize_v4.4.1_linux_amd64.tar.gz
 
 PROTOC = $(shell pwd)/bin/protoc
 PROTOC_ZIP = protoc-3.17.3-linux-x86_64.zip
@@ -151,7 +154,7 @@ TMP_DIR=$$(mktemp -d) ;\
 cd $$TMP_DIR ;\
 go mod init tmp ;\
 echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
+GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
 rm -rf $$TMP_DIR ;\
 }
 endef

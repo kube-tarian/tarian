@@ -19,6 +19,27 @@ builds:
       - linux
     goarch:
       - amd64
+  - id: tarian-node-agent
+    main: ./cmd/tarian-node-agent/
+    binary: tarian-node-agent
+    env:
+      - CC=clang
+      - CGO_CFLAGS=-I/home/andy/Workspace/kube-tarian/execsnoop-core/output -Wno-unknown-attributes
+      - CGO_LDFLAGS=-lelf -lz /home/andy/Workspace/kube-tarian/tarian/output/libbpf.a
+    goos:
+      - linux
+    goarch:
+      - amd64
+    flags:
+      - -tags=netgo
+    ldflags:
+      - -s
+      - -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+      - -extldflags "-static"
   - id: tarian-pod-agent
     main: ./cmd/tarian-pod-agent/
     binary: tarian-pod-agent
