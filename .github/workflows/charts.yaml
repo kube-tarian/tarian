@@ -94,7 +94,7 @@ jobs:
           sleep 5s
 
       # build tarianctl for k8s-test
-      - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@f2d1f6cbe10b90d22296ea09a7217081c2798009 # @v1.26
+      - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
       - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
       - run: make bin/protoc
       - run: make build
