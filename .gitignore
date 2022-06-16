@@ -1,5 +1,7 @@
 /bin
+/dist
+/output
 /vendor
 /.local
+/.vscode
 
-dist/
