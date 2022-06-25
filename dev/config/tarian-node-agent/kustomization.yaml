@@ -1,0 +1,4 @@
+resources:
+- tarian-node-agent.yaml
+
+namespace: tarian-system

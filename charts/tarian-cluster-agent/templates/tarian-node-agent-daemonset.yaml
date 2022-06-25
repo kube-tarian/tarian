@@ -1,0 +1,22 @@
+{{- $name := printf "%s-%s" .Release.Name "node-agent" -}}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ $name }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+    spec:
+      containers:
+      - name: tarian-node-agent
+        image: "{{ .Values.nodeAgent.image.name }}:{{ .Values.nodeAgent.image.tag | default .Chart.AppVersion }}"
+        args:
+        - "--log-encoding={{ .Values.nodeAgent.log.encoding }}"
+        - "--log-level={{ .Values.nodeAgent.log.level }}"
+        - run
+      serviceAccountName: {{ .Release.Name }}-node-sa

@@ -11,6 +11,15 @@ clusterAgent:
     type: ClusterIP
     nodeport:
   enableAddConstraint: false
+nodeAgent:
+  log:
+    encoding: json
+    level: info
+  image:
+    name: ghcr.io/kube-tarian/tarian-node-agent
+    # empty = default to app version
+    tag:
+  clusterAgentAddress: tarian-server:80
 webhook:
   failurePolicy: Ignore
   podAgentContainerImage:

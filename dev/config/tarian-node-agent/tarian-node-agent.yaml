@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: tarian-node-agent
+spec:
+  selector:
+    matchLabels:
+      app: tarian-node-agent
+  template:
+    metadata:
+      labels:
+        app: tarian-node-agent
+    spec:
+      containers:
+      - name: tarian-node-agent
+        image: localhost:5000/tarian-node-agent:latest
+        args:
+        - --log-encoding=json
+        - --log-level=debug
+        - run
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: host-proc
+          mountPath: /host/proc
+        - name: bpf-maps
+          mountPath: /sys/fs/bpf
+          mountPropagation: Bidirectional
+      serviceAccountName: tarian-node-agent
+      volumes:
+      - name: host-proc
+        hostPath:
+          path: /host/proc
+      - hostPath:
+          path: /sys/fs/bpf
+          type: DirectoryOrCreate
+        name: bpf-maps
+

@@ -1,6 +1,7 @@
 resources:
 - service_account_cluster_agent_controller_manager.yaml
 - service_account_cluster_agent.yaml
+- service_account_node_agent.yaml
 - leader_election_role.yaml
 - leader_election_role_binding.yaml
 - cert_rotator_role.yaml
@@ -9,5 +10,7 @@ resources:
 - cert_rotator_clusterrole_binding.yaml
 - cluster_agent_clusterrole.yaml
 - cluster_agent_clusterrole_binding.yaml
+- node_agent_clusterrole.yaml
+- node_agent_clusterrole_binding.yaml
 
 namespace: tarian-system
