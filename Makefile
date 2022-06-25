@@ -60,6 +60,7 @@ CGO_LDFLAGS_DYN = "-lelf -lz -lbpf"
 BTFFILE = /sys/kernel/btf/vmlinux
 BPFTOOL = $(shell which bpftool || /bin/false)
 VMLINUXH = $(OUTPUT)/vmlinux.h
+NODEAGENT_EBPF_DIR = pkg/nodeagent/ebpf
 
 # output
 
@@ -100,8 +101,7 @@ $(LIBBPF_OBJ): $(LIBBPF_SRC) $(wildcard $(LIBBPF_SRC)/*.[ch]) | $(OUTPUT)/libbpf
 
 libbpfgo-static: $(VMLINUXH) | $(LIBBPF_OBJ)
 
-NODEAGENT_EBPF_DIR = pkg/nodeagent/ebpf
-$(NODEAGENT_EBPF_DIR)/capture_exec.bpf.o: vmlinuxh ## Build eBPF object
+$(NODEAGENT_EBPF_DIR)/capture_exec.bpf.o: vmlinuxh libbpfgo-static ## Build eBPF object
 	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -c $(NODEAGENT_EBPF_DIR)/c/capture_exec.bpf.c -o $@
 
 ##@ Development
@@ -115,7 +115,9 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
-build: bin/goreleaser generate proto ## Build binaries and copy to ./bin/
+ebpf: $(NODEAGENT_EBPF_DIR)/capture_exec.bpf.o
+
+build: bin/goreleaser generate proto ebpf ## Build binaries and copy to ./bin/
 	./bin/goreleaser build --single-target --snapshot --rm-dist --single-target
 	cp dist/*/tarian* ./bin/
 
@@ -131,11 +133,13 @@ local-images: build
 	docker build -f Dockerfile-server -t localhost:5000/tarian-server dist/tarian-server_linux_amd64/ && docker push localhost:5000/tarian-server
 	docker build -f Dockerfile-cluster-agent -t localhost:5000/tarian-cluster-agent dist/tarian-cluster-agent_linux_amd64/ && docker push localhost:5000/tarian-cluster-agent
 	docker build -f Dockerfile-pod-agent -t localhost:5000/tarian-pod-agent dist/tarian-pod-agent_linux_amd64/ && docker push localhost:5000/tarian-pod-agent
+	docker build -f Dockerfile-node-agent -t localhost:5000/tarian-node-agent dist/tarian-node-agent_linux_amd64/ && docker push localhost:5000/tarian-node-agent
 
 push-local-images:
 	docker push localhost:5000/tarian-server
 	docker push localhost:5000/tarian-cluster-agent
 	docker push localhost:5000/tarian-pod-agent
+	docker push localhost:5000/tarian-node-agent
 
 unit-test:
 	go test -v -race -count=1 ./pkg/...
