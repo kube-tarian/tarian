@@ -4,6 +4,7 @@ bases:
 - ../webhook
 - ../tarian-server
 - ../tarian-cluster-agent
+- ../tarian-node-agent
 
 patchesStrategicMerge:
 - manager_patch.yaml

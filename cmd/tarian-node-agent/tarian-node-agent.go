@@ -60,6 +60,17 @@ func run(c *cli.Context) error {
 	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
 	nodeagent.SetLogger(logger)
 
+	if !isDebugFsMounted() {
+		logger.Infow("debugfs is not mounted, will try to mount")
+
+		err := mountDebugFs()
+		if err != nil {
+			logger.Fatal(err)
+		}
+
+		logger.Infow("successfully mounted debugfs", "path", DebugFSRoot)
+	}
+
 	captureExec, err := nodeagent.NewCaptureExec()
 	if err != nil {
 		logger.Fatal(err)
