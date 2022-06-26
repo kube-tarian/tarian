@@ -32,7 +32,7 @@ kubectl exec -ti nginx -c nginx -- sleep 15
 
 # output for debugging
 tarianctl get events
-kubectl logs ds/falco -n falco
+kubectl logs ds/tarian-node-agent -n tarian-system
 kubectl logs deploy/tarian-cluster-agent -n tarian-system
 
 # assert contains sleep
@@ -55,7 +55,7 @@ test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- 
 kubectl exec -ti nginx2 -c nginx -- pwd
 kubectl exec -ti nginx2 -c nginx -- ls /
 
-# give time for tarian-cluser-agent to process the falco alerts
+# give time for tarian-cluser-agent to process data from node agents
 sleep 5
 
 tarianctl get constraints

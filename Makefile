@@ -113,7 +113,7 @@ fmt: ## Run go fmt against code.
 	go fmt ./...
 
 vet: ## Run go vet against code.
-	go vet ./...
+	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) go vet ./...
 
 ebpf: $(NODEAGENT_EBPF_DIR)/capture_exec.bpf.o
 
@@ -127,7 +127,7 @@ proto: bin/protoc
 
 lint: fmt vet
 	revive -formatter stylish -config .revive.toml ./pkg/...
-	staticcheck ./...
+	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) staticcheck ./...
 
 local-images: build
 	docker build -f Dockerfile-server -t localhost:5000/tarian-server dist/tarian-server_linux_amd64/ && docker push localhost:5000/tarian-server
@@ -142,10 +142,10 @@ push-local-images:
 	docker push localhost:5000/tarian-node-agent
 
 unit-test:
-	go test -v -race -count=1 ./pkg/...
+	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) go test -v -race -count=1 ./pkg/...
 
 e2e-test:
-	go test -v -race -count=1 ./test/e2e/...
+	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) go test -v -race -count=1 ./test/e2e/...
 
 k8s-test:
 	./test/k8s/test.sh
@@ -178,13 +178,7 @@ controller-test: manifests generate fmt vet ## Run tests.
 
 ##@ Deployment
 
-deploy-falco:
-	helm repo add falcosecurity https://falcosecurity.github.io/charts
-	helm repo update
-	kubectl create namespace falco --dry-run=client -o yaml | kubectl apply -f -
-	helm upgrade -i falco falcosecurity/falco -n falco -f "./dev/falco/falco-values.yaml" --set-file customRules."tarian_rules\.yaml"="./dev/falco/tarian_rules.yaml"
-
-deploy: manifests bin/kustomize deploy-falco ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+deploy: manifests bin/kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd dev/config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build dev/config/default | kubectl apply -f -
 
