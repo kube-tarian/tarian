@@ -33,12 +33,15 @@ jobs:
           --health-retries 5
     steps:
       # setup
-      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # @2.4.0
+      - uses: actions/checkout@7884fcad6b5d53d10323aee724dc68d8b9096a2e # @2.4.2
+        with:
+          submodules: 'recursive'
       - uses: actions/setup-go@424fc82d43fa5a37540bae62709ddcc23d9520d4 # @v2.1.5
         with:
           go-version: '1.17'
 
       # prepare
+      - run: sudo apt update && sudo apt install -y pkg-config libelf-dev clang
       - run: go install github.com/mgechev/revive@latest
       - run: go install honnef.co/go/tools/cmd/staticcheck@latest
       - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
@@ -57,7 +60,9 @@ jobs:
       HOME: ${{ github.workspace }}/..
     needs: build
     steps:
-      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # @2.4.0
+      - uses: actions/checkout@7884fcad6b5d53d10323aee724dc68d8b9096a2e # @2.4.2
+        with:
+          submodules: 'recursive'
       - uses: actions/setup-go@424fc82d43fa5a37540bae62709ddcc23d9520d4 # @v2.1.5
         with:
           go-version: '1.17'
@@ -76,6 +81,7 @@ jobs:
 
       # build images
       - run: bash ./dev/run-kind-registry.sh
+      - run: make ebpf generate
       - run: ./bin/goreleaser release --snapshot --rm-dist
       - run: make push-local-images
       - run: cp dist/tarianctl_linux_amd64/tarianctl ./bin/
@@ -104,7 +110,9 @@ jobs:
       GOPATH: ${{ github.workspace }}/../go
       HOME: ${{ github.workspace }}/..
     steps:
-      - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # @2.4.0
+      - uses: actions/checkout@7884fcad6b5d53d10323aee724dc68d8b9096a2e # @2.4.2
+        with:
+          submodules: 'recursive'
       - uses: actions/setup-go@424fc82d43fa5a37540bae62709ddcc23d9520d4 # @v2.1.5
         with:
           go-version: '1.17'

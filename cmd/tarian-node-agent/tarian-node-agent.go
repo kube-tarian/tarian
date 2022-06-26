@@ -10,6 +10,8 @@ import (
 	"github.com/kube-tarian/tarian/pkg/logger"
 	"github.com/kube-tarian/tarian/pkg/nodeagent"
 	cli "github.com/urfave/cli/v2"
+
+	_ "embed"
 )
 
 // nolint: gochecknoglobals
@@ -87,6 +89,4 @@ func run(c *cli.Context) error {
 
 		fmt.Printf("%d %s %s %s %s %s\n", e.Pid, e.Comm, e.Filename, e.ContainerID, e.K8sPodName, e.K8sNamespace)
 	}
-
-	return nil
 }

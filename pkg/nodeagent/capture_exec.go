@@ -6,8 +6,6 @@ import (
 	"golang.org/x/sys/unix"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	_ "embed"
 )
 
 var logger *zap.SugaredLogger
