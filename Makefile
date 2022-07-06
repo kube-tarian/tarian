@@ -81,10 +81,10 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 
 create-kind-cluster:
 	./dev/run-kind-registry.sh
-	kind create cluster --config=dev/cluster-config.yaml
+	kind create cluster --config=dev/cluster-config.yaml --name tarian
 
 delete-kind-cluster:
-	kind delete cluster
+	kind delete cluster --name tarian
 
 create-minikube-cluster:
 	minikube start --driver=virtualbox --insecure-registry "10.0.0.0/8"
