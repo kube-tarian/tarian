@@ -18,6 +18,8 @@ spec:
         - --log-encoding=json
         - --log-level=debug
         - run
+        - --cluster-agent-host=tarian-cluster-agent.tarian-system.svc
+        - --cluster-agent-port=80
         securityContext:
           privileged: true
         volumeMounts:
