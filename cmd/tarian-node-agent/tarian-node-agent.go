@@ -3,9 +3,10 @@ package main
 import "C"
 
 import (
-	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/kube-tarian/tarian/pkg/logger"
 	"github.com/kube-tarian/tarian/pkg/nodeagent"
@@ -53,6 +54,23 @@ func getCliApp() *cli.App {
 				Name:   "run",
 				Usage:  "Run the node agent",
 				Action: run,
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "cluster-agent-host",
+						Usage: "Host address of the cluster agent to communicate with",
+						Value: "tarian-cluster-agent.tarian-system.svc",
+					},
+					&cli.StringFlag{
+						Name:  "cluster-agent-port",
+						Usage: "Host port of the cluster agent to communicate with",
+						Value: "80",
+					},
+					&cli.StringFlag{
+						Name:  "node-name",
+						Usage: "Node name where it is running. This is intended to be set from Downward API",
+						Value: "",
+					},
+				},
 			},
 		},
 	}
@@ -73,20 +91,21 @@ func run(c *cli.Context) error {
 		logger.Infow("successfully mounted debugfs", "path", DebugFSRoot)
 	}
 
-	captureExec, err := nodeagent.NewCaptureExec()
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	execEvent := captureExec.GetEventsChannel()
-	go captureExec.Start()
+	agent := nodeagent.NewNodeAgent(c.String("cluster-agent-host") + ":" + c.String("cluster-agent-port"))
 
 	logger.Infow("tarian-node-agent is running")
-	logger.Infow("detecting new processes")
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 
-	for {
-		e := <-execEvent
+	go func() {
+		sig := <-sigCh
+		logger.Infow("got sigterm signal, attempting graceful shutdown", "signal", sig)
 
-		fmt.Printf("%d %s %s %s %s %s\n", e.Pid, e.Comm, e.Filename, e.ContainerID, e.K8sPodName, e.K8sNamespace)
-	}
+		agent.GracefulStop()
+	}()
+
+	agent.Run()
+	logger.Info("tarian-node-agent shutdown gracefully")
+
+	return nil
 }

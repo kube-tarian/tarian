@@ -2,27 +2,10 @@ package nodeagent
 
 import (
 	"github.com/kube-tarian/tarian/pkg/nodeagent/ebpf"
-	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
-
-var logger *zap.SugaredLogger
-
-func init() {
-	l, err := zap.NewProduction()
-
-	if err != nil {
-		panic("Can not create logger")
-	}
-
-	logger = l.Sugar()
-}
-
-func SetLogger(l *zap.SugaredLogger) {
-	logger = l
-}
 
 type ExecEvent struct {
 	Pid          uint32
