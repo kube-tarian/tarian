@@ -12,8 +12,10 @@ type ExecEvent struct {
 	Comm         string
 	Filename     string
 	ContainerID  string
+	K8sPodUID    string
 	K8sPodName   string
 	K8sNamespace string
+	K8sPodLabels map[string]string
 }
 
 type CaptureExec struct {
@@ -60,10 +62,14 @@ func (c *CaptureExec) Start() {
 
 		pod := watcher.FindPod(containerID)
 		var podName string
+		var podUID string
 		var namespace string
+		var podLabels map[string]string
 		if pod != nil {
 			podName = pod.GetName()
+			podUID = string(pod.GetUID())
 			namespace = pod.GetNamespace()
+			podLabels = pod.GetLabels()
 		}
 
 		execEvent := ExecEvent{
@@ -72,7 +78,9 @@ func (c *CaptureExec) Start() {
 			Filename:     unix.ByteSliceToString(bpfEvt.Filename[:]),
 			ContainerID:  containerID,
 			K8sPodName:   podName,
+			K8sPodUID:    podUID,
 			K8sNamespace: namespace,
+			K8sPodLabels: podLabels,
 		}
 
 		c.eventsChan <- execEvent
