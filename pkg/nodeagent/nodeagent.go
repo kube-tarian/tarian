@@ -32,13 +32,17 @@ type NodeAgent struct {
 	cancelFunc context.CancelFunc
 	cancelCtx  context.Context
 
-	// enableRegisterProcesses bool
+	enableAddConstraint bool
 }
 
 func NewNodeAgent(clusterAgentAddress string) *NodeAgent {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &NodeAgent{clusterAgentAddress: clusterAgentAddress, cancelCtx: ctx, cancelFunc: cancel, constraintsInitialized: false}
+}
+
+func (n *NodeAgent) EnableAddConstraint(enabled bool) {
+	n.enableAddConstraint = enabled
 }
 
 func (n *NodeAgent) Dial() {
@@ -138,6 +142,11 @@ func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
 			_, threatScanAnnotationPresent := evt.K8sPodAnnotations[ThreatScanAnnotation]
 			registerAnnotationValue, registerAnnotationPresent := evt.K8sPodAnnotations[RegisterAnnotation]
 			if !threatScanAnnotationPresent && !registerAnnotationPresent {
+				continue
+			}
+
+			// Pod has register annotation but the cluster disable registration
+			if registerAnnotationPresent && !n.enableAddConstraint {
 				continue
 			}
 
