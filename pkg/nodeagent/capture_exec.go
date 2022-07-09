@@ -8,14 +8,15 @@ import (
 )
 
 type ExecEvent struct {
-	Pid          uint32
-	Comm         string
-	Filename     string
-	ContainerID  string
-	K8sPodUID    string
-	K8sPodName   string
-	K8sNamespace string
-	K8sPodLabels map[string]string
+	Pid               uint32
+	Comm              string
+	Filename          string
+	ContainerID       string
+	K8sPodUID         string
+	K8sPodName        string
+	K8sNamespace      string
+	K8sPodLabels      map[string]string
+	K8sPodAnnotations map[string]string
 }
 
 type CaptureExec struct {
@@ -65,22 +66,25 @@ func (c *CaptureExec) Start() {
 		var podUID string
 		var namespace string
 		var podLabels map[string]string
+		var podAnnotations map[string]string
 		if pod != nil {
 			podName = pod.GetName()
 			podUID = string(pod.GetUID())
 			namespace = pod.GetNamespace()
 			podLabels = pod.GetLabels()
+			podAnnotations = pod.GetAnnotations()
 		}
 
 		execEvent := ExecEvent{
-			Pid:          bpfEvt.Pid,
-			Comm:         unix.ByteSliceToString(bpfEvt.Comm[:]),
-			Filename:     unix.ByteSliceToString(bpfEvt.Filename[:]),
-			ContainerID:  containerID,
-			K8sPodName:   podName,
-			K8sPodUID:    podUID,
-			K8sNamespace: namespace,
-			K8sPodLabels: podLabels,
+			Pid:               bpfEvt.Pid,
+			Comm:              unix.ByteSliceToString(bpfEvt.Comm[:]),
+			Filename:          unix.ByteSliceToString(bpfEvt.Filename[:]),
+			ContainerID:       containerID,
+			K8sPodName:        podName,
+			K8sPodUID:         podUID,
+			K8sNamespace:      namespace,
+			K8sPodLabels:      podLabels,
+			K8sPodAnnotations: podAnnotations,
 		}
 
 		c.eventsChan <- execEvent

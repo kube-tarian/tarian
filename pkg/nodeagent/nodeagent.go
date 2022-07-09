@@ -12,6 +12,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const (
+	ThreatScanAnnotation = "pod-agent.k8s.tarian.dev/threat-scan"
+)
+
 type NodeAgent struct {
 	clusterAgentAddress string
 	grpcConn            *grpc.ClientConn
@@ -144,6 +148,12 @@ func (n *NodeAgent) ValidateProcess(evt *ExecEvent) *ProcessViolation {
 	// Ignore empty pod
 	// It usually means a host process
 	if evt.K8sNamespace == "" || evt.K8sPodName == "" {
+		return nil
+	}
+
+	// Skip validation if no threat scan annotation is present
+	_, threatScanAnnotationPresent := evt.K8sPodAnnotations[ThreatScanAnnotation]
+	if !threatScanAnnotationPresent {
 		return nil
 	}
 
