@@ -70,6 +70,11 @@ func getCliApp() *cli.App {
 						Usage: "Node name where it is running. This is intended to be set from Downward API",
 						Value: "",
 					},
+					&cli.BoolFlag{
+						Name:  "enable-add-constraint",
+						Usage: "Enable add constraint RPC. Enable this to allow register mode.",
+						Value: false,
+					},
 				},
 			},
 		},
@@ -92,6 +97,7 @@ func run(c *cli.Context) error {
 	}
 
 	agent := nodeagent.NewNodeAgent(c.String("cluster-agent-host") + ":" + c.String("cluster-agent-port"))
+	agent.EnableAddConstraint(c.Bool("enable-add-constraint"))
 
 	logger.Infow("tarian-node-agent is running")
 	sigCh := make(chan os.Signal, 1)
