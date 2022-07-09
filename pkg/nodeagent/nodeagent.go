@@ -3,6 +3,8 @@ package nodeagent
 import (
 	"context"
 	"regexp"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 
 const (
 	ThreatScanAnnotation = "pod-agent.k8s.tarian.dev/threat-scan"
+	RegisterAnnotation   = "pod-agent.k8s.tarian.dev/register"
 )
 
 type NodeAgent struct {
@@ -132,13 +135,36 @@ func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
 				continue
 			}
 
+			_, threatScanAnnotationPresent := evt.K8sPodAnnotations[ThreatScanAnnotation]
+			registerAnnotationValue, registerAnnotationPresent := evt.K8sPodAnnotations[RegisterAnnotation]
+			if !threatScanAnnotationPresent && !registerAnnotationPresent {
+				continue
+			}
+
 			violation := n.ValidateProcess(&evt)
 			if violation != nil {
-				logger.Infow("violated process detected", "filename", evt.Filename)
+				registerProcess := false
+				registerRules := strings.Split(registerAnnotationValue, ",")
+				for _, rule := range registerRules {
+					switch strings.TrimSpace(rule) {
+					case "processes":
+						registerProcess = true
+					case "all":
+						registerProcess = true
+					}
+				}
 
-				n.ReportViolationsToClusterAgent(violation)
+				if registerProcess {
+					logger.Infow("violated process detected, going to register", "filename", evt.Filename)
 
-				logger.Infow("reported violation to the cluster agent", "filename", evt.Filename, "violation", violation)
+					n.RegisterViolationsAsNewConstraint(violation)
+				} else {
+					logger.Infow("violated process detected", "filename", evt.Filename)
+
+					n.ReportViolationsToClusterAgent(violation)
+
+					// TODO: test action
+				}
 			}
 		}
 	}
@@ -148,12 +174,6 @@ func (n *NodeAgent) ValidateProcess(evt *ExecEvent) *ProcessViolation {
 	// Ignore empty pod
 	// It usually means a host process
 	if evt.K8sNamespace == "" || evt.K8sPodName == "" {
-		return nil
-	}
-
-	// Skip validation if no threat scan annotation is present
-	_, threatScanAnnotationPresent := evt.K8sPodAnnotations[ThreatScanAnnotation]
-	if !threatScanAnnotationPresent {
 		return nil
 	}
 
@@ -183,7 +203,7 @@ out:
 				continue
 			}
 
-			logger.Debugw("validating process againts regex regex", "expr", rgx.String())
+			logger.Debugw("validating process againts regex", "expr", rgx.String())
 
 			if rgx.MatchString(evt.Filename) {
 				violated = false
@@ -263,4 +283,47 @@ func (n *NodeAgent) ReportViolationsToClusterAgent(violation *ProcessViolation) 
 	} else {
 		logger.Debugw("ingest event response", "response", response)
 	}
+}
+
+func (n *NodeAgent) RegisterViolationsAsNewConstraint(violation *ProcessViolation) {
+	k8sPodName := violation.K8sPodName
+	k8sNsName := violation.K8sNamespace
+
+	procName := violation.Filename
+	allowedProcessRules := []*tarianpb.AllowedProcessRule{{Regex: &procName}}
+
+	podLabels := violation.K8sPodLabels
+	delete(podLabels, "pod-template-hash")
+
+	req := &tarianpb.AddConstraintRequest{
+		Constraint: &tarianpb.Constraint{
+			Kind:      tarianpb.KindConstraint,
+			Namespace: k8sNsName,
+			Name:      k8sPodName + "-" + strconv.FormatInt(time.Now().UnixNano()/time.Hour.Milliseconds(), 10),
+			Selector: &tarianpb.Selector{
+				MatchLabels: matchLabelsFromPodLabels(podLabels),
+			},
+			AllowedProcesses: allowedProcessRules,
+		},
+	}
+
+	response, err := n.configClient.AddConstraint(context.Background(), req)
+
+	if err != nil {
+		logger.Errorw("error while registering process constraint", "err", err)
+	} else {
+		logger.Debugw("add constraint response", "response", response)
+	}
+}
+
+func matchLabelsFromPodLabels(labels map[string]string) []*tarianpb.MatchLabel {
+	matchLabels := make([]*tarianpb.MatchLabel, len(labels))
+
+	i := 0
+	for k, v := range labels {
+		matchLabels[i] = &tarianpb.MatchLabel{Key: k, Value: v}
+		i++
+	}
+
+	return matchLabels
 }
