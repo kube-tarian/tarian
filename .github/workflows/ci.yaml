@@ -140,6 +140,7 @@ jobs:
           if [[ $GITHUB_REF == refs/heads/main ]]; then
             docker push ghcr.io/${{ github.repository_owner}}/tarian-server
             docker push ghcr.io/${{ github.repository_owner}}/tarian-cluster-agent
+            docker push ghcr.io/${{ github.repository_owner}}/tarian-node-agent
             docker push ghcr.io/${{ github.repository_owner}}/tarian-pod-agent
           fi
 
