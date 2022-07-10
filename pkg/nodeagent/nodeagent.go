@@ -33,6 +33,7 @@ type NodeAgent struct {
 	cancelCtx  context.Context
 
 	enableAddConstraint bool
+	nodeName            string
 }
 
 func NewNodeAgent(clusterAgentAddress string) *NodeAgent {
@@ -43,6 +44,10 @@ func NewNodeAgent(clusterAgentAddress string) *NodeAgent {
 
 func (n *NodeAgent) EnableAddConstraint(enabled bool) {
 	n.enableAddConstraint = enabled
+}
+
+func (n *NodeAgent) SetNodeName(name string) {
+	n.nodeName = name
 }
 
 func (n *NodeAgent) Dial() {
@@ -126,6 +131,8 @@ func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
 		logger.Fatal(err)
 	}
 
+	captureExec.SetNodeName(n.nodeName)
+
 	execEvent := captureExec.GetEventsChannel()
 	go captureExec.Start()
 
@@ -171,8 +178,6 @@ func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
 					logger.Infow("violated process detected", "filename", evt.Filename)
 
 					n.ReportViolationsToClusterAgent(violation)
-
-					// TODO: test action
 				}
 			}
 		}
