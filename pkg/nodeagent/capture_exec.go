@@ -1,6 +1,8 @@
 package nodeagent
 
 import (
+	"path/filepath"
+
 	"github.com/kube-tarian/tarian/pkg/nodeagent/ebpf"
 	"golang.org/x/sys/unix"
 	"k8s.io/client-go/kubernetes"
@@ -68,6 +70,9 @@ func (c *CaptureExec) Start() {
 			continue
 		}
 
+		filename := unix.ByteSliceToString(bpfEvt.Filename[:])
+		comm := filepath.Base(filename)
+
 		pod := watcher.FindPod(containerID)
 		var podName string
 		var podUID string
@@ -84,8 +89,8 @@ func (c *CaptureExec) Start() {
 
 		execEvent := ExecEvent{
 			Pid:               bpfEvt.Pid,
-			Comm:              unix.ByteSliceToString(bpfEvt.Comm[:]),
-			Filename:          unix.ByteSliceToString(bpfEvt.Filename[:]),
+			Comm:              comm,
+			Filename:          filename,
 			ContainerID:       containerID,
 			K8sPodName:        podName,
 			K8sPodUID:         podUID,
