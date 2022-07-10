@@ -96,6 +96,14 @@ func run(c *cli.Context) error {
 		logger.Infow("successfully mounted debugfs", "path", DebugFSRoot)
 	}
 
+	// Check host proc dir
+	_, err := os.Stat(nodeagent.HostProcDir)
+	if err == nil {
+		logger.Infow("Host proc is mounted", "dir", nodeagent.HostProcDir)
+	} else if os.IsNotExist(err) {
+		logger.Fatalw("Host proc directory is not properly mounted", "dir", nodeagent.HostProcDir)
+	}
+
 	agent := nodeagent.NewNodeAgent(c.String("cluster-agent-host") + ":" + c.String("cluster-agent-port"))
 	agent.EnableAddConstraint(c.Bool("enable-add-constraint"))
 	agent.SetNodeName(c.String("node-name"))
