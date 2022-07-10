@@ -53,7 +53,7 @@ echo $'test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/c
 test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- http://alertmanager.tarian-system.svc:9093/api/v2/alerts | jq '. | length') -gt 1 \
   || (echo "expected alerts created" && false)
 
-# run command to registering constraints
+# run command to register constraints
 kubectl exec -ti nginx2 -c nginx -- pwd
 kubectl exec -ti nginx2 -c nginx -- ls /
 
@@ -63,7 +63,7 @@ sleep 5
 tarianctl get constraints
 
 # test register constraint using annotation
-tarianctl get constraints | grep run=nginx2
+tarianctl get constraints | grep run=nginx2 | grep pwd
 
 # action
 tarianctl add action --name nginx-delete --match-labels=run=nginx --action=delete-pod

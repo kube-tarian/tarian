@@ -19,4 +19,31 @@ spec:
         - "--log-encoding={{ .Values.nodeAgent.log.encoding }}"
         - "--log-level={{ .Values.nodeAgent.log.level }}"
         - run
+        - --cluster-agent-host={{ .Release.Name }}.{{ .Release.Namespace }}.svc
+        - --cluster-agent-port=80
+        - --node-name=$(NODE_NAME)
+{{- if .Values.clusterAgent.enableAddConstraint }}
+        - --enable-add-constraint
+{{- end }}
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: host-proc
+          mountPath: /host/proc
+        - name: bpf-maps
+          mountPath: /sys/fs/bpf
+          mountPropagation: Bidirectional
+        env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
       serviceAccountName: {{ .Release.Name }}-node-sa
+      volumes:
+      - name: host-proc
+        hostPath:
+          path: {{ .Values.nodeAgent.hostProcDir }}
+      - hostPath:
+          path: /sys/fs/bpf
+          type: DirectoryOrCreate
+        name: bpf-maps

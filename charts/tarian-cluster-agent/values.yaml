@@ -20,6 +20,7 @@ nodeAgent:
     # empty = default to app version
     tag:
   clusterAgentAddress: tarian-server:80
+  hostProcDir: /proc
 webhook:
   failurePolicy: Ignore
   podAgentContainerImage:

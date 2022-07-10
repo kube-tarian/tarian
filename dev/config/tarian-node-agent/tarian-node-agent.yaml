@@ -21,6 +21,7 @@ spec:
         - --cluster-agent-host=tarian-cluster-agent.tarian-system.svc
         - --cluster-agent-port=80
         - --node-name=$(NODE_NAME)
+        - --enable-add-constraint
         securityContext:
           privileged: true
         volumeMounts:
