@@ -16,19 +16,22 @@ const (
 	BpfContainerIDLength = 31
 
 	DockerIDLength = 128
+
+	HostProcDir = "/host/proc"
 )
 
 func procsContainerID(pid uint32) (string, error) {
 	pidstr := fmt.Sprint(pid)
-	cgroups, err := ioutil.ReadFile(filepath.Join("/host/proc", pidstr, "cgroup"))
+	cgroups, err := ioutil.ReadFile(filepath.Join(HostProcDir, pidstr, "cgroup"))
 	if err != nil {
 		return "", err
 	}
-	off, _ := procsFindDockerID(string(cgroups))
-	return off, nil
+
+	containerID, _ := findDockerIDFromCgroup(string(cgroups))
+	return containerID, nil
 }
 
-func procsFindDockerID(cgroups string) (string, int) {
+func findDockerIDFromCgroup(cgroups string) (string, int) {
 	cgrpPaths := strings.Split(cgroups, "\n")
 	for _, s := range cgrpPaths {
 		if strings.Contains(s, "pods") || strings.Contains(s, "docker") ||
