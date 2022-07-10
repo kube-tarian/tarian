@@ -77,7 +77,12 @@ jobs:
           set -e
 
           helm install tarian-server ./charts/tarian-server -n tarian-system --set server.service.type=NodePort --set server.service.nodePort=31051 $CONDITIONAL_SERVER_IMAGE_TAG
-          helm install tarian-cluster-agent ./charts/tarian-cluster-agent/ -n tarian-system --set clusterAgent.service.type=NodePort --set clusterAgent.service.nodePort=31052 $CONDITIONAL_CLUSTER_AGENT_IMAGE_TAG --set clusterAgent.enableAddConstraint=true
+          helm install tarian-cluster-agent ./charts/tarian-cluster-agent/ -n tarian-system \
+            --set clusterAgent.service.type=NodePort \
+            --set clusterAgent.service.nodePort=31052 \
+            $CONDITIONAL_CLUSTER_AGENT_IMAGE_TAG \
+            --set clusterAgent.enableAddConstraint=true \
+            --set nodeAgent.hostProcDir=/host/proc
 
       - name: Wait for pods ready
         run: |
