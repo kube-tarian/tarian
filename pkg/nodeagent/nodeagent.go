@@ -171,11 +171,11 @@ func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
 				}
 
 				if registerProcess {
-					logger.Infow("violated process detected, going to register", "filename", evt.Filename)
+					logger.Infow("violated process detected, going to register", "comm", evt.Comm)
 
 					n.RegisterViolationsAsNewConstraint(violation)
 				} else {
-					logger.Infow("violated process detected", "filename", evt.Filename)
+					logger.Infow("violated process detected", "comm", evt.Comm)
 
 					n.ReportViolationsToClusterAgent(violation)
 				}
@@ -219,7 +219,7 @@ out:
 
 			logger.Debugw("validating process againts regex", "expr", rgx.String())
 
-			if rgx.MatchString(evt.Filename) {
+			if rgx.MatchString(evt.Comm) {
 				violated = false
 				break out
 			}
@@ -264,7 +264,7 @@ type ProcessViolation struct {
 func (n *NodeAgent) ReportViolationsToClusterAgent(violation *ProcessViolation) {
 	violatedProcesses := make([]*tarianpb.Process, 1)
 
-	processName := violation.Filename
+	processName := violation.Comm
 	violatedProcesses[0] = &tarianpb.Process{Pid: int32(violation.Pid), Name: processName}
 
 	pbPodLabels := make([]*tarianpb.Label, len(violation.K8sPodLabels))
@@ -303,7 +303,7 @@ func (n *NodeAgent) RegisterViolationsAsNewConstraint(violation *ProcessViolatio
 	k8sPodName := violation.K8sPodName
 	k8sNsName := violation.K8sNamespace
 
-	procName := violation.Filename
+	procName := violation.Comm
 	allowedProcessRules := []*tarianpb.AllowedProcessRule{{Regex: &procName}}
 
 	podLabels := violation.K8sPodLabels
