@@ -98,8 +98,9 @@ func run(c *cli.Context) error {
 
 	agent := nodeagent.NewNodeAgent(c.String("cluster-agent-host") + ":" + c.String("cluster-agent-port"))
 	agent.EnableAddConstraint(c.Bool("enable-add-constraint"))
+	agent.SetNodeName(c.String("node-name"))
 
-	logger.Infow("tarian-node-agent is running")
+	logger.Infow("tarian-node-agent is running", "node-name", c.String("node-name"))
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 

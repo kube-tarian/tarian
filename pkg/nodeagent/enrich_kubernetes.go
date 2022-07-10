@@ -93,11 +93,12 @@ type PodWatcher struct {
 	informerFactory informers.SharedInformerFactory
 }
 
-func NewPodWatcher(k8sClient *kubernetes.Clientset) *PodWatcher {
+func NewPodWatcher(k8sClient *kubernetes.Clientset, nodeName string) *PodWatcher {
 	k8sInformerFactory := informers.NewSharedInformerFactoryWithOptions(k8sClient, 60*time.Second,
 		informers.WithTweakListOptions(func(options *metav1.ListOptions) {
-			// Watch local pods only.
-			// options.FieldSelector = "spec.nodeName=" + os.Getenv("NODE_NAME")
+			if nodeName != "" {
+				options.FieldSelector = "spec.nodeName=" + nodeName
+			}
 		}))
 	podInformer := k8sInformerFactory.Core().V1().Pods().Informer()
 	err := podInformer.AddIndexers(map[string]cache.IndexFunc{

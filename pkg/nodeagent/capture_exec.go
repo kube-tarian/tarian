@@ -23,6 +23,7 @@ type CaptureExec struct {
 	eventsChan     chan ExecEvent
 	shouldClose    bool
 	bpfCaptureExec *ebpf.BpfCaptureExec
+	nodeName       string
 }
 
 func NewCaptureExec() (*CaptureExec, error) {
@@ -37,13 +38,19 @@ func NewCaptureExec() (*CaptureExec, error) {
 	}, nil
 }
 
+func (c *CaptureExec) SetNodeName(name string) {
+	c.nodeName = name
+}
+
 func (c *CaptureExec) Start() {
 	config, err := rest.InClusterConfig()
+
 	if err != nil {
 		panic(err)
 	}
+
 	k8sClient := kubernetes.NewForConfigOrDie(config)
-	watcher := NewPodWatcher(k8sClient)
+	watcher := NewPodWatcher(k8sClient, c.nodeName)
 	watcher.Start()
 
 	go c.bpfCaptureExec.Start()
