@@ -55,13 +55,6 @@ jobs:
       - name: Create namespace
         run: | 
           kubectl create namespace tarian-system
-          kubectl create namespace falco
-
-      - name: Setup falco
-        run: |
-          helm repo add falcosecurity https://falcosecurity.github.io/charts
-          helm repo update
-          helm upgrade -i falco falcosecurity/falco -n falco -f "./dev/falco/falco-values.yaml" --set-file customRules."tarian_rules\.yaml"="./dev/falco/tarian_rules.yaml"
 
       - name: Install postgresql
         run: |
@@ -88,9 +81,13 @@ jobs:
 
       - name: Wait for pods ready
         run: |
-          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=5m || true
+          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=2m || true
+          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=2m || true
+          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=2m || true
           kubectl get pods --all-namespaces
           kubectl get deployment --all-namespaces
+          kubectl get daemonset --all-namespaces
+          kubectl get service --all-namespaces -o wide
           sleep 5s
 
       # build tarianctl for k8s-test
