@@ -88,8 +88,6 @@ jobs:
         run: |
           kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=1m || true
           kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=1m || true
-          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=1m || true
-          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=1m || true
           kubectl get pods --all-namespaces
           kubectl get deployment --all-namespaces
           kubectl get daemonset --all-namespaces
