@@ -22,12 +22,11 @@ type ClusterAgentConfig struct {
 }
 
 type ClusterAgent struct {
-	grpcServer            *grpc.Server
-	configServer          *ConfigServer
-	eventServer           *EventServer
-	actionHandler         *actionHandler
-	configCache           *ConfigCache
-	falcoSidekickListener *FalcoSidekickListener
+	grpcServer    *grpc.Server
+	configServer  *ConfigServer
+	eventServer   *EventServer
+	actionHandler *actionHandler
+	configCache   *ConfigCache
 
 	k8sInformers informers.SharedInformerFactory
 	context      context.Context
@@ -106,8 +105,6 @@ func NewClusterAgent(config *ClusterAgentConfig) *ClusterAgent {
 	// Not sure why this is needed, but it doesn't work without this.
 	ca.k8sInformers.Core().V1().Pods().Informer()
 
-	ca.falcoSidekickListener = NewFalcoSidekickListener(":8088", config.ServerAddress, config.ServerGrpcDialOptions, ca.k8sInformers, ca.configCache, actionHandler)
-
 	return ca
 }
 
@@ -126,10 +123,4 @@ func (ca *ClusterAgent) Run() {
 	go ca.configCache.Run()
 	go ca.actionHandler.Run()
 	go ca.k8sInformers.Start(ca.context.Done())
-
-	go func() {
-		if err := ca.falcoSidekickListener.server.ListenAndServe(); err != nil {
-			logger.Fatalw("error running falco sidekick listener", "err", err)
-		}
-	}()
 }

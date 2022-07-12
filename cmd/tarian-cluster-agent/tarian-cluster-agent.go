@@ -28,8 +28,6 @@ const (
 	defaultHost = ""
 
 	defaultServerAddress = "localhost:50051"
-
-	defaultSidekickListenerHttpPort = "8088"
 )
 
 // nolint: gochecknoglobals
@@ -105,11 +103,6 @@ func getCliApp() *cli.App {
 						Name:  "enable-add-constraint",
 						Usage: "Enable add constraint RPC. This is needed to support pod agent running in register mode.",
 						Value: false,
-					},
-					&cli.StringFlag{
-						Name:  "falco-listener-http-port",
-						Usage: "Falco listener http port",
-						Value: defaultSidekickListenerHttpPort,
 					},
 				},
 				Action: run,

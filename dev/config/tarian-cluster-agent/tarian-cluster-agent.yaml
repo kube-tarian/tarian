@@ -24,8 +24,6 @@ spec:
         ports:
         - containerPort: 50052
           name: grpc
-        - containerPort: 8088
-          name: falco
       serviceAccountName: tarian-cluster-agent
 ---
 apiVersion: v1
@@ -41,9 +39,6 @@ spec:
     targetPort: 50052
     nodePort: 31052
     name: grpc
-  - port: 8088
-    targetPort: 8088
-    name: falco
   selector:
     app: tarian-cluster-agent
 ---
