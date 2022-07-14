@@ -22,7 +22,8 @@ kubectl get MutatingWebhookConfiguration -o yaml
 sed -i 's/Welcome/Welcome-updated/g' dev/config/monitored-pod/configmap.yaml
 kubectl apply -f dev/config/monitored-pod -R
 kubectl get pods
-kubectl wait --for=condition=ready pod/nginx --timeout=5m
+kubectl wait --for=condition=ready pod/nginx --timeout=1m
+kubectl wait --for=condition=ready pod/nginx --timeout=1m
 
 echo test $(kubectl get pod nginx -o json | jq -r '.spec.containers | length') -eq 2 || (echo "expected container count 2" && false)
 test $(kubectl get pod nginx -o json | jq -r '.spec.containers | length') -eq 2 || (echo "expected container count 2" && false)
