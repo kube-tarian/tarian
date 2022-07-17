@@ -46,9 +46,7 @@ func getCliApp() *cli.App {
 				Value: "console",
 			},
 		},
-		Action: func(ctx *cli.Context) error {
-			return ctx.App.Command("run").Run(ctx)
-		},
+		DefaultCommand: "run",
 		Commands: []*cli.Command{
 			{
 				Name:   "run",
