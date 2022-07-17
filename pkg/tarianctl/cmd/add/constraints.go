@@ -36,17 +36,17 @@ func NewAddConstraintCommand() *cli.Command {
 				Usage: "The name scope for the constraint submitted",
 				Value: "",
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:  "match-labels",
-				Usage: "The matchLabels selector for the constraint submitted. `KEY_1=VAL_1` ... KEY_N=VAL_N",
+				Usage: "The matchLabels selector for the constraint submitted. `KEY_1=VAL_1`,...,KEY_N=VAL_N",
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:  "allowed-processes",
-				Usage: "The allowed processes for the constraint submitted. `REGEX_1` ... REGEX_N",
+				Usage: "The allowed processes for the constraint submitted. `REGEX_1`,...,REGEX_N",
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:  "allowed-file-sha256sums",
-				Usage: "The allowed file sha256 sums for the constraint submitted. `PATH_1=SUM_1` ... PATH_N=SUM_N",
+				Usage: "The allowed file sha256 sums for the constraint submitted. `PATH_1=SUM_1`,...,PATH_N=SUM_N",
 			},
 			&cli.StringFlag{
 				Name:  "from-violated-pod",
@@ -97,10 +97,10 @@ func NewAddConstraintCommand() *cli.Command {
 						Namespace: c.String("namespace"),
 						Name:      c.String("name"),
 						Selector: &tarianpb.Selector{
-							MatchLabels: matchLabelsFromString(c.String("match-labels")),
+							MatchLabels: matchLabelsFromString(c.StringSlice("match-labels")),
 						},
-						AllowedProcesses: allowedProcessesFromString(c.String("allowed-processes")),
-						AllowedFiles:     allowedFilesFromString(c.String("allowed-file-sha256sums")),
+						AllowedProcesses: allowedProcessesFromString(c.StringSlice("allowed-processes")),
+						AllowedFiles:     allowedFilesFromString(c.StringSlice("allowed-file-sha256sums")),
 					},
 				}
 			}
@@ -135,16 +135,14 @@ func NewAddConstraintCommand() *cli.Command {
 	}
 }
 
-func matchLabelsFromString(labelsStr string) []*tarianpb.MatchLabel {
-	if labelsStr == "" {
+func matchLabelsFromString(strLabels []string) []*tarianpb.MatchLabel {
+	if strLabels == nil {
 		return nil
 	}
 
 	labels := []*tarianpb.MatchLabel{}
 
-	splitByComma := strings.Split(labelsStr, ",")
-
-	for _, s := range splitByComma {
+	for _, s := range strLabels {
 		idx := strings.Index(s, "=")
 
 		if idx < 0 {
@@ -160,16 +158,14 @@ func matchLabelsFromString(labelsStr string) []*tarianpb.MatchLabel {
 	return labels
 }
 
-func allowedProcessesFromString(str string) []*tarianpb.AllowedProcessRule {
-	if str == "" {
+func allowedProcessesFromString(strProcesses []string) []*tarianpb.AllowedProcessRule {
+	if strProcesses == nil {
 		return nil
 	}
 
 	allowedProcesses := []*tarianpb.AllowedProcessRule{}
 
-	splitByComma := strings.Split(str, ",")
-
-	for _, s := range splitByComma {
+	for _, s := range strProcesses {
 		token := strings.Trim(s, "\" ")
 
 		allowedProcesses = append(allowedProcesses, &tarianpb.AllowedProcessRule{Regex: &token})
@@ -182,16 +178,14 @@ func allowedProcessesFromString(str string) []*tarianpb.AllowedProcessRule {
 	return allowedProcesses
 }
 
-func allowedFilesFromString(str string) []*tarianpb.AllowedFileRule {
-	if str == "" {
+func allowedFilesFromString(strFiles []string) []*tarianpb.AllowedFileRule {
+	if strFiles == nil {
 		return nil
 	}
 
 	allowedFiles := []*tarianpb.AllowedFileRule{}
 
-	splitByComma := strings.Split(str, ",")
-
-	for _, s := range splitByComma {
+	for _, s := range strFiles {
 		idx := strings.Index(s, "=")
 
 		if idx < 0 {

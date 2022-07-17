@@ -80,7 +80,7 @@ func runAddAction(c *cli.Context) error {
 			Namespace: c.String("namespace"),
 			Name:      c.String("name"),
 			Selector: &tarianpb.Selector{
-				MatchLabels: matchLabelsFromString(c.String("match-labels")),
+				MatchLabels: matchLabelsFromString(c.StringSlice("match-labels")),
 			},
 			OnViolatedProcess: c.Bool("on-violated-process"),
 			OnViolatedFile:    c.Bool("on-violated-file"),

@@ -7,7 +7,7 @@ import (
 )
 
 func TestMatchLabelsFromString(t *testing.T) {
-	matchLabels := matchLabelsFromString("key1=value1,key2=value2")
+	matchLabels := matchLabelsFromString([]string{"key1=value1", "key2=value2"})
 
 	assert.Len(t, matchLabels, 2)
 	assert.Equal(t, "key1", matchLabels[0].Key)
@@ -17,7 +17,7 @@ func TestMatchLabelsFromString(t *testing.T) {
 }
 
 func TestAllowedProcessesFromString(t *testing.T) {
-	rules := allowedProcessesFromString("sleep, pause, tarian.*")
+	rules := allowedProcessesFromString([]string{"sleep", "pause", "tarian.*"})
 	assert.Len(t, rules, 3)
 	assert.Equal(t, "sleep", rules[0].GetRegex())
 	assert.Equal(t, "pause", rules[1].GetRegex())

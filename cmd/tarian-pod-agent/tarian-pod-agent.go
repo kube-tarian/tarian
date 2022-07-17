@@ -51,9 +51,7 @@ func getCliApp() *cli.App {
 				Value: "console",
 			},
 		},
-		Action: func(ctx *cli.Context) error {
-			return ctx.App.Command("threat-scan").Run(ctx)
-		},
+		DefaultCommand: "threat-scan",
 		Commands: []*cli.Command{
 			{
 				Name:  "threat-scan",
