@@ -15,6 +15,7 @@ import (
 	"github.com/kube-tarian/tarian/pkg/server/dbstore"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -58,7 +59,7 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 
 	clusterAgentConfig := &clusteragent.ClusterAgentConfig{
 		ServerAddress:         "localhost:" + e2eServerPort,
-		ServerGrpcDialOptions: []grpc.DialOption{grpc.WithInsecure()},
+		ServerGrpcDialOptions: []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())},
 	}
 
 	clusterAgent := clusteragent.NewClusterAgent(clusterAgentConfig)

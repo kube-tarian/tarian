@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func TestPodAgentSyncConstraints(t *testing.T) {
@@ -20,7 +21,7 @@ func TestPodAgentSyncConstraints(t *testing.T) {
 	defer e2eHelper.Stop()
 
 	// Add constraints
-	grpcConn, err := grpc.Dial(":"+e2eServerPort, grpc.WithInsecure())
+	grpcConn, err := grpc.Dial(":"+e2eServerPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.Nil(t, err)
 	configClient := tarianpb.NewConfigClient(grpcConn)
 

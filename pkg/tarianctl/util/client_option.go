@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var logger *zap.SugaredLogger
@@ -54,7 +55,7 @@ func ClientOptionsFromCliContext(ctx *cli.Context) []grpc.DialOption {
 		tlsConfig.InsecureSkipVerify = ctx.Bool("server-tls-insecure-skip-verify")
 		o = append(o, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	} else {
-		o = append(o, grpc.WithInsecure())
+		o = append(o, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
 	return o
