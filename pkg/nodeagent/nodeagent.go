@@ -11,6 +11,7 @@ import (
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/scylladb/go-set/strset"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -52,7 +53,7 @@ func (n *NodeAgent) SetNodeName(name string) {
 
 func (n *NodeAgent) Dial() {
 	var err error
-	n.grpcConn, err = grpc.Dial(n.clusterAgentAddress, grpc.WithInsecure())
+	n.grpcConn, err = grpc.Dial(n.clusterAgentAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	n.configClient = tarianpb.NewConfigClient(n.grpcConn)
 	n.eventClient = tarianpb.NewEventClient(n.grpcConn)
 
