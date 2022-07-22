@@ -40,7 +40,7 @@ The main reason Tarian was born is to fight against threats in Kubernetes togeth
 ## Requirements
 
 - Supported Kubernetes version (currently 1.22+)
-- Kernel version >= 5.8 [Ref](https://github.com/libbpf/libbpf-bootstrap/issues/42)
+- Kernel version >= 5.8. See [Libbpf](https://github.com/libbpf/libbpf-bootstrap/issues/42).
 - Kernel with [BTF](https://www.kernel.org/doc/html/latest/bpf/btf.html) information to support eBPF CO-RE.
   Some major Linux distributions come with kernel BTF already built in. If your kernel doesn't come with BTF built-in,
   you'll need to build custom kernel. See [BPF CO-RE](https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere).
