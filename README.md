@@ -50,11 +50,11 @@ The main reason Tarian was born is to fight against threats in Kubernetes togeth
 
 ### Tested on popular Kubernetes Distributions:
 
-| Kind                                       | :heavy_check_mark: |                    |
-| Minikube                                   | :heavy_minus_sign: | kernel < 5.8       |
-| Linode Kubernetes Engine (LKE)             | :heavy_check_mark: |                    |
-| Digital Ocean Kubernetes Engine (DOKS)     | :heavy_check_mark: |                    |
-| Google Kubernetes Engine (GKE)             | :heavy_check_mark: |                    |
+| Kind                                       | :heavy_check_mark: |                                                                    |
+| Minikube                                   | :heavy_minus_sign: | kernel < 5.8                                                       |
+| Linode Kubernetes Engine (LKE)             | :heavy_check_mark: |                                                                    |
+| Digital Ocean Kubernetes Engine (DOKS)     | :heavy_check_mark: |                                                                    |
+| Google Kubernetes Engine (GKE)             | :heavy_check_mark: |                                                                    |
 | Amazon Elastic Kubernetes Engine (EKS)     | :heavy_minus_sign: | [kernel < 5.8](https://github.com/awslabs/amazon-eks-ami/pull/862) |
 | Azure Kubernetes Service (AKS)             | :heavy_minus_sign: | [kernel < 5.8](https://github.com/Azure/AKS/issues/2883)           |
 
