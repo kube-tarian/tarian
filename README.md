@@ -50,6 +50,8 @@ The main reason Tarian was born is to fight against threats in Kubernetes togeth
 
 ### Tested on popular Kubernetes Distributions:
 
+| Distribution                               | Working            | Notes                                                              |
+|--------------------------------------------|--------------------|--------------------------------------------------------------------|
 | Kind                                       | :heavy_check_mark: |                                                                    |
 | Minikube                                   | :heavy_minus_sign: | kernel < 5.8                                                       |
 | Linode Kubernetes Engine (LKE)             | :heavy_check_mark: |                                                                    |
