@@ -13,7 +13,7 @@ We want to maintain this as an open-source project to fight against the attacks 
 
 **How does Tarian work?**
 
-Tarian Cluster Agent runs in Kubernetes cluster detecting unknown processes and unknown changes to files, report them to Tarian Server, and optionally take action: delete the violated pod. It leverages Falco with a custom rule for detecting new processes executed. For file change detection, Tarian Cluster Agent injects a sidecar container in your main application's pod which will check file checksums in the configured path and compare them with the registered checksums in Tarian Server. Tarian will be a part of your Application's pod from dev to prod environment, hence you can register to your Tarian DB what is supposed to be happening & running in your container + file signatures to be watched + what can be notified + action to take (self destroy the pod) based on changes detected. Shift-left your detection mechanism!
+Tarian Cluster Agent runs in Kubernetes cluster detecting unknown processes and unknown changes to files, report them to Tarian Server, and optionally take action: delete the violated pod. It uses eBPF to detect new processes. For file change detection, Tarian Cluster Agent injects a sidecar container in your main application's pod which will check file checksums in the configured path and compare them with the registered checksums in Tarian Server. Tarian will be a part of your Application's pod from dev to prod environment, hence you can register to your Tarian DB what is supposed to be happening & running in your container + file signatures to be watched + what can be notified + action to take (self destroy the pod) based on changes detected. Shift-left your detection mechanism!
 
 
 **What if an unknown change happens inside the container which is not in Tarian's registration DB, how does Tarian react to it?**
@@ -42,62 +42,30 @@ The main reason Tarian was born is to fight against threats in Kubernetes togeth
 ## Requirements
 
 - Supported Kubernetes version (currently 1.22+)
-- Kernel version >= 5.8 [Ref](https://github.com/libbpf/libbpf-bootstrap/issues/42)
+- Kernel version >= 5.8
 - Kernel with [BTF](https://www.kernel.org/doc/html/latest/bpf/btf.html) information to support eBPF CO-RE.
   Some major Linux distributions come with kernel BTF already built in. If your kernel doesn't come with BTF built-in,
   you'll need to build custom kernel. See [BPF CO-RE](https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere).
 
 
-### Tested on popular Kubernetes Distributions:
+### Tested on popular Kubernetes Environments/Services:
 
-| Distribution                               | Working            | Notes                                                              |
-|--------------------------------------------|--------------------|--------------------------------------------------------------------|
-| Kind                                       | :heavy_check_mark: |                                                                    |
-| Minikube                                   | :heavy_minus_sign: | kernel < 5.8                                                       |
-| Linode Kubernetes Engine (LKE)             | :heavy_check_mark: |                                                                    |
-| Digital Ocean Kubernetes Engine (DOKS)     | :heavy_check_mark: |                                                                    |
-| Google Kubernetes Engine (GKE)             | :heavy_check_mark: |                                                                    |
-| Amazon Elastic Kubernetes Engine (EKS)     | :heavy_minus_sign: | [kernel < 5.8](https://github.com/awslabs/amazon-eks-ami/pull/862) |
-| Azure Kubernetes Service (AKS)             | :heavy_minus_sign: | [kernel < 5.8](https://github.com/Azure/AKS/issues/2883)           |
+| Environment                                  | Working            | Notes                                                              |
+|----------------------------------------------|--------------------|--------------------------------------------------------------------|
+| Kind v0.14.0                                 | :heavy_check_mark: |                                                                    |
+| Minikube v1.26.0                             | :heavy_check_mark: |                                                                    |
+| Linode Kubernetes Engine (LKE) 1.22          | :heavy_check_mark: |                                                                    |
+| Digital Ocean Kubernetes Engine (DOKS) 1.22  | :heavy_check_mark: |                                                                    |
+| Google Kubernetes Engine (GKE) 1.22          | :heavy_check_mark: |                                                                    |
+| Amazon Elastic Kubernetes Engine (EKS)       | :heavy_minus_sign: | [kernel < 5.8](https://github.com/awslabs/amazon-eks-ami/pull/862) |
+| Azure Kubernetes Service (AKS)               | :heavy_minus_sign: | [kernel < 5.8](https://github.com/Azure/AKS/issues/2883)           |
 
 
 ### Prepare Namespaces
 
 ```bash
 kubectl create namespace tarian-system
-kubectl create namespace falco
 ```
-
-### Install Falco with custom rules from Tarian
-
-Save this to `falco-values.yaml`
-
-```yaml
-falcosidekick:
-  enabled: true
-  config:
-    webhook:
-      address: http://tarian-cluster-agent.tarian-system.svc:8088
-```
-
-Then install Falco using Helm:
-
-```bash
-helm repo add falcosecurity https://falcosecurity.github.io/charts
-helm repo update
-
-helm upgrade -i falco falcosecurity/falco -n falco -f falco-values.yaml \
-  --set-file customRules."tarian_rules\.yaml"=https://raw.githubusercontent.com/kube-tarian/tarian/main/dev/falco/tarian_rules.yaml
-```
-
-On GKE, falco uses ebpf, so you will need to add
-
-```
---set ebpf.enabled=true
-```
-
-to the helm command above. See also [Falco docs](https://falco.org/docs/getting-started/third-party/production/).
-
 
 ### Setup a Postgresql Database
 
@@ -134,10 +102,6 @@ kubectl wait --for=condition=ready pod --all -n tarian-system
 ```bash
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
 ```
-
-4. Verify
-
-After the above step, you should see falco alert in tarianctl get events (See the following Usage sections).
 
 
 ## Configuration
