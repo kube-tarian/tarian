@@ -4,19 +4,12 @@ Tarian welcomes and accepts contributions via GitHub pull requests.
 
 ## Pre-requisites
 
-- [A kubernetes cluster that is able to run falco](https://falco.org/docs/getting-started/third-party/learning/) 
-  - minikube
-  - or kind, with falco installed on the host
-  - or a managed (cloud) kubernetes cluster with ability to run falco
+- Kubernetes cluster: minikube or kind
 - [Go 1.17+](https://golang.org/)
 - [Kubectl](https://kubernetes.io/docs/tasks/tools/)
 - Docker for developing with local cluster
 
-If you want to go with local cluster, we have makefile targets to help you:
-
 ### Kind
-
-After installing falco on the host (https://falco.org/docs/getting-started/installation/), run the following command:
 
 ```bash
 make create-kind-cluster
@@ -28,32 +21,60 @@ make create-kind-cluster
 make create-minikube-cluster
 ```
 
-
 ## Setup
 
-1. Prepare build tools
+1. Clone submodules
 
 ```bash
-go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.26
-go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
-make bin/protoc bin/goreleaser kustomize
+git submodule update --init --recursive
 ```
 
-2. Build local images
+2. Prepare build tools
+
+```bash
+sudo apt update && sudo apt install make unzip pkg-config libelf-dev clang gcc linux-tools-common linux-tools-common linux-tools-generic
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
+make bin/protoc bin/goreleaser bin/kustomize
+```
+
+Verify if bpftool is working. If it requires to install the packages for your specific kernel, it will recommend the package name.
+
+```bash
+bpftool
+```
+
+If it's working, the command will print:
+
+```
+Usage: /usr/lib/linux-tools/5.15.0-40-generic/bpftool [OPTIONS] OBJECT { COMMAND | help }
+       /usr/lib/linux-tools/5.15.0-40-generic/bpftool batch file FILE
+       /usr/lib/linux-tools/5.15.0-40-generic/bpftool version
+
+       OBJECT := { prog | map | link | cgroup | perf | net | feature | btf | gen | struct_ops | iter }
+       OPTIONS := { {-j|--json} [{-p|--pretty}] | {-d|--debug} |
+                    {-V|--version} }
+```
+
+3. Build local images
 
 ```bash
 make local-images
 ```
 
-3. Apply tarian-k8s manifests
+4. Apply tarian-k8s manifests
 
 ```bash
 make deploy
 ```
 
-Once the pods are running (`kubectl get pods -n tarian-system`),
+5. Wait for all the pods to be ready
 
-4. Run DB migration:
+```bash
+kubectl wait --for=condition=ready pod --all -n tarian-system
+```
+
+6. Run DB migration:
 
 ```bash
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
@@ -65,6 +86,7 @@ kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db mig
 
 ```bash
 kubectl run nginx --image=nginx --annotations=pod-agent.k8s.tarian.dev/threat-scan=true
+kubectl wait --for=condition=ready pod nginx
 ```
 
 There should be a container injected in nginx pod.
@@ -99,9 +121,13 @@ multiple clusters. For example, we want to use tarian in the staging and the pro
 
 `tarian-cluster-agent` is the component that's installed in each cluster and syncs the configurations from `tarian-server`, coordinates with pod-agents, and executes actions.
 
+### tarian-node-agent
+
+`tarian-node-agent` is a daemonset that runs on each node, detecting and reporting unknown processes to the `tarian-cluster-agent`.
+
 ### tarian-pod-agent
 
-`tarian-pod-agent` is a sidecar container that's injected to pods by `tarian-cluster-agent`. The pod agent periodically scans for threats in the main container, and reports to the `tarian-cluster-agent`.
+`tarian-pod-agent` is a sidecar container that's injected to pods by `tarian-cluster-agent`. The pod agent periodically detect unexpected changes to the registered files and reports to the `tarian-cluster-agent`.
 
 ### tarianctl
 
