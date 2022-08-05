@@ -1,3 +1,5 @@
+<p align="center"><img src="Tarian-logo1.png" width="250"></p>
+
 # Tarian
 
 Protect your applications running on Kubernetes from malicious attacks by pre-registering your trusted processes and trusted file signatures. Tarian will detect unknown processes and changes to the registered files, then it will send alerts and take an automated action. Save your K8s environment from Ransomware!
