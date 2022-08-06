@@ -33,12 +33,33 @@ jobs:
     steps:
     - name: Checkout the code
       uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag localbuild/testimage:latest
-    - name: Run the Anchore scan action itself with GitHub Advanced Security code scanning integration enabled
+
+    - name: Run the Anchore scan action against tarian-server
       uses: anchore/scan-action@b08527d5ae7f7dc76f9621edb6e49eaf47933ccd
       with:
-        image: "localbuild/testimage:latest"
+        image: ghcr.io/kube-tarian/tarian-server:latest
+        acs-report-enable: true
+        fail-build: false
+    - name: Upload Anchore Scan Report
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: results.sarif
+
+    - name: Run the Anchore scan action against tarian-cluster-agent
+      uses: anchore/scan-action@b08527d5ae7f7dc76f9621edb6e49eaf47933ccd
+      with:
+        image: ghcr.io/kube-tarian/tarian-cluster-agent:latest
+        acs-report-enable: true
+        fail-build: false
+    - name: Upload Anchore Scan Report
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: results.sarif
+
+    - name: Run the Anchore scan action against tarian-pod-agent
+      uses: anchore/scan-action@b08527d5ae7f7dc76f9621edb6e49eaf47933ccd
+      with:
+        image: ghcr.io/kube-tarian/tarian-pod-agent:latest
         acs-report-enable: true
         fail-build: false
     - name: Upload Anchore Scan Report
