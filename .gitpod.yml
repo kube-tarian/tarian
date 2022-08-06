@@ -1,7 +1,7 @@
 tasks:
   - init: curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64 && chmod +x ./kind && sudo mv ./kind /usr/local/bin
     command: make create-kind-cluster
-  - before: bash ./dev/run-kind-registry.sh; GO111MODULE=off go get -u github.com/mgechev/revive; go install honnef.co/go/tools/cmd/staticcheck@latest; go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1; go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
+  - before: bash ./dev/run-kind-registry.sh; go install github.com/mgechev/revive@latest; go install honnef.co/go/tools/cmd/staticcheck@latest; go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1; go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
     init: make bin/protoc bin/goreleaser lint build unit-test
     command: make local-images
   - before: docker-compose up -d
