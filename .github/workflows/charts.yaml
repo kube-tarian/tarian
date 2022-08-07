@@ -108,6 +108,8 @@ jobs:
     if: startsWith(github.ref, 'refs/heads/main')
     needs: lint-test
     runs-on: self-hosted
+    permissions:
+      contents: write
     env:
       GOPATH: ${{ github.workspace }}/../go
       HOME: ${{ github.workspace }}/..
