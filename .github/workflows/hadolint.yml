@@ -21,8 +21,8 @@ permissions:
   contents: read
 
 jobs:
-  hadolint:
-    name: Run hadolint scanning
+  hadolint-tarian-server:
+    name: Run hadolint scanning on tarian-server
     runs-on: ubuntu-latest
     permissions:
       contents: read # for actions/checkout to fetch code
@@ -40,6 +40,23 @@ jobs:
           output-file: hadolint-results-server.sarif
           no-fail: true
 
+      - name: Upload hadolint-results-server to GitHub
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: hadolint-results-server.sarif
+          wait-for-processing: true
+
+  hadolint-tarian-cluster-agent:
+    name: Run hadolint scanning on tarian-cluster-agent
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Run hadolint
         uses: hadolint/hadolint-action@f988afea3da57ee48710a9795b6bb677cc901183 # @2.1.0
         with:
@@ -48,28 +65,8 @@ jobs:
           output-file: hadolint-results-cluster-agent.sarif
           no-fail: true
 
-      - name: Run hadolint
-        uses: hadolint/hadolint-action@f988afea3da57ee48710a9795b6bb677cc901183 # @2.1.0
-        with:
-          dockerfile: ./Dockerfile-pod-agent
-          format: sarif
-          output-file: hadolint-results-pod-agent.sarif
-          no-fail: true
-
-      - name: Upload hadolint-results-server to GitHub
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: hadolint-results-server.sarif
-          wait-for-processing: true
-
       - name: Upload hadolint-results-cluster-agent to GitHub
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: hadolint-results-cluster-agent.sarif
-          wait-for-processing: true
-
-      - name: Upload hadolint-results-pod-agent to GitHub
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: hadolint-results-pod-agent.sarif
           wait-for-processing: true
