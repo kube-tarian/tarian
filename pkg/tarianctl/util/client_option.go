@@ -1,3 +1,4 @@
+// Package util provides helpers for tarianctl
 package util
 
 import (

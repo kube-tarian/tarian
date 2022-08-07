@@ -1,3 +1,4 @@
+// Package importcmd provides import commands
 package importcmd
 
 import (

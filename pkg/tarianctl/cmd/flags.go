@@ -1,3 +1,4 @@
+// Package cmd holds top level commands and params
 package cmd
 
 import cli "github.com/urfave/cli/v2"

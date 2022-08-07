@@ -1,3 +1,4 @@
+// Package stringutil provides helper functions for string
 package stringutil
 
 import "unicode/utf8"

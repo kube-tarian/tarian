@@ -1,3 +1,4 @@
+// Package podagent provides tarian pod agent functionality
 package podagent
 
 import (
