@@ -93,29 +93,25 @@ func runAddAction(c *cli.Context) error {
 		req.Action.FalcoPriority = tarianpb.FalcoPriorityFromString(c.String("on-falco-alert"))
 	}
 
-	if req != nil {
-		if c.Bool("dry-run") {
-			d, err := yaml.Marshal(req.GetAction())
-			if err != nil {
-				logger.Fatal(err)
-			}
-
-			fmt.Println(string(d))
-		} else {
-			response, err := configClient.AddAction(context.Background(), req)
-
-			if err != nil {
-				logger.Fatal(err)
-			}
-
-			if response.GetSuccess() {
-				logger.Info("Action was added successfully")
-			} else {
-				logger.Fatal("failed to add Action")
-			}
+	if c.Bool("dry-run") {
+		d, err := yaml.Marshal(req.GetAction())
+		if err != nil {
+			logger.Fatal(err)
 		}
+
+		fmt.Println(string(d))
 	} else {
-		fmt.Println("No new Action")
+		response, err := configClient.AddAction(context.Background(), req)
+
+		if err != nil {
+			logger.Fatal(err)
+		}
+
+		if response.GetSuccess() {
+			logger.Info("Action was added successfully")
+		} else {
+			logger.Fatal("failed to add Action")
+		}
 	}
 
 	return nil
