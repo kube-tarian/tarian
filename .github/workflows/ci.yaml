@@ -116,10 +116,10 @@ jobs:
       - uses: actions/setup-go@424fc82d43fa5a37540bae62709ddcc23d9520d4 # @v2.1.5
         with:
           go-version: '1.17'
-      - run: sudo apt update && sudo apt install -y jq
+      - run: sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang
       - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
       - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
-      - run: make bin/protoc bin/goreleaser
+      - run: make bin/protoc ebpf bin/goreleaser
       - name: Login to GitHub Container Registry
         uses: docker/login-action@42d299face0c5c43a0487c477f595ac9cf22f1a7 # @v1.12.0
         with:
