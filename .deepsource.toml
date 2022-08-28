@@ -1,17 +1,6 @@
 version = 1
 
 [[analyzers]]
-name = "python"
-enabled = true
-
-  [analyzers.meta]
-  runtime_version = "3.x.x"
-
-[[analyzers]]
-name = "terraform"
-enabled = true
-
-[[analyzers]]
 name = "secrets"
 enabled = true
 
@@ -20,31 +9,8 @@ name = "docker"
 enabled = true
 
 [[analyzers]]
-name = "javascript"
-enabled = true
-
-[[analyzers]]
-name = "csharp"
-enabled = true
-
-[[analyzers]]
-name = "sql"
-enabled = true
-
-[[analyzers]]
 name = "test-coverage"
 enabled = true
-
-[[analyzers]]
-name = "shell"
-enabled = true
-
-[[analyzers]]
-name = "rust"
-enabled = true
-
-  [analyzers.meta]
-  msrv = "1.30.0"
 
 [[analyzers]]
 name = "go"
@@ -53,3 +19,4 @@ enabled = true
   [analyzers.meta]
   import_root = "github.com/kube-tarian/tarian"
   dependencies_vendored = true
+ 
