@@ -5,8 +5,15 @@ set -euxo pipefail
 export TARIAN_SERVER_ADDRESS=localhost:31051
 export PATH=$PATH:./bin
 
+# debug
+
+kubectl get statefulset -A
+kubectl get pods -A
+kubectl get svc -n tarian-system
+kubectl get endpoints -n tarian-system
+
 # run db migration and seed data
-kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
+kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dgraph apply-schema
 tarianctl add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx 
 tarianctl add constraint --name nginx-files --namespace default --match-labels run=nginx --allowed-file-sha256sums=/usr/share/nginx/html/index.html=38ffd4972ae513a0c79a8be4573403edcd709f0f572105362b08ff50cf6de521
 tarianctl get constraints

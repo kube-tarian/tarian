@@ -20,19 +20,35 @@ func NewGetActionsCommand() *cli.Command {
 		Name:    "actions",
 		Aliases: []string{"action"},
 		Usage:   "Get actions from the Tarian Server.",
-		Flags: []cli.Flag{&cli.StringFlag{
-			Name:    "output",
-			Aliases: []string{"o"},
-			Usage:   "Output format. Valid values: yaml",
-			Value:   "",
-		}},
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "output",
+				Aliases: []string{"o"},
+				Usage:   "Output format. Valid values: yaml",
+				Value:   "",
+			},
+			&cli.StringFlag{
+				Name:    "namespace",
+				Aliases: []string{"n"},
+				Usage:   "Filter by namespace",
+				Value:   "",
+			},
+		},
 		Action: func(c *cli.Context) error {
 			logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
 			util.SetLogger(logger)
 
 			opts := util.ClientOptionsFromCliContext(c)
 			client, _ := client.NewConfigClient(c.String("server-address"), opts...)
-			response, err := client.GetActions(context.Background(), &tarianpb.GetActionsRequest{})
+
+			request := &tarianpb.GetActionsRequest{}
+
+			ns := c.String("namespace")
+			if ns != "" {
+				request.Namespace = ns
+			}
+
+			response, err := client.GetActions(context.Background(), request)
 
 			if err != nil {
 				logger.Fatal(err)

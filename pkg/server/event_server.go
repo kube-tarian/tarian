@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/gogo/status"
-	"github.com/kube-tarian/tarian/pkg/server/dbstore"
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"google.golang.org/grpc/codes"
@@ -16,13 +15,8 @@ type EventServer struct {
 	eventStore store.EventStore
 }
 
-func NewEventServer(dsn string) (*EventServer, error) {
-	dbStore, err := dbstore.NewDbEventStore(dsn)
-
-	if err != nil {
-		return nil, err
-	}
-	return &EventServer{eventStore: dbStore}, nil
+func NewEventServer(s store.EventStore) *EventServer {
+	return &EventServer{eventStore: s}
 }
 
 func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.IngestEventRequest) (*tarianpb.IngestEventResponse, error) {

@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3.9'
 
 services:
   db:
@@ -18,3 +18,22 @@ services:
     environment:
     - DATABASE_HOST=db
     - DATABASE_SSL_MODE=disable
+  dgraph-zero:
+    image: dgraph/dgraph:latest
+    volumes:
+      - /tmp/tarian-dev/dgraph/data:/dgraph
+    ports:
+      - 5080:5080
+      - 6080:6080
+    restart: on-failure
+    command: dgraph zero --my=dgraph-zero:5080
+  dgraph-alpha:
+    image: dgraph/dgraph:latest
+    volumes:
+      - /tmp/tarian-dev/dgraph/data:/dgraph
+    ports:
+      - 8080:8080
+      - 9080:9080
+    restart: on-failure
+    command: dgraph alpha --my=dgraph-alpha:7080 --zero=dgraph-zero:5080 --security whitelist=10.0.0.0/8,172.0.0.0/8,192.168.0.0/16,127.0.0.1
+

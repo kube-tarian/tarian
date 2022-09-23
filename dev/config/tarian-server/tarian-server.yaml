@@ -25,18 +25,8 @@ spec:
         - containerPort: 50051
           name: grpc
         env:
-        - name: POSTGRES_HOST
-          value: postgresql
-        - name: POSTGRES_PORT
-          value: "5432"
-        - name: POSTGRES_USER
-          value: postgres
-        - name: POSTGRES_PASSWORD
-          value: tarian
-        - name: POSTGRES_DBNAME
-          value: tarian
-        - name: POSTGRES_SSLMODE
-          value: disable
+        - name: DGRAPH_ADDRESS
+          value: dgraph-public:9080
 ---
 apiVersion: v1
 kind: Service

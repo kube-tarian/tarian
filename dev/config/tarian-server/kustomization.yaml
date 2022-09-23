@@ -1,7 +1,6 @@
 resources:
 - tarian-server.yaml
-- postgresql.yaml
-- phppgadmin.yaml
 - alertmanager.yaml
+- dgraph-single.yaml
 
 namespace: tarian-system

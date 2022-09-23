@@ -13,6 +13,7 @@ import (
 	"github.com/kube-tarian/tarian/pkg/podagent"
 	"github.com/kube-tarian/tarian/pkg/server"
 	"github.com/kube-tarian/tarian/pkg/server/dbstore"
+	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -53,7 +54,23 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	_, err = dbPool.Exec(context.Background(), "CREATE DATABASE "+dbConfig.DbName)
 	require.Nil(t, err)
 
-	srv, err := server.NewServer(dbConfig.GetDsn(), "", "")
+	storeSet := store.StoreSet{}
+	storeSet.ActionStore, err = dbstore.NewDbActionStore(dbConfig.GetDsn())
+	if err != nil {
+		t.Fatal("error while initiating database access", "err", err)
+	}
+
+	storeSet.EventStore, err = dbstore.NewDbEventStore(dbConfig.GetDsn())
+	if err != nil {
+		t.Fatal("error while initiating database access", "err", err)
+	}
+
+	storeSet.ConstraintStore, err = dbstore.NewDbConstraintStore(dbConfig.GetDsn())
+	if err != nil {
+		t.Fatal("error while initiating database access", "err", err)
+	}
+
+	srv, err := server.NewServer(storeSet, "", "")
 	grpcServer := srv.GrpcServer
 	require.Nil(t, err)
 

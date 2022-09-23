@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/kube-tarian/tarian/pkg/server/dbstore"
+	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -52,10 +52,10 @@ type Server struct {
 	cancelCtx  context.Context
 	cancelFunc context.CancelFunc
 
-	eventStore *dbstore.DbEventStore
+	eventStore store.EventStore
 }
 
-func NewServer(dsn string, certFile string, privateKeyFile string) (*Server, error) {
+func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string) (*Server, error) {
 	opts := []grpc.ServerOption{}
 	if certFile != "" && privateKeyFile != "" {
 		creds, _ := credentials.NewServerTLSFromFile(certFile, privateKeyFile)
@@ -64,23 +64,8 @@ func NewServer(dsn string, certFile string, privateKeyFile string) (*Server, err
 
 	grpcServer := grpc.NewServer(opts...)
 
-	configServer, err := NewConfigServer(dsn)
-	if err != nil {
-		logger.Errorw("failed to initiate config server", "err", err)
-		return nil, err
-	}
-
-	eventServer, err := NewEventServer(dsn)
-	if err != nil {
-		logger.Errorw("failed to initiate event server", "err", err)
-		return nil, err
-	}
-
-	eventStore, err := dbstore.NewDbEventStore(dsn)
-	if err != nil {
-		logger.Errorw("failed to initiate db store", "err", err)
-		return nil, err
-	}
+	configServer := NewConfigServer(storeSet.ConstraintStore, storeSet.ActionStore)
+	eventServer := NewEventServer(storeSet.EventStore)
 
 	tarianpb.RegisterConfigServer(grpcServer, configServer)
 	tarianpb.RegisterEventServer(grpcServer, eventServer)
@@ -93,7 +78,7 @@ func NewServer(dsn string, certFile string, privateKeyFile string) (*Server, err
 		ConfigServer: configServer,
 		cancelCtx:    cancelCtx,
 		cancelFunc:   cancelFunc,
-		eventStore:   eventStore,
+		eventStore:   storeSet.EventStore,
 	}
 
 	return server, nil

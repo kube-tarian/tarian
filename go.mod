@@ -226,6 +226,7 @@ require (
 require (
 	github.com/Boostport/migration/driver/postgres v1.0.0
 	github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0
+	github.com/dgraph-io/dgo/v210 v210.0.0-20220113041351-ba0e5dfc4c3e
 )
 
 require (

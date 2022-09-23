@@ -1,17 +1,28 @@
 package main
 
 import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/kube-tarian/tarian/pkg/logger"
 	"github.com/kube-tarian/tarian/pkg/server"
 	"github.com/kube-tarian/tarian/pkg/server/dbstore"
+	"github.com/kube-tarian/tarian/pkg/server/dgraphstore"
+	"github.com/kube-tarian/tarian/pkg/store"
 	cli "github.com/urfave/cli/v2"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/kelseyhightower/envconfig"
 )
@@ -102,6 +113,24 @@ func getCliApp() *cli.App {
 					},
 				},
 			},
+			{
+				Name:  "dgraph",
+				Usage: "Command group related to Dgraph database",
+				Subcommands: []*cli.Command{
+					{
+						Name:   "apply-schema",
+						Usage:  "Apply the schema for Dgraph database",
+						Action: applyDgraphSchema,
+						Flags: []cli.Flag{
+							&cli.DurationFlag{
+								Name:  "timeout",
+								Usage: "How long it should wait for the operation to complete",
+								Value: 5 * time.Minute,
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -114,13 +143,54 @@ func run(c *cli.Context) error {
 	host := c.String("host")
 	port := c.String("port")
 
-	var cfg server.PostgresqlConfig
-	err := envconfig.Process("Postgres", &cfg)
-	if err != nil {
-		logger.Fatalw("database config error", "err", err)
+	dgraphAddress := os.Getenv("DGRAPH_ADDRESS")
+	storeSet := store.StoreSet{}
+	if dgraphAddress != "" {
+		cfg := dgraphstore.DgraphConfig{Address: dgraphAddress}
+
+		err := envconfig.Process("Dgraph", &cfg)
+		if err != nil {
+			logger.Fatalw("dgraph config error", "err", err)
+		}
+
+		dialOpts := buildDgraphDialOpts(cfg, logger)
+		grpcClient, err := dgraphstore.NewGrpcClient(cfg.Address, dialOpts)
+
+		if err != nil {
+			logger.Fatalw("error while initiating dgraph client", "err", err)
+		}
+
+		dg := dgraphstore.NewDgraphClient(grpcClient)
+		storeSet.EventStore = dgraphstore.NewDgraphEventStore(dg)
+		storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
+		storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
+	} else {
+		var cfg server.PostgresqlConfig
+		err := envconfig.Process("Postgres", &cfg)
+		if err != nil {
+			logger.Fatalw("database config error", "err", err)
+		}
+
+		storeSet.ActionStore, err = dbstore.NewDbActionStore(cfg.GetDsn())
+		if err != nil {
+			logger.Fatalw("error while initiating database access", "err", err)
+
+		}
+
+		storeSet.EventStore, err = dbstore.NewDbEventStore(cfg.GetDsn())
+		if err != nil {
+			logger.Fatalw("error while initiating database access", "err", err)
+
+		}
+
+		storeSet.ConstraintStore, err = dbstore.NewDbConstraintStore(cfg.GetDsn())
+		if err != nil {
+			logger.Fatalw("error while initiating database access", "err", err)
+
+		}
 	}
 
-	server, err := server.NewServer(cfg.GetDsn(), c.String("tls-cert-file"), c.String("tls-private-key-file"))
+	server, err := server.NewServer(storeSet, c.String("tls-cert-file"), c.String("tls-private-key-file"))
 	if err != nil {
 		logger.Fatalw("error while initiating tarian-server", "err", err)
 		return err
@@ -175,4 +245,75 @@ func dbmigrate(c *cli.Context) error {
 	}
 
 	return nil
+}
+
+func applyDgraphSchema(c *cli.Context) error {
+	l := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
+
+	var cfg dgraphstore.DgraphConfig
+	err := envconfig.Process("Dgraph", &cfg)
+	if err != nil {
+		l.Fatalw("dgraph config error", "err", err)
+	}
+
+	dialOpts := buildDgraphDialOpts(cfg, l)
+	grpcClient, err := dgraphstore.NewGrpcClient(cfg.Address, dialOpts)
+	if err != nil {
+		l.Fatalw("error while creating grpc client for applying dgraph schema", "err", err)
+	}
+
+	dg := dgraphstore.NewDgraphClient(grpcClient)
+
+	ctx, cancel := context.WithTimeout(c.Context, c.Duration("timeout"))
+	defer cancel()
+
+	err = dgraphstore.ApplySchema(ctx, dg)
+
+	if err != nil {
+		l.Fatalw("error while applying dgraph schema", "err", err)
+	} else {
+		l.Infow("dgraph schema applied")
+	}
+
+	return nil
+}
+
+func buildDgraphDialOpts(dgraphCfg dgraphstore.DgraphConfig, l *zap.SugaredLogger) []grpc.DialOption {
+	dialOpts := []grpc.DialOption{}
+	if dgraphCfg.TLSCertFile == "" {
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	} else {
+		certPool, _ := x509.SystemCertPool()
+		if certPool == nil {
+			certPool = x509.NewCertPool()
+		}
+
+		if dgraphCfg.TLSCAFile != "" {
+			serverCACert, err := ioutil.ReadFile(dgraphCfg.TLSCAFile)
+			if err != nil {
+				l.Fatalw("failed to read Dgraph TLS CA file", "filename", dgraphCfg.TLSCAFile, "err", err)
+			}
+
+			if ok := certPool.AppendCertsFromPEM(serverCACert); !ok {
+				l.Errorw("failed to append Dgraph TLS CA file")
+			}
+		}
+
+		cert, err := tls.LoadX509KeyPair(dgraphCfg.TLSCertFile, dgraphCfg.TLSKeyFile)
+		if err != nil {
+			l.Fatalw("error while creating Dgraph client TLS cert", "err", err)
+		}
+
+		// Get server name, without port
+		splitAddress := strings.Split(dgraphCfg.Address, ":")
+		serverName := ""
+
+		if len(splitAddress) > 0 {
+			serverName = splitAddress[0]
+		}
+
+		tlsConfig := &tls.Config{ServerName: serverName, RootCAs: certPool, Certificates: []tls.Certificate{cert}}
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	}
+	return dialOpts
 }
