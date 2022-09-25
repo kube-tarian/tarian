@@ -31,7 +31,7 @@ func NewAddActionCommand() *cli.Command {
 				Value:    "",
 				Required: true,
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:  "match-labels",
 				Usage: "The matchLabels selector for the action submitted. `KEY_1=VAL_1` ... KEY_N=VAL_N",
 			},
