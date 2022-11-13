@@ -33,18 +33,8 @@ spec:
         - containerPort: 50051
           name: grpc
         env:
-        - name: POSTGRES_HOST
-          value: {{ .Values.server.postgresql.host | quote }}
-        - name: POSTGRES_PORT
-          value: {{ .Values.server.postgresql.port | quote }}
-        - name: POSTGRES_USER
-          value: {{ .Values.server.postgresql.user | quote }}
-        - name: POSTGRES_PASSWORD
-          value: {{ .Values.server.postgresql.password | quote }}
-        - name: POSTGRES_DBNAME
-          value: {{ .Values.server.postgresql.dbname | quote }}
-        - name: POSTGRES_SSLMODE
-          value: {{ .Values.server.postgresql.sslmode | quote }}
+        - name: DGRAPH_ADDRESS
+          value: {{ .Values.server.dgraph.address | quote }}
         volumeMounts:
 {{- if .Values.server.tlsSecretName }}
         - name: tls

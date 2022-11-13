@@ -141,17 +141,17 @@ func (cs *ConfigServer) AddAction(ctx context.Context, request *tarianpb.AddActi
 
 	logger.Infow("add action", "request", request)
 
-	// exist, err := cs.actionStore.NamespaceAndNameExist(request.GetAction().GetNamespace(), request.GetAction().GetName())
-	// if err != nil {
-	// 	logger.Errorw("error while handling add action RPC", "err", err)
-	// 	return nil, status.Error(codes.Internal, "internal server error")
-	// }
+	exist, err := cs.actionStore.NamespaceAndNameExist(request.GetAction().GetNamespace(), request.GetAction().GetName())
+	if err != nil {
+		logger.Errorw("error while handling add action RPC", "err", err)
+		return nil, status.Error(codes.Internal, "internal server error")
+	}
 
-	// if exist {
-	// 	return nil, status.Error(codes.InvalidArgument, "namespace and name already exists")
-	// }
+	if exist {
+		return nil, status.Error(codes.InvalidArgument, "namespace and name already exists")
+	}
 
-	err := cs.actionStore.Add(request.GetAction())
+	err = cs.actionStore.Add(request.GetAction())
 	if err != nil {
 		logger.Errorw("error while handling add action RPC", "err", err)
 		return &tarianpb.AddActionResponse{Success: false}, nil

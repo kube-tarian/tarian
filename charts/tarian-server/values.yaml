@@ -9,13 +9,8 @@ server:
   alert:
     alertManagerAddress: http://alertmanager:9093
     evaluationInterval: 5s
-  postgresql:
-    host: tarian-postgresql
-    port: 5432
-    user: postgres
-    password: tarian
-    dbname: tarian
-    sslmode: disable
+  dgraph:
+    address: dgraph-public:9080
   service:
     type: ClusterIP
     nodeport:

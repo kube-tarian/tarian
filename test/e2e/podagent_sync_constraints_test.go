@@ -17,7 +17,6 @@ func TestPodAgentSyncConstraints(t *testing.T) {
 	e2eHelper := NewE2eHelper(t)
 	e2eHelper.PrepareDatabase()
 	e2eHelper.Run()
-	defer e2eHelper.DropDatabase()
 	defer e2eHelper.Stop()
 
 	// Add constraints

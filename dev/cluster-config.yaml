@@ -23,9 +23,9 @@ nodes:
     hostPort: 31052
     protocol: TCP
 
-  # postgresql
-  - containerPort: 31432
-    hostPort: 31432
+  # dgraph
+  - containerPort: 31880
+    hostPort: 31880
     protocol: TCP
 
   # phppgadmin

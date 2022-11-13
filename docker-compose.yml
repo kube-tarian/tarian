@@ -1,23 +1,6 @@
 version: '3.9'
 
 services:
-  db:
-    image: postgres
-    environment:
-      POSTGRES_PASSWORD: tarian
-      POSTGRES_DB: tarian
-    shm_size: '256mb'
-    ports:
-      - 5432:5432
-  phppgadmin:
-    depends_on:
-    - db
-    image: bitnami/phppgadmin
-    ports:
-      - 8090:8080
-    environment:
-    - DATABASE_HOST=db
-    - DATABASE_SSL_MODE=disable
   dgraph-zero:
     image: dgraph/dgraph:latest
     volumes:

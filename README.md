@@ -67,17 +67,10 @@ The main reason Tarian was born is to fight against threats in Kubernetes togeth
 kubectl create namespace tarian-system
 ```
 
-### Setup a Postgresql Database
+### Setup Dgraph Database
 
-You can use a DB as a service from your Cloud Services or you can also run by yourself in the cluster. For example to install the DB in the cluster, run:
+You can use any [Dgraph installation](https://dgraph.io/docs/deploy/kubernetes/) option as long as it can be accessed from the tarian server.
 
-```bash
-helm repo add bitnami https://charts.bitnami.com/bitnami
-
-helm install tarian-postgresql bitnami/postgresql -n tarian-system \
-  --set auth.postgresPassword=tarian \
-  --set auth.database=tarian
-```
 
 ### Install tarian
 
@@ -87,7 +80,7 @@ helm install tarian-postgresql bitnami/postgresql -n tarian-system \
 helm repo add tarian https://kube-tarian.github.io/tarian
 helm repo update
 
-helm upgrade -i tarian-server tarian/tarian-server --devel -n tarian-system
+helm upgrade -i tarian-server tarian/tarian-server --devel -n tarian-system --set server.dgraph.address=DGRAPH_ADDRESS:PORT
 helm upgrade -i tarian-cluster-agent tarian/tarian-cluster-agent --devel -n tarian-system
 ```
 
@@ -97,10 +90,10 @@ helm upgrade -i tarian-cluster-agent tarian/tarian-cluster-agent --devel -n tari
 kubectl wait --for=condition=ready pod --all -n tarian-system
 ```
 
-3. Run database migration to create the required tables
+3. Apply Dgraph schema
 
 ```bash
-kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
+kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dgraph apply-schema
 ```
 
 

@@ -77,7 +77,7 @@ kubectl wait --for=condition=ready pod --all -n tarian-system
 6. Run DB migration:
 
 ```bash
-kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server db migrate
+kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dgraph apply-schema
 ```
 
 ## See if it's working

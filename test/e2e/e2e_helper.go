@@ -7,27 +7,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/driftprogramming/pgxpoolmock"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/dgraph-io/dgo/v210"
 	"github.com/kube-tarian/tarian/pkg/clusteragent"
 	"github.com/kube-tarian/tarian/pkg/podagent"
 	"github.com/kube-tarian/tarian/pkg/server"
-	"github.com/kube-tarian/tarian/pkg/server/dbstore"
+	"github.com/kube-tarian/tarian/pkg/server/dgraphstore"
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	uuid "github.com/satori/go.uuid"
 )
 
-var cfg server.PostgresqlConfig = server.PostgresqlConfig{
-	User:     "postgres",
-	Password: "tarian",
-	DbName:   "tarian", // only used to connect, it will create its own db
-	Host:     "localhost",
-	Port:     "5432",
-	SslMode:  "disable",
+var cfg dgraphstore.DgraphConfig = dgraphstore.DgraphConfig{
+	Address: "localhost:9080",
 }
 
 const (
@@ -40,35 +32,24 @@ type TestHelper struct {
 	clusterAgent *clusteragent.ClusterAgent
 	podAgent     *podagent.PodAgent
 	t            *testing.T
-	dbPool       pgxpoolmock.PgxPool
-	dbConfig     server.PostgresqlConfig
+	dgraphConfig dgraphstore.DgraphConfig
+	dg           *dgo.Dgraph
 }
 
 func NewE2eHelper(t *testing.T) *TestHelper {
-	dbPool, err := pgxpool.Connect(context.Background(), cfg.GetDsn())
-	require.Nil(t, err)
+	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	grpcClient, err := dgraphstore.NewGrpcClient(cfg.Address, dialOpts)
 
-	dbConfig := cfg
-	dbConfig.DbName += "_test_" + fmt.Sprintf("%d", time.Now().Unix()) + "_" + uuid.NewV4().String()[:8]
+	if err != nil {
+		t.Fatal("error while initiating dgraph client", "err", err)
+	}
 
-	_, err = dbPool.Exec(context.Background(), "CREATE DATABASE "+dbConfig.DbName)
-	require.Nil(t, err)
+	dg := dgraphstore.NewDgraphClient(grpcClient)
 
 	storeSet := store.StoreSet{}
-	storeSet.ActionStore, err = dbstore.NewDbActionStore(dbConfig.GetDsn())
-	if err != nil {
-		t.Fatal("error while initiating database access", "err", err)
-	}
-
-	storeSet.EventStore, err = dbstore.NewDbEventStore(dbConfig.GetDsn())
-	if err != nil {
-		t.Fatal("error while initiating database access", "err", err)
-	}
-
-	storeSet.ConstraintStore, err = dbstore.NewDbConstraintStore(dbConfig.GetDsn())
-	if err != nil {
-		t.Fatal("error while initiating database access", "err", err)
-	}
+	storeSet.EventStore = dgraphstore.NewDgraphEventStore(dg)
+	storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
+	storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
 
 	srv, err := server.NewServer(storeSet, "", "")
 	grpcServer := srv.GrpcServer
@@ -82,7 +63,7 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	clusterAgent := clusteragent.NewClusterAgent(clusterAgentConfig)
 	podAgent := podagent.NewPodAgent("localhost:" + e2eClusterAgentPort)
 
-	return &TestHelper{t: t, dbPool: dbPool, dbConfig: dbConfig, server: grpcServer, clusterAgent: clusterAgent, podAgent: podAgent}
+	return &TestHelper{t: t, dgraphConfig: cfg, dg: dg, server: grpcServer, clusterAgent: clusterAgent, podAgent: podAgent}
 }
 
 func (th *TestHelper) RunServer() {
@@ -118,12 +99,9 @@ func (th *TestHelper) Run() {
 }
 
 func (th *TestHelper) PrepareDatabase() {
-	_, err := dbstore.RunMigration(th.dbConfig.GetDsn())
-	require.Nil(th.t, err)
-}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
-func (th *TestHelper) DropDatabase() {
-	_, err := th.dbPool.Exec(context.Background(), "DROP DATABASE "+th.dbConfig.DbName+" WITH (FORCE)")
-
+	err := dgraphstore.ApplySchema(ctx, th.dg)
 	require.Nil(th.t, err)
 }

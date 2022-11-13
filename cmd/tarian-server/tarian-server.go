@@ -15,7 +15,6 @@ import (
 
 	"github.com/kube-tarian/tarian/pkg/logger"
 	"github.com/kube-tarian/tarian/pkg/server"
-	"github.com/kube-tarian/tarian/pkg/server/dbstore"
 	"github.com/kube-tarian/tarian/pkg/server/dgraphstore"
 	"github.com/kube-tarian/tarian/pkg/store"
 	cli "github.com/urfave/cli/v2"
@@ -103,17 +102,6 @@ func getCliApp() *cli.App {
 				Action: run,
 			},
 			{
-				Name:  "db",
-				Usage: "Command group related to database",
-				Subcommands: []*cli.Command{
-					{
-						Name:   "migrate",
-						Usage:  "Run database migration",
-						Action: dbmigrate,
-					},
-				},
-			},
-			{
 				Name:  "dgraph",
 				Usage: "Command group related to Dgraph database",
 				Subcommands: []*cli.Command{
@@ -145,50 +133,24 @@ func run(c *cli.Context) error {
 
 	dgraphAddress := os.Getenv("DGRAPH_ADDRESS")
 	storeSet := store.StoreSet{}
-	if dgraphAddress != "" {
-		cfg := dgraphstore.DgraphConfig{Address: dgraphAddress}
+	cfg := dgraphstore.DgraphConfig{Address: dgraphAddress}
 
-		err := envconfig.Process("Dgraph", &cfg)
-		if err != nil {
-			logger.Fatalw("dgraph config error", "err", err)
-		}
-
-		dialOpts := buildDgraphDialOpts(cfg, logger)
-		grpcClient, err := dgraphstore.NewGrpcClient(cfg.Address, dialOpts)
-
-		if err != nil {
-			logger.Fatalw("error while initiating dgraph client", "err", err)
-		}
-
-		dg := dgraphstore.NewDgraphClient(grpcClient)
-		storeSet.EventStore = dgraphstore.NewDgraphEventStore(dg)
-		storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
-		storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
-	} else {
-		var cfg server.PostgresqlConfig
-		err := envconfig.Process("Postgres", &cfg)
-		if err != nil {
-			logger.Fatalw("database config error", "err", err)
-		}
-
-		storeSet.ActionStore, err = dbstore.NewDbActionStore(cfg.GetDsn())
-		if err != nil {
-			logger.Fatalw("error while initiating database access", "err", err)
-
-		}
-
-		storeSet.EventStore, err = dbstore.NewDbEventStore(cfg.GetDsn())
-		if err != nil {
-			logger.Fatalw("error while initiating database access", "err", err)
-
-		}
-
-		storeSet.ConstraintStore, err = dbstore.NewDbConstraintStore(cfg.GetDsn())
-		if err != nil {
-			logger.Fatalw("error while initiating database access", "err", err)
-
-		}
+	err := envconfig.Process("Dgraph", &cfg)
+	if err != nil {
+		logger.Fatalw("dgraph config error", "err", err)
 	}
+
+	dialOpts := buildDgraphDialOpts(cfg, logger)
+	grpcClient, err := dgraphstore.NewGrpcClient(cfg.Address, dialOpts)
+
+	if err != nil {
+		logger.Fatalw("error while initiating dgraph client", "err", err)
+	}
+
+	dg := dgraphstore.NewDgraphClient(grpcClient)
+	storeSet.EventStore = dgraphstore.NewDgraphEventStore(dg)
+	storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
+	storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
 
 	server, err := server.NewServer(storeSet, c.String("tls-cert-file"), c.String("tls-private-key-file"))
 	if err != nil {
@@ -223,26 +185,6 @@ func run(c *cli.Context) error {
 	}
 
 	logger.Info("tarian-server shutdown gracefully")
-
-	return nil
-}
-
-func dbmigrate(c *cli.Context) error {
-	logger := logger.GetLogger(c.String("log-level"), c.String("log-encoding"))
-
-	var cfg server.PostgresqlConfig
-	err := envconfig.Process("Postgres", &cfg)
-	if err != nil {
-		logger.Fatalw("database config error", "err", err)
-	}
-
-	count, err := dbstore.RunMigration(cfg.GetDsn())
-
-	if err != nil {
-		logger.Fatalw("error while running database migration", "err", err)
-	} else {
-		logger.Infow("completed database migration", "applied", count)
-	}
 
 	return nil
 }
