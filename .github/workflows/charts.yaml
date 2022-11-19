@@ -25,7 +25,7 @@ jobs:
           submodules: 'recursive'
       - uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # @3.3.1
         with:
-          go-version: '1.17'
+          go-version: '1.19'
 
       - name: Set up Helm
         uses: azure/setup-helm@f382f75448129b3be48f8121b9857be18d815a82 # @v3.4

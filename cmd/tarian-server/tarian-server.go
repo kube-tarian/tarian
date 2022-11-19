@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -231,7 +230,7 @@ func buildDgraphDialOpts(dgraphCfg dgraphstore.DgraphConfig, l *zap.SugaredLogge
 		}
 
 		if dgraphCfg.TLSCAFile != "" {
-			serverCACert, err := ioutil.ReadFile(dgraphCfg.TLSCAFile)
+			serverCACert, err := os.ReadFile(dgraphCfg.TLSCAFile)
 			if err != nil {
 				l.Fatalw("failed to read Dgraph TLS CA file", "filename", dgraphCfg.TLSCAFile, "err", err)
 			}

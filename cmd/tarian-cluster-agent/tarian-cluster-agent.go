@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -229,7 +228,7 @@ func newClusterAgentConfigFromCliContext(c *cli.Context, logger *zap.SugaredLogg
 		serverCAFile := c.String("server-tls-ca-file")
 
 		if serverCAFile != "" {
-			serverCACert, err := ioutil.ReadFile(serverCAFile)
+			serverCACert, err := os.ReadFile(serverCAFile)
 			if err != nil {
 				logger.Fatalw("failed to read server tls ca files", "filename", serverCAFile, "err", err)
 			}

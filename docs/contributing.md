@@ -5,7 +5,7 @@ Tarian welcomes and accepts contributions via GitHub pull requests.
 ## Pre-requisites
 
 - Kubernetes cluster: minikube or kind
-- [Go 1.17+](https://golang.org/)
+- [Go 1.19+](https://golang.org/)
 - [Kubectl](https://kubernetes.io/docs/tasks/tools/)
 - Docker for developing with local cluster
 

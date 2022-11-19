@@ -4,7 +4,7 @@ package util
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
+	"os"
 
 	"github.com/urfave/cli/v2"
 	"go.uber.org/zap"
@@ -41,7 +41,7 @@ func ClientOptionsFromCliContext(ctx *cli.Context) []grpc.DialOption {
 		serverCAFile := ctx.String("server-tls-ca-file")
 
 		if serverCAFile != "" {
-			serverCACert, err := ioutil.ReadFile(serverCAFile)
+			serverCACert, err := os.ReadFile(serverCAFile)
 			if err != nil {
 				logger.Fatalw("failed to read server tls ca files", "filename", serverCAFile, "err", err)
 			}

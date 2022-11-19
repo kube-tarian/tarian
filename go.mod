@@ -1,6 +1,6 @@
 module github.com/kube-tarian/tarian
 
-go 1.17
+go 1.19
 
 require (
 	github.com/go-logr/zapr v1.2.0

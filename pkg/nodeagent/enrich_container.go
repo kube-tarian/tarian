@@ -2,7 +2,7 @@ package nodeagent
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -22,7 +22,7 @@ const (
 
 func procsContainerID(pid uint32) (string, error) {
 	pidstr := fmt.Sprint(pid)
-	cgroups, err := ioutil.ReadFile(filepath.Join(HostProcDir, pidstr, "cgroup"))
+	cgroups, err := os.ReadFile(filepath.Join(HostProcDir, pidstr, "cgroup"))
 
 	if err != nil {
 		return "", err
