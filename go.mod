@@ -3,7 +3,7 @@ module github.com/kube-tarian/tarian
 go 1.19
 
 require (
-	github.com/go-logr/zapr v1.2.0
+	github.com/go-logr/zapr v1.2.3
 	github.com/go-openapi/runtime v0.24.1
 	github.com/go-openapi/strfmt v0.21.3
 	github.com/gogo/status v1.1.1
@@ -12,9 +12,9 @@ require (
 	github.com/open-policy-agent/cert-controller v0.4.0
 	github.com/prometheus/alertmanager v0.24.0
 	github.com/scylladb/go-set v1.0.2
-	github.com/stretchr/testify v1.8.0
-	github.com/urfave/cli/v2 v2.11.0
-	go.uber.org/zap v1.21.0
+	github.com/stretchr/testify v1.8.1
+	github.com/urfave/cli/v2 v2.24.2
+	go.uber.org/zap v1.24.0
 	google.golang.org/grpc v1.43.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v3 v3.0.1
@@ -43,7 +43,7 @@ require (
 	github.com/falcosecurity/falcosidekick v0.0.0-20211206092417-aef760059143
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-logr/logr v1.2.0 // indirect
+	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-openapi/analysis v0.21.2 // indirect
 	github.com/go-openapi/errors v0.20.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
@@ -80,8 +80,8 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.mongodb.org/mongo-driver v1.10.0 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/atomic v1.10.0 // indirect
+	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
