@@ -192,10 +192,10 @@ bin/controller-gen: ## Download controller-gen locally if necessary.
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 bin/kustomize: ## Download kustomize locally if necessary.
-	curl -o kustomize_v4.4.1_linux_amd64.tar.gz -L0 "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v4.4.1/kustomize_v4.4.1_linux_amd64.tar.gz"
+	curl -o kustomize_v4.5.7_linux_amd64.tar.gz -L0 "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v4.5.7/kustomize_v4.5.7_linux_amd64.tar.gz"
 	mkdir -p bin
-	tar -C ./bin/ -xvf kustomize_v4.4.1_linux_amd64.tar.gz
-	rm -f kustomize_v4.4.1_linux_amd64.tar.gz
+	tar -C ./bin/ -xvf kustomize_v4.5.7_linux_amd64.tar.gz
+	rm -f kustomize_v4.5.7_linux_amd64.tar.gz
 
 PROTOC = $(shell pwd)/bin/protoc
 PROTOC_ZIP = protoc-3.17.3-linux-x86_64.zip
