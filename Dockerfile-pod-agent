@@ -1,7 +1,6 @@
-# FROM alpine:3.14
-FROM alpine@sha256:e7d88de73db3d3fd9b2d63aa7f447a10fd0220b7cbf39803c803f2af9ba256b3
+# FROM cgr.dev/chainguard/static:latest
+FROM cgr.dev/chainguard/static@sha256:2ea44d9bdd177a07e6fba8a60f7d45cb8a7358586a5f740187866566e6df310d
 
-RUN apk --no-cache add ca-certificates
 COPY ./tarian-pod-agent .
 
 ENTRYPOINT ["./tarian-pod-agent"]
