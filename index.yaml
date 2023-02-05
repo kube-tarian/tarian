@@ -2,6 +2,42 @@ apiVersion: v1
 entries:
   tarian-cluster-agent:
   - apiVersion: v1
+    appVersion: 0.0.13
+    created: "2023-02-05T01:50:06.989054464Z"
+    description: Anti-Virus for K8s. Protect your Applications running on Kubernetes
+      from malicious attacks with pre-registered source code, runtime processes monitoring,
+      analytics, alerting and also sharing detections with community. Maybe save from
+      Ransomware.
+    digest: 3821397d9243f59fea680b7d30c930f370bc7c30f01987ffd073f58fa245d58d
+    home: https://github.com/kube-tarian/tarian
+    keywords:
+    - security
+    - microservices
+    - containers
+    - anti-virus
+    - antivirus
+    - anti-viruses
+    - cloud-native
+    - cloudnative
+    - security-hardening
+    - pods
+    - security-tools
+    - devsecops
+    - runtime-security
+    - kubernetes
+    - tarian
+    - antivirus-software
+    - kube-tarian
+    maintainers:
+    - name: devopstoday11
+    - name: andylibrian
+    name: tarian-cluster-agent
+    sources:
+    - https://github.com/kube-tarian/tarian
+    urls:
+    - https://github.com/kube-tarian/tarian/releases/download/chart-tarian-cluster-agent-0.0.13/tarian-cluster-agent-0.0.13.tgz
+    version: 0.0.13
+  - apiVersion: v1
     appVersion: 0.0.12
     created: "2022-11-20T06:19:48.954552877Z"
     description: Anti-Virus for K8s. Protect your Applications running on Kubernetes
@@ -363,42 +399,6 @@ entries:
     version: 0.0.3-alpha3
   - apiVersion: v1
     appVersion: 0.0.3-alpha2
-    created: "2021-09-17T01:26:04.023242401Z"
-    description: Anti-Virus for K8s. Protect your Applications running on Kubernetes
-      from malicious attacks with pre-registered source code, runtime processes monitoring,
-      analytics, alerting and also sharing detections with community. Maybe save from
-      Ransomware.
-    digest: 68eb3b50e568aa6867c0564f34a89810c1b1fd002b074759000471fba2f058fb
-    home: https://github.com/devopstoday11/tarian
-    keywords:
-    - security
-    - microservices
-    - containers
-    - anti-virus
-    - antivirus
-    - anti-viruses
-    - cloud-native
-    - cloudnative
-    - security-hardening
-    - pods
-    - security-tools
-    - devsecops
-    - runtime-security
-    - kubernetes
-    - tarian
-    - antivirus-software
-    - kube-tarian
-    maintainers:
-    - name: devopstoday11
-    - name: andylibrian
-    name: tarian-cluster-agent
-    sources:
-    - https://github.com/devopstoday11/tarian
-    urls:
-    - https://github.com/devopstoday11/tarian/releases/download/chart-tarian-cluster-agent-0.0.3-alpha2/tarian-cluster-agent-0.0.3-alpha2.tgz
-    version: 0.0.3-alpha2
-  - apiVersion: v1
-    appVersion: 0.0.3-alpha2
     created: "2021-09-17T01:10:28.927239102Z"
     description: Anti-Virus for K8s. Protect your Applications running on Kubernetes
       from malicious attacks with pre-registered source code, runtime processes monitoring,
@@ -433,6 +433,42 @@ entries:
     urls:
     - https://github.com/devopstoday11/tarian/releases/download/chart-tarian-cluster-agent-v0.0.3-alpha2/tarian-cluster-agent-v0.0.3-alpha2.tgz
     version: v0.0.3-alpha2
+  - apiVersion: v1
+    appVersion: 0.0.3-alpha2
+    created: "2021-09-17T01:26:04.023242401Z"
+    description: Anti-Virus for K8s. Protect your Applications running on Kubernetes
+      from malicious attacks with pre-registered source code, runtime processes monitoring,
+      analytics, alerting and also sharing detections with community. Maybe save from
+      Ransomware.
+    digest: 68eb3b50e568aa6867c0564f34a89810c1b1fd002b074759000471fba2f058fb
+    home: https://github.com/devopstoday11/tarian
+    keywords:
+    - security
+    - microservices
+    - containers
+    - anti-virus
+    - antivirus
+    - anti-viruses
+    - cloud-native
+    - cloudnative
+    - security-hardening
+    - pods
+    - security-tools
+    - devsecops
+    - runtime-security
+    - kubernetes
+    - tarian
+    - antivirus-software
+    - kube-tarian
+    maintainers:
+    - name: devopstoday11
+    - name: andylibrian
+    name: tarian-cluster-agent
+    sources:
+    - https://github.com/devopstoday11/tarian
+    urls:
+    - https://github.com/devopstoday11/tarian/releases/download/chart-tarian-cluster-agent-0.0.3-alpha2/tarian-cluster-agent-0.0.3-alpha2.tgz
+    version: 0.0.3-alpha2
   - apiVersion: v1
     appVersion: 0.0.2-alpha8
     created: "2021-09-05T23:38:28.307655602Z"
@@ -614,6 +650,42 @@ entries:
     - https://github.com/devopstoday11/tarian/releases/download/tarian-cluster-agent-0.0.2-alpha3/tarian-cluster-agent-0.0.2-alpha3.tgz
     version: 0.0.2-alpha3
   tarian-server:
+  - apiVersion: v1
+    appVersion: 0.0.13
+    created: "2023-02-05T01:50:07.133931388Z"
+    description: Anti-Virus for K8s. Protect your Applications running on Kubernetes
+      from malicious attacks with pre-registered source code, runtime processes monitoring,
+      analytics, alerting and also sharing detections with community. Maybe save from
+      Ransomware.
+    digest: 273091c69e559a7fc00240d5192bc3e507734e6f87074d0ae3847ae1b3ede75a
+    home: https://github.com/kube-tarian/tarian
+    keywords:
+    - security
+    - microservices
+    - containers
+    - anti-virus
+    - antivirus
+    - anti-viruses
+    - cloud-native
+    - cloudnative
+    - security-hardening
+    - pods
+    - security-tools
+    - devsecops
+    - runtime-security
+    - kubernetes
+    - tarian
+    - antivirus-software
+    - kube-tarian
+    maintainers:
+    - name: devopstoday11
+    - name: andylibrian
+    name: tarian-server
+    sources:
+    - https://github.com/kube-tarian/tarian
+    urls:
+    - https://github.com/kube-tarian/tarian/releases/download/chart-tarian-server-0.0.13/tarian-server-0.0.13.tgz
+    version: 0.0.13
   - apiVersion: v1
     appVersion: 0.0.12
     created: "2022-11-20T06:19:49.085208623Z"
@@ -1190,4 +1262,4 @@ entries:
     urls:
     - https://github.com/devopstoday11/tarian/releases/download/tarian-server-0.0.2-alpha3/tarian-server-0.0.2-alpha3.tgz
     version: 0.0.2-alpha3
-generated: "2022-11-20T06:19:49.085616222Z"
+generated: "2023-02-05T01:50:07.13421119Z"
