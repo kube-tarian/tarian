@@ -155,3 +155,40 @@ make k8s-test
 ## Acceptance policy
 
 ## Commit Message format
+
+## eBPF
+
+### Building eBPF object
+
+```
+make ebpf
+```
+
+This target is called automatically when on full build.
+I mention it here just for a pointer to explore how the eBPF object is built.
+
+After running that command, you will notice an output on the terminal that the source code is in
+
+`pkg/nodeagent/ebpf/c/capture_exec.bpf.c`
+
+and the compiled object is saved to `pkg/nodeagent/ebpf/capture_exec.bpf.o`
+
+The compiled object above is embedded to Go binary by using go:embed. See
+
+```
+//go:embed capture_exec.bpf.o
+var captureExecBpfObj []byte
+```
+
+in `pkg/nodeagent/ebpf/exec.go`
+
+
+Tarian uses https://github.com/aquasecurity/libbpfgo to load the eBPF program and interact with it.
+Please check `loadBpfObject()` and `Start()` in `pkg/nodeagent/ebpf/exec.go`.
+
+
+TODO:
+- Developing standalone eBPF program:
+  - How to develop and test locally
+- Where to add in Tarian
+- How to test the newly added eBPF program in tarian
