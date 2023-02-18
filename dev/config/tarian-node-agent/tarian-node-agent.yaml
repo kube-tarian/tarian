@@ -24,6 +24,7 @@ spec:
         - --enable-add-constraint
         securityContext:
           privileged: true
+          runAsUser: 0
         volumeMounts:
         - name: host-proc
           mountPath: /host/proc
