@@ -13,6 +13,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 )
 
 const (
@@ -53,7 +55,13 @@ func (n *NodeAgent) SetNodeName(name string) {
 
 func (n *NodeAgent) Dial() {
 	var err error
-	n.grpcConn, err = grpc.Dial(n.clusterAgentAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	n.grpcConn, err = grpc.Dial(
+		n.clusterAgentAddress,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+	)
+
 	n.configClient = tarianpb.NewConfigClient(n.grpcConn)
 	n.eventClient = tarianpb.NewEventClient(n.grpcConn)
 

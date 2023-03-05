@@ -17,6 +17,14 @@ import (
 	"github.com/kube-tarian/tarian/pkg/server/dgraphstore"
 	"github.com/kube-tarian/tarian/pkg/store"
 	cli "github.com/urfave/cli/v2"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -151,6 +159,13 @@ func run(c *cli.Context) error {
 	storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
 	storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
 
+	tp, err := initOtelTraceProvider()
+	if err != nil {
+		logger.Fatalw("error initializing otel trace provider", "err", err)
+	}
+
+	defer tp.Shutdown(c.Context)
+
 	server, err := server.NewServer(storeSet, c.String("tls-cert-file"), c.String("tls-private-key-file"))
 	if err != nil {
 		logger.Fatalw("error while initiating tarian-server", "err", err)
@@ -256,5 +271,35 @@ func buildDgraphDialOpts(dgraphCfg dgraphstore.DgraphConfig, l *zap.SugaredLogge
 		tlsConfig := &tls.Config{ServerName: serverName, RootCAs: certPool, Certificates: []tls.Certificate{cert}}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	}
+
+	dialOpts = append(dialOpts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
+	dialOpts = append(dialOpts, grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+
 	return dialOpts
+}
+
+func initOtelTraceProvider() (*trace.TracerProvider, error) {
+	ctx := context.Background()
+
+	client := otlptracegrpc.NewClient()
+	exporter, err := otlptrace.New(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exporter),
+		trace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceVersionKey.String(version+" ("+commit+")"),
+		)),
+	)
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
+
+	return tp, nil
 }

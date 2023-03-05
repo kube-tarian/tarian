@@ -8,6 +8,7 @@ import (
 
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -47,6 +48,9 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string) 
 		creds, _ := credentials.NewServerTLSFromFile(certFile, privateKeyFile)
 		opts = append(opts, grpc.Creds(creds))
 	}
+
+	opts = append(opts, grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()))
+	opts = append(opts, grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
 
 	grpcServer := grpc.NewServer(opts...)
 

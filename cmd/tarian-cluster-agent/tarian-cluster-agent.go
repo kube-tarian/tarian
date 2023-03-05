@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"log"
@@ -14,6 +15,14 @@ import (
 	"github.com/kube-tarian/tarian/pkg/clusteragent/webhookserver"
 	"github.com/kube-tarian/tarian/pkg/logger"
 	cli "github.com/urfave/cli/v2"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -187,6 +196,12 @@ func run(c *cli.Context) error {
 		logger.Fatalw("failed to listen", "err", err)
 	}
 
+	tp, err := initOtelTraceProvider()
+	if err != nil {
+		logger.Fatalw("error initializing otel trace provider", "err", err)
+	}
+	defer tp.Shutdown(context.Background())
+
 	clusterAgentConfig := newClusterAgentConfigFromCliContext(c, logger)
 	clusterAgent := clusteragent.NewClusterAgent(clusterAgentConfig)
 	defer clusterAgent.Close()
@@ -246,6 +261,9 @@ func newClusterAgentConfigFromCliContext(c *cli.Context, logger *zap.SugaredLogg
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
+	dialOpts = append(dialOpts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
+	dialOpts = append(dialOpts, grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+
 	config := &clusteragent.ClusterAgentConfig{
 		ServerAddress:         c.String("server-address"),
 		ServerGrpcDialOptions: dialOpts,
@@ -269,6 +287,12 @@ func runWebhookServer(c *cli.Context) error {
 		Host:        c.String("cluster-agent-host"),
 		Port:        c.String("cluster-agent-port"),
 	}
+
+	tp, err := initOtelTraceProvider()
+	if err != nil {
+		logger.Fatalw("error initializing otel trace provider", "err", err)
+	}
+	defer tp.Shutdown(context.Background())
 
 	mgr := webhookserver.NewManager(c.Int("port"), c.String("health-probe-bind-address"), c.Bool("enable-leader-election"))
 
@@ -294,4 +318,30 @@ func runWebhookServer(c *cli.Context) error {
 
 	logger.Info("manager shutdown gracefully")
 	return nil
+}
+
+func initOtelTraceProvider() (*trace.TracerProvider, error) {
+	ctx := context.Background()
+
+	client := otlptracegrpc.NewClient()
+	exporter, err := otlptrace.New(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exporter),
+		trace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceVersionKey.String(version+" ("+commit+")"),
+		)),
+	)
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
+
+	return tp, nil
 }

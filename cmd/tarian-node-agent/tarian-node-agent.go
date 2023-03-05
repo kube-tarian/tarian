@@ -3,6 +3,7 @@ package main
 import "C"
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -11,6 +12,13 @@ import (
 	"github.com/kube-tarian/tarian/pkg/logger"
 	"github.com/kube-tarian/tarian/pkg/nodeagent"
 	cli "github.com/urfave/cli/v2"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 
 	_ "embed"
 )
@@ -102,6 +110,13 @@ func run(c *cli.Context) error {
 		logger.Fatalw("Host proc directory is not properly mounted", "dir", nodeagent.HostProcDir)
 	}
 
+	tp, err := initOtelTraceProvider()
+	if err != nil {
+		logger.Fatalw("error initializing otel trace provider", "err", err)
+	}
+
+	defer tp.Shutdown(c.Context)
+
 	agent := nodeagent.NewNodeAgent(c.String("cluster-agent-host") + ":" + c.String("cluster-agent-port"))
 	agent.EnableAddConstraint(c.Bool("enable-add-constraint"))
 	agent.SetNodeName(c.String("node-name"))
@@ -121,4 +136,30 @@ func run(c *cli.Context) error {
 	logger.Info("tarian-node-agent shutdown gracefully")
 
 	return nil
+}
+
+func initOtelTraceProvider() (*trace.TracerProvider, error) {
+	ctx := context.Background()
+
+	client := otlptracegrpc.NewClient()
+	exporter, err := otlptrace.New(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exporter),
+		trace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceVersionKey.String(version+" ("+commit+")"),
+		)),
+	)
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
+
+	return tp, nil
 }

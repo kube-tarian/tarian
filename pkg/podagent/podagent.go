@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -100,7 +101,13 @@ func (p *PodAgent) SetRegisterFileIgnorePaths(paths []string) {
 
 func (p *PodAgent) Dial() {
 	var err error
-	p.grpcConn, err = grpc.Dial(p.clusterAgentAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	p.grpcConn, err = grpc.Dial(
+		p.clusterAgentAddress,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+	)
+
 	p.configClient = tarianpb.NewConfigClient(p.grpcConn)
 	p.eventClient = tarianpb.NewEventClient(p.grpcConn)
 

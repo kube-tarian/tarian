@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -37,7 +38,10 @@ type ClusterAgent struct {
 func NewClusterAgent(config *ClusterAgentConfig) *ClusterAgent {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+	)
 
 	configServer := NewConfigServer(config.ServerAddress, config.ServerGrpcDialOptions)
 	configServer.EnableAddConstraint(config.EnableAddConstraint)
