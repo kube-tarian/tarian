@@ -21,6 +21,11 @@ spec:
         - run
         - "--server-address=tarian-server:80"
         - --enable-add-constraint
+        env:
+        - name: OTEL_SERVICE_NAME
+          value: tarian-cluster-agent-k8s
+        - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+          value: http://host.minikube.internal:4317
         ports:
         - containerPort: 50052
           name: grpc
