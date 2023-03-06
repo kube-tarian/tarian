@@ -34,8 +34,9 @@ import (
 )
 
 const (
-	defaultPort = "50051"
-	defaultHost = ""
+	defaultPort        = "50051"
+	defaultMetricsPort = "50062"
+	defaultHost        = ""
 )
 
 // nolint: gochecknoglobals
@@ -84,6 +85,11 @@ func getCliApp() *cli.App {
 						Name:  "port",
 						Usage: "Host port to listen at",
 						Value: defaultPort,
+					},
+					&cli.StringFlag{
+						Name:  "metrics-port",
+						Usage: "Host port for exposing prometheus",
+						Value: defaultMetricsPort,
 					},
 					&cli.StringFlag{
 						Name:  "alertmanager-address",
@@ -190,6 +196,9 @@ func run(c *cli.Context) error {
 
 		server.WithAlertDispatcher(url, c.Duration("alert-evaluation-interval")).StartAlertDispatcher()
 	}
+
+	metricsPort := c.String("metrics-port")
+	server.StartPromHTTPServer(host + ":" + metricsPort)
 
 	// Run server
 	logger.Infow("tarian-server is listening at", "address", host+":"+port)
