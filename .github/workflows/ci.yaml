@@ -152,8 +152,8 @@ jobs:
             docker push ghcr.io/${{ github.repository_owner}}/tarian-pod-agent
 
             cosign sign ghcr.io/${{ github.repository_owner}}/tarian-server
-            cosign sign ghcr.io/${{ github.repository_owner}}/tarian-cluster-agent
-            cosign sign ghcr.io/${{ github.repository_owner}}/tarian-node-agent
-            cosign sign ghcr.io/${{ github.repository_owner}}/tarian-pod-agent
+            cosign sign docker push ghcr.io/${{ github.repository_owner}}/tarian-cluster-agent
+            cosign sign docker push ghcr.io/${{ github.repository_owner}}/tarian-node-agent
+            cosign sign docker push ghcr.io/${{ github.repository_owner}}/tarian-pod-agent
           fi
 
