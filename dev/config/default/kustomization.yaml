@@ -5,6 +5,7 @@ bases:
 - ../tarian-server
 - ../tarian-cluster-agent
 - ../tarian-node-agent
+- ../tarian-node-agent-loadtest
 
 patchesStrategicMerge:
 - manager_patch.yaml

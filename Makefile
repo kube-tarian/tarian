@@ -135,6 +135,9 @@ local-images: build
 	docker build -f Dockerfile-pod-agent -t localhost:5000/tarian-pod-agent dist/tarian-pod-agent_linux_amd64_v1/ && docker push localhost:5000/tarian-pod-agent
 	docker build -f Dockerfile-node-agent -t localhost:5000/tarian-node-agent dist/tarian-node-agent_linux_amd64_v1/ && docker push localhost:5000/tarian-node-agent
 
+local-image-loadtest: build
+	docker build -f Dockerfile-node-agent-loadtest -t localhost:5000/tarian-node-agent-loadtest dist/tarian-node-agent-loadtest_linux_amd64_v1/ && docker push localhost:5000/tarian-node-agent-loadtest
+
 push-local-images:
 	docker push localhost:5000/tarian-server
 	docker push localhost:5000/tarian-cluster-agent

@@ -283,6 +283,7 @@ func buildDgraphDialOpts(dgraphCfg dgraphstore.DgraphConfig, l *zap.SugaredLogge
 
 	dialOpts = append(dialOpts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
 	dialOpts = append(dialOpts, grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(16*1024*1024)))
 
 	return dialOpts
 }

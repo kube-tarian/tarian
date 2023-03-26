@@ -1,0 +1,4 @@
+resources:
+- tarian-node-agent-loadtest.yaml
+
+namespace: tarian-system

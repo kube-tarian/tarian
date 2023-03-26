@@ -58,5 +58,7 @@ func ClientOptionsFromCliContext(ctx *cli.Context) []grpc.DialOption {
 		o = append(o, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
+	o = append(o, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(16*1024*1024)))
+
 	return o
 }

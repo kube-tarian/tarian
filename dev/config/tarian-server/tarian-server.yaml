@@ -19,8 +19,8 @@ spec:
         - "--log-encoding=json"
         - "--log-level=debug"
         - run
-        - "--alertmanager-address=http://alertmanager:9093"
-        - "--alert-evaluation-interval=3s"
+        # - "--alertmanager-address=http://alertmanager:9093"
+        # - "--alert-evaluation-interval=3s"
         ports:
         - containerPort: 50051
           name: grpc

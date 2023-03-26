@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tarian-node-agent-loadtest
+spec:
+  selector:
+    matchLabels:
+      app: tarian-node-agent-loadtest
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: tarian-node-agent-loadtest
+    spec:
+      containers:
+      - name: tarian-node-agent-loadtest
+        image: localhost:5000/tarian-node-agent-loadtest:latest
+        args:
+        - --log-encoding=json
+        - --log-level=debug
+        - run
+        - --cluster-agent-host=tarian-cluster-agent.tarian-system.svc
+        - --cluster-agent-port=80
+        - --node-name=$(NODE_NAME)
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: OTEL_SERVICE_NAME
+          value: tarian-node-agent-loadtest-k8s
+        - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+          value: http://host.minikube.internal:4317

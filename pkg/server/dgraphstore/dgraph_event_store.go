@@ -26,11 +26,11 @@ func NewDgraphEventStore(dgraphClient *dgo.Dgraph) *DgraphEventStore {
 func (d *DgraphEventStore) GetAll(limit uint) ([]*tarianpb.Event, error) {
 	q := fmt.Sprintf(`
 		{
-			events(func: type(Event)) {
+			events(func: type(Event), first: %d) {
 				%s
 			}
 		}
-	`, eventFields)
+	`, limit, eventFields)
 
 	tx := d.dgraphClient.NewReadOnlyTxn()
 
@@ -354,6 +354,9 @@ func (d *DgraphEventStore) UpsertPod(dgraphPod Pod) (Pod, error) {
 	defer cancel()
 
 	resp, err := d.dgraphClient.NewTxn().Do(ctx, req)
+	if err != nil {
+		return Pod{}, err
+	}
 
 	ok := false
 	podUID, ok := resp.Uids["uid(p)"]

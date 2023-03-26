@@ -40,6 +40,25 @@ builds:
       - -X main.date={{.Date}}
       - -X main.builtBy=goreleaser
       - -extldflags "-static"
+  - id: tarian-node-agent-loadtest
+    main: ./cmd/tarian-node-agent-loadtest/
+    binary: tarian-node-agent-loadtest
+    env:
+      - CC=clang
+    goos:
+      - linux
+    goarch:
+      - amd64
+    flags:
+      - -tags=netgo
+    ldflags:
+      - -s
+      - -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+      - -extldflags "-static"
   - id: tarian-pod-agent
     main: ./cmd/tarian-pod-agent/
     binary: tarian-pod-agent
