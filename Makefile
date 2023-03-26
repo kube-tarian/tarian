@@ -208,7 +208,7 @@ bin/protoc:
 
 GORELEASER = $(shell pwd)/bin/goreleaser
 bin/goreleaser:
-	curl -LO "https://github.com/goreleaser/goreleaser/releases/download/v1.14.1/goreleaser_Linux_x86_64.tar.gz"
+	curl -LO "https://github.com/goreleaser/goreleaser/releases/download/v0.174.2/goreleaser_Linux_x86_64.tar.gz"
 	mkdir -p bin
 	tar -C ./bin/ -xvf goreleaser_Linux_x86_64.tar.gz goreleaser
 	rm -f goreleaser_Linux_x86_64.tar.gz

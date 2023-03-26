@@ -82,9 +82,9 @@ jobs:
       # build images
       - run: bash ./dev/run-kind-registry.sh
       - run: make ebpf generate
-      - run: ./bin/goreleaser release --snapshot --rm-dist --skip-sign
+      - run: ./bin/goreleaser release --snapshot --rm-dist
       - run: make push-local-images
-      - run: cp dist/tarianctl_linux_amd64*/tarianctl ./bin/
+      - run: cp dist/tarianctl_linux_amd64/tarianctl ./bin/
 
       # deploy to k8s
       - run: make deploy
@@ -108,9 +108,8 @@ jobs:
     if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     permissions:
-      packages: write # for ghcr
-      contents: write # to create a release
-      id-token: write # for cosign keyless signing
+      packages: write
+      contents: write
     env:
       GOPATH: ${{ github.workspace }}/../go
       HOME: ${{ github.workspace }}/..
@@ -131,7 +130,6 @@ jobs:
           registry: ghcr.io
           username: devopstoday11
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # @v2.8.1
       - run: |
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             ./bin/goreleaser
@@ -142,18 +140,11 @@ jobs:
           CONTAINER_REGISTRY: ghcr.io/${{ github.repository_owner }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: docker images
-      - env:
-          COSIGN_EXPERIMENTAL: 1
-        run: |
+      - run: |
           if [[ $GITHUB_REF == refs/heads/main ]]; then
             docker push ghcr.io/${{ github.repository_owner}}/tarian-server
             docker push ghcr.io/${{ github.repository_owner}}/tarian-cluster-agent
             docker push ghcr.io/${{ github.repository_owner}}/tarian-node-agent
             docker push ghcr.io/${{ github.repository_owner}}/tarian-pod-agent
-
-            cosign sign ghcr.io/${{ github.repository_owner}}/tarian-server
-            cosign sign docker push ghcr.io/${{ github.repository_owner}}/tarian-cluster-agent
-            cosign sign docker push ghcr.io/${{ github.repository_owner}}/tarian-node-agent
-            cosign sign docker push ghcr.io/${{ github.repository_owner}}/tarian-pod-agent
           fi
 

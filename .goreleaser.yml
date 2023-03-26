@@ -59,20 +59,6 @@ builds:
     goarch:
       - amd64
 
-signs:
-  - cmd: cosign
-    env:
-      - COSIGN_EXPERIMENTAL=1
-    certificate: '${artifact}.pem'
-    args:
-      - sign-blob
-      - '--output-certificate=${certificate}'
-      - '--output-signature=${signature}'
-      - '${artifact}'
-    artifacts: all
-    output: true
-release:
-  draft: true
 dockers:
   - ids:
     - tarian-server
@@ -134,12 +120,3 @@ dockers:
     - "--label=org.opencontainers.image.revision={{.FullCommit}}"
     - "--label=org.opencontainers.image.version={{.Version}}"
     - "--label=org.opencontainers.image.source={{ .GitURL }}"
-docker_signs:
-  - cmd: cosign
-    env:
-      - COSIGN_EXPERIMENTAL=1
-    args:
-      - sign
-      - '${artifact}'
-    artifacts: all
-    output: true
