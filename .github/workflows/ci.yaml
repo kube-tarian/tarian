@@ -34,11 +34,12 @@ jobs:
         run: docker-compose ps
 
       # prepare
-      - run: sudo apt update && sudo apt install -y pkg-config libelf-dev clang
+      - run: sudo apt update && sudo apt install -y pkg-config libelf-dev clang llvm
       - run: go install github.com/mgechev/revive@latest
       - run: go install honnef.co/go/tools/cmd/staticcheck@latest
       - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
       - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
+      - run: go install github.com/cilium/ebpf/cmd/bpf2go@3cd2cb36d0786219e49e7dde9c2debfdc7c304ca # @v0.10.0
       - run: make bin/protoc
 
       - run: make build
@@ -73,9 +74,10 @@ jobs:
           kubectl_version: 'v1.25.5'
 
       # prepare for build
-      - run: sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang
+      - run: sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang llvm
       - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
       - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
+      - run: go install github.com/cilium/ebpf/cmd/bpf2go@3cd2cb36d0786219e49e7dde9c2debfdc7c304ca # @v0.10.0
       - run: make bin/protoc bin/goreleaser
 
       # build images
@@ -119,9 +121,10 @@ jobs:
       - uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # @3.3.1
         with:
           go-version: '1.19'
-      - run: sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang
+      - run: sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang llvm
       - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
       - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
+      - run: go install github.com/cilium/ebpf/cmd/bpf2go@3cd2cb36d0786219e49e7dde9c2debfdc7c304ca # @v0.10.0
       - run: make bin/protoc ebpf bin/goreleaser
       - name: Login to GitHub Container Registry
         uses: docker/login-action@42d299face0c5c43a0487c477f595ac9cf22f1a7 # @v1.12.0

@@ -74,9 +74,10 @@ jobs:
     #    uses a compiled language
 
     - run: |
-        sudo apt update && sudo apt install -y pkg-config libelf-dev clang
+        sudo apt update && sudo apt install -y pkg-config libelf-dev clang llvm
         go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
         go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
+        go install github.com/cilium/ebpf/cmd/bpf2go@3cd2cb36d0786219e49e7dde9c2debfdc7c304ca # @v0.10.0
         make bin/protoc
         make build
 

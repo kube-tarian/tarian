@@ -32,7 +32,7 @@ git submodule update --init --recursive
 2. Prepare build tools
 
 ```bash
-sudo apt update && sudo apt install make unzip pkg-config libelf-dev clang gcc linux-tools-common linux-tools-common linux-tools-generic
+sudo apt update && sudo apt install make unzip pkg-config libelf-dev clang gcc linux-tools-common linux-tools-common linux-tools-generic llvm
 go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
 make bin/protoc bin/goreleaser bin/kustomize

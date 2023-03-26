@@ -72,7 +72,7 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/net v0.4.0
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783 // indirect
-	golang.org/x/sys v0.3.0
+	golang.org/x/sys v0.6.0
 	golang.org/x/term v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
@@ -91,6 +91,7 @@ require (
 
 require (
 	github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0
+	github.com/cilium/ebpf v0.10.0
 	github.com/dgraph-io/dgo/v210 v210.0.0-20220113041351-ba0e5dfc4c3e
 )
 

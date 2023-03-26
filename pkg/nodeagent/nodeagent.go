@@ -127,7 +127,7 @@ func (n *NodeAgent) SyncConstraints() {
 }
 
 func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
-	captureExec, err := NewCaptureExec()
+	captureExec, err := NewCaptureExec2()
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -185,7 +185,7 @@ func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
 	}
 }
 
-func (n *NodeAgent) ValidateProcess(evt *ExecEvent) *ProcessViolation {
+func (n *NodeAgent) ValidateProcess(evt *Exec2Event) *ProcessViolation {
 	// Ignore empty pod
 	// It usually means a host process
 	if evt.K8sNamespace == "" || evt.K8sPodName == "" {
@@ -236,7 +236,7 @@ out:
 	return nil
 }
 
-func constraintMatchesPod(constraint *tarianpb.Constraint, evt *ExecEvent) bool {
+func constraintMatchesPod(constraint *tarianpb.Constraint, evt *Exec2Event) bool {
 	if constraint.GetNamespace() != evt.K8sNamespace {
 		return false
 	}
@@ -259,7 +259,7 @@ func constraintMatchesPod(constraint *tarianpb.Constraint, evt *ExecEvent) bool 
 }
 
 type ProcessViolation struct {
-	ExecEvent
+	Exec2Event
 }
 
 func (n *NodeAgent) ReportViolationsToClusterAgent(violation *ProcessViolation) {
