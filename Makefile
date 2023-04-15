@@ -130,10 +130,10 @@ lint: fmt vet
 	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) staticcheck ./...
 
 local-images: build
-	docker build -f Dockerfile-server -t localhost:5000/tarian-server dist/tarian-server_linux_amd64_v1/ && docker push localhost:5000/tarian-server
-	docker build -f Dockerfile-cluster-agent -t localhost:5000/tarian-cluster-agent dist/tarian-cluster-agent_linux_amd64_v1/ && docker push localhost:5000/tarian-cluster-agent
-	docker build -f Dockerfile-pod-agent -t localhost:5000/tarian-pod-agent dist/tarian-pod-agent_linux_amd64_v1/ && docker push localhost:5000/tarian-pod-agent
-	docker build -f Dockerfile-node-agent -t localhost:5000/tarian-node-agent dist/tarian-node-agent_linux_amd64_v1/ && docker push localhost:5000/tarian-node-agent
+	docker build -f Dockerfile-server -t localhost:5000/tarian-server dist/tarian-server_linux_amd64/ && docker push localhost:5000/tarian-server
+	docker build -f Dockerfile-cluster-agent -t localhost:5000/tarian-cluster-agent dist/tarian-cluster-agent_linux_amd64/ && docker push localhost:5000/tarian-cluster-agent
+	docker build -f Dockerfile-pod-agent -t localhost:5000/tarian-pod-agent dist/tarian-pod-agent_linux_amd64/ && docker push localhost:5000/tarian-pod-agent
+	docker build -f Dockerfile-node-agent -t localhost:5000/tarian-node-agent dist/tarian-node-agent_linux_amd64/ && docker push localhost:5000/tarian-node-agent
 
 push-local-images:
 	docker push localhost:5000/tarian-server
