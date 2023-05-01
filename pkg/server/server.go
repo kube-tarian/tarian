@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/kube-tarian/tarian/pkg/queue"
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"go.uber.org/zap"
@@ -32,6 +33,7 @@ func SetLogger(l *zap.SugaredLogger) {
 type Server struct {
 	GrpcServer      *grpc.Server
 	EventServer     *EventServer
+	IngestionWorker *IngestionWorker
 	ConfigServer    *ConfigServer
 	AlertDispatcher *AlertDispatcher
 
@@ -50,8 +52,11 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string) 
 
 	grpcServer := grpc.NewServer(opts...)
 
+	queue := queue.NewChannelQueue()
+
 	configServer := NewConfigServer(storeSet.ConstraintStore, storeSet.ActionStore)
-	eventServer := NewEventServer(storeSet.EventStore)
+	eventServer := NewEventServer(storeSet.EventStore, queue)
+	ingestionWorker := NewIngestionWorker(storeSet.EventStore, queue)
 
 	tarianpb.RegisterConfigServer(grpcServer, configServer)
 	tarianpb.RegisterEventServer(grpcServer, eventServer)
@@ -59,12 +64,13 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string) 
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
 	server := &Server{
-		GrpcServer:   grpcServer,
-		EventServer:  eventServer,
-		ConfigServer: configServer,
-		cancelCtx:    cancelCtx,
-		cancelFunc:   cancelFunc,
-		eventStore:   storeSet.EventStore,
+		GrpcServer:      grpcServer,
+		EventServer:     eventServer,
+		IngestionWorker: ingestionWorker,
+		ConfigServer:    configServer,
+		cancelCtx:       cancelCtx,
+		cancelFunc:      cancelFunc,
+		eventStore:      storeSet.EventStore,
 	}
 
 	return server, nil
@@ -78,6 +84,8 @@ func (s *Server) Start(grpcListenAddress string) error {
 	}
 
 	logger.Infow("tarian-server is listening at", "address", listener.Addr())
+
+	go s.IngestionWorker.Start()
 
 	if err := s.GrpcServer.Serve(listener); err != nil {
 		logger.Errorw("failed to serve", "err", err)

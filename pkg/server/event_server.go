@@ -4,19 +4,20 @@ import (
 	"context"
 
 	"github.com/gogo/status"
+	"github.com/kube-tarian/tarian/pkg/queue"
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type EventServer struct {
 	tarianpb.UnimplementedEventServer
-	eventStore store.EventStore
+	eventStore     store.EventStore
+	ingestionQueue queue.QueuePublisher
 }
 
-func NewEventServer(s store.EventStore) *EventServer {
-	return &EventServer{eventStore: s}
+func NewEventServer(s store.EventStore, ingestionQueue queue.QueuePublisher) *EventServer {
+	return &EventServer{eventStore: s, ingestionQueue: ingestionQueue}
 }
 
 func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.IngestEventRequest) (*tarianpb.IngestEventResponse, error) {
@@ -27,9 +28,7 @@ func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.Ingest
 		return nil, status.Error(codes.InvalidArgument, "required event is empty")
 	}
 
-	event.ServerTimestamp = timestamppb.Now()
-
-	err := es.eventStore.Add(request.GetEvent())
+	err := es.ingestionQueue.Publish(request.GetEvent())
 
 	if err != nil {
 		logger.Errorw("error while handling ingest event", "err", err)
