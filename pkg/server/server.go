@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/kube-tarian/tarian/pkg/queue"
+	"github.com/kube-tarian/tarian/pkg/protoqueue"
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"go.uber.org/zap"
@@ -43,7 +43,7 @@ type Server struct {
 	eventStore store.EventStore
 }
 
-func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string) (*Server, error) {
+func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, natsURL string) (*Server, error) {
 	opts := []grpc.ServerOption{}
 	if certFile != "" && privateKeyFile != "" {
 		creds, _ := credentials.NewServerTLSFromFile(certFile, privateKeyFile)
@@ -52,11 +52,37 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string) 
 
 	grpcServer := grpc.NewServer(opts...)
 
-	queue := queue.NewChannelQueue()
+	var queuePublisher protoqueue.QueuePublisher
+	var queueSubscriber protoqueue.QueueSubscriber
+
+	if natsURL == "" {
+		channelQueue := protoqueue.NewChannelQueue()
+		queuePublisher = channelQueue
+		queueSubscriber = channelQueue
+	} else {
+		jetstreamQueue, err := protoqueue.NewJetstream("", "tarian-server-event-ingestion")
+
+		if err == nil {
+			queuePublisher = jetstreamQueue
+			queueSubscriber = jetstreamQueue
+		} else {
+			logger.Errorw("failed to create Jetstream queue", "err", err)
+		}
+
+		err = jetstreamQueue.Connect()
+		if err != nil {
+			logger.Errorw("failed to connect to NATS", "err", err)
+		}
+
+		err = jetstreamQueue.Init()
+		if err != nil {
+			logger.Errorw("failed to init stream and subscription", "err", err)
+		}
+	}
 
 	configServer := NewConfigServer(storeSet.ConstraintStore, storeSet.ActionStore)
-	eventServer := NewEventServer(storeSet.EventStore, queue)
-	ingestionWorker := NewIngestionWorker(storeSet.EventStore, queue)
+	eventServer := NewEventServer(storeSet.EventStore, queuePublisher)
+	ingestionWorker := NewIngestionWorker(storeSet.EventStore, queueSubscriber)
 
 	tarianpb.RegisterConfigServer(grpcServer, configServer)
 	tarianpb.RegisterEventServer(grpcServer, eventServer)

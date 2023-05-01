@@ -51,7 +51,7 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
 	storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
 
-	srv, err := server.NewServer(storeSet, "", "")
+	srv, err := server.NewServer(storeSet, "", "", "")
 	grpcServer := srv.GrpcServer
 	require.Nil(t, err)
 

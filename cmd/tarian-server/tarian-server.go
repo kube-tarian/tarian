@@ -97,6 +97,11 @@ func getCliApp() *cli.App {
 						Usage: "Private key file in x509 format matching --tls-cert-file",
 						Value: "",
 					},
+					&cli.StringFlag{
+						Name:  "nats-url",
+						Usage: "If specified, tarian-server will use NATS to queue the incoming events",
+						Value: "",
+					},
 				},
 				Action: run,
 			},
@@ -151,7 +156,7 @@ func run(c *cli.Context) error {
 	storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
 	storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
 
-	server, err := server.NewServer(storeSet, c.String("tls-cert-file"), c.String("tls-private-key-file"))
+	server, err := server.NewServer(storeSet, c.String("tls-cert-file"), c.String("tls-private-key-file"), c.String("nats-url"))
 	if err != nil {
 		logger.Fatalw("error while initiating tarian-server", "err", err)
 		return err

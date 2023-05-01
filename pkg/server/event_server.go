@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/gogo/status"
-	"github.com/kube-tarian/tarian/pkg/queue"
+	"github.com/kube-tarian/tarian/pkg/protoqueue"
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"google.golang.org/grpc/codes"
@@ -13,10 +13,10 @@ import (
 type EventServer struct {
 	tarianpb.UnimplementedEventServer
 	eventStore     store.EventStore
-	ingestionQueue queue.QueuePublisher
+	ingestionQueue protoqueue.QueuePublisher
 }
 
-func NewEventServer(s store.EventStore, ingestionQueue queue.QueuePublisher) *EventServer {
+func NewEventServer(s store.EventStore, ingestionQueue protoqueue.QueuePublisher) *EventServer {
 	return &EventServer{eventStore: s, ingestionQueue: ingestionQueue}
 }
 
