@@ -56,11 +56,15 @@ func (j *JetStream) Connect() error {
 		return err
 	}
 
+	logger.Infow("connected to NATS server", zap.Error(err))
+
 	jetStreamContext, err := nc.JetStream()
 	if err != nil {
 		logger.Errorw("failed to get jetstream context", zap.Error(err))
 		return err
 	}
+
+	logger.Infow("successfully get jetstream context", zap.Error(err))
 
 	j.Conn = JetStreamConnection{NATSConn: nc, JSContext: jetStreamContext}
 	return nil
@@ -100,9 +104,9 @@ func (j *JetStream) CreateStreamIfNotExist() error {
 		Subjects:  []string{j.StreamName},
 		Retention: nats.LimitsPolicy,
 		Discard:   nats.DiscardOld,
-		MaxMsgs:   10000,              // TODO: extract to param
-		MaxAge:    24 * time.Hour,     // TODO: extract to param
-		MaxBytes:  1000 * 1000 * 1000, // TODO: extract to param
+		MaxMsgs:   10000,            // TODO: extract to param
+		MaxAge:    24 * time.Hour,   // TODO: extract to param
+		MaxBytes:  50 * 1000 * 1000, // TODO: extract to param
 		Storage:   nats.FileStorage,
 		Replicas:  1, // TODO: extract to param
 		// Duplicates: v.GetDuration("duplicates"), // TODO: extract to param

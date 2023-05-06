@@ -21,6 +21,7 @@ spec:
         - run
         - "--alertmanager-address=http://alertmanager:9093"
         - "--alert-evaluation-interval=3s"
+        - "--nats-url=nats:4222"
         ports:
         - containerPort: 50051
           name: grpc

@@ -12,6 +12,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/sethvargo/go-retry"
 )
 
 var logger *zap.SugaredLogger
@@ -60,7 +62,7 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, 
 		queuePublisher = channelQueue
 		queueSubscriber = channelQueue
 	} else {
-		jetstreamQueue, err := protoqueue.NewJetstream("", "tarian-server-event-ingestion")
+		jetstreamQueue, err := protoqueue.NewJetstream(natsURL, "tarian-server-event-ingestion")
 
 		if err == nil {
 			queuePublisher = jetstreamQueue
@@ -69,14 +71,38 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, 
 			logger.Errorw("failed to create Jetstream queue", "err", err)
 		}
 
-		err = jetstreamQueue.Connect()
+		ctx := context.Background()
+		backoffConnect := retry.NewConstant(5 * time.Second)
+		backoffConnect = retry.WithCappedDuration(1*time.Minute, backoffConnect)
+		err = retry.Do(ctx, backoffConnect, func(ctx context.Context) error {
+			err = jetstreamQueue.Connect()
+			if err != nil {
+				logger.Warnw("failed to connect to NATS, retrying...", "err", err)
+				return retry.RetryableError(err)
+			}
+
+			return nil
+		})
+
 		if err != nil {
-			logger.Errorw("failed to connect to NATS", "err", err)
+			logger.Errorw("failed to connect to NATS, giving up after retrying", "err", err)
+			return nil, err
 		}
 
-		err = jetstreamQueue.Init()
+		backoffInit := retry.NewConstant(5 * time.Second)
+		backoffInit = retry.WithCappedDuration(1*time.Minute, backoffInit)
+		err = retry.Do(ctx, backoffInit, func(ctx context.Context) error {
+			err = jetstreamQueue.Init()
+			if err != nil {
+				logger.Warnw("failed to init stream, retrying...", "err", err)
+				return retry.RetryableError(err)
+			}
+
+			return nil
+		})
 		if err != nil {
-			logger.Errorw("failed to init stream and subscription", "err", err)
+			logger.Errorw("failed to init stream and subscription, giving up after retrying", "err", err)
+			return nil, err
 		}
 	}
 

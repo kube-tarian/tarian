@@ -1,0 +1,13 @@
+nats:
+  image: nats:alpine
+
+  jetstream:
+    enabled: true
+
+    memStorage:
+      enabled: true
+      size: 128Mi
+
+    fileStorage:
+      enabled: true
+      size: 50Mi

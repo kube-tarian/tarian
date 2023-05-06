@@ -33,7 +33,12 @@ test $(kubectl get pod nginx -o json | jq -r '.spec.containers | length') -eq 2 
 kubectl exec -ti nginx -c nginx -- sleep 15
 
 # output for debugging
+kubectl logs nats-0 -n tarian-system
+kubectl logs deploy/tarian-server -n tarian-system
+kubectl logs deploy/tarian-server -p -n tarian-system || true
+kubectl logs deploy/tarian-server -n tarian-system
 tarianctl get events
+
 # need to support both dev/config and charts, there's a naming difference
 kubectl logs `kubectl get ds -n tarian-system -o name` -n tarian-system
 kubectl logs deploy/tarian-cluster-agent -n tarian-system

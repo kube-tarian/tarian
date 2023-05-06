@@ -63,6 +63,11 @@ jobs:
         run: |
           kubectl apply -f ./dev/config/tarian-server/dgraph-single.yaml -n tarian-system
 
+      - name: Install NATS
+        run: |
+          helm repo add nats https://nats-io.github.io/k8s/helm/charts/
+          helm upgrade -i nats nats/nats -n tarian-system -f ./dev/nats-helm-values.yaml
+
       - name: Install charts
         run: |
           APP_VERSION_TAG=$(helm show chart ./charts/tarian-server | grep appVersion | cut -d':' -f2 | tr -d ' "')
