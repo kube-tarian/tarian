@@ -33,24 +33,25 @@ type JetStreamConnection struct {
 
 type JetStream struct {
 	URL          string
+	Options      []nats.Option
 	StreamName   string
 	Conn         JetStreamConnection
 	Subscription *nats.Subscription
 	channel      chan any
 }
 
-func NewJetstream(url string, streamName string) (*JetStream, error) {
+func NewJetstream(url string, options []nats.Option, streamName string) (*JetStream, error) {
 	channel := make(chan any, 1000)
 	return &JetStream{
 		URL:        url,
+		Options:    options,
 		StreamName: streamName,
 		channel:    channel,
 	}, nil
 }
 
 func (j *JetStream) Connect() error {
-	// TODO: opts
-	nc, err := nats.Connect(j.URL)
+	nc, err := nats.Connect(j.URL, j.Options...)
 	if err != nil {
 		logger.Errorw("failed to connect to NATS server", zap.Error(err))
 		return err
@@ -155,7 +156,12 @@ func (j *JetStream) Publish(queuedMessage proto.Message) error {
 }
 
 func (j *JetStream) NextMessage(message proto.Message) (proto.Message, error) {
-	msg, err := j.Subscription.NextMsg(3 * time.Second)
+	msg, err := j.Subscription.NextMsg(1 * time.Hour)
+
+	if errors.Is(err, nats.ErrTimeout) {
+		return nil, fmt.Errorf("no message in the queue until timeout is reached")
+	}
+
 	if err != nil {
 		return nil, err
 	}

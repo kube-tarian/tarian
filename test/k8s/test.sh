@@ -34,7 +34,6 @@ kubectl exec -ti nginx -c nginx -- sleep 15
 
 # output for debugging
 kubectl logs nats-0 -n tarian-system
-kubectl logs deploy/tarian-server -n tarian-system
 kubectl logs deploy/tarian-server -p -n tarian-system || true
 kubectl logs deploy/tarian-server -n tarian-system
 tarianctl get events

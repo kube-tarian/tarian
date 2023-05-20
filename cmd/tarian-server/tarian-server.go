@@ -16,6 +16,7 @@ import (
 	"github.com/kube-tarian/tarian/pkg/server"
 	"github.com/kube-tarian/tarian/pkg/server/dgraphstore"
 	"github.com/kube-tarian/tarian/pkg/store"
+	"github.com/nats-io/nats.go"
 	cli "github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -102,6 +103,21 @@ func getCliApp() *cli.App {
 						Usage: "If specified, tarian-server will use NATS to queue the incoming events",
 						Value: "",
 					},
+					&cli.StringSliceFlag{
+						Name:  "nats-tls-root-cas",
+						Usage: "The root CA certificates to be used to connect to NATS",
+						Value: &cli.StringSlice{},
+					},
+					&cli.StringFlag{
+						Name:  "nats-tls-client-cert",
+						Usage: "The TLS client certificate to be used to connect to NATS",
+						Value: "",
+					},
+					&cli.StringFlag{
+						Name:  "nats-tls-client-key",
+						Usage: "The TLS client key to be used to connect to NATS",
+						Value: "",
+					},
 				},
 				Action: run,
 			},
@@ -156,7 +172,19 @@ func run(c *cli.Context) error {
 	storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
 	storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
 
-	server, err := server.NewServer(storeSet, c.String("tls-cert-file"), c.String("tls-private-key-file"), c.String("nats-url"))
+	natsOpts := []nats.Option{}
+	if len(c.StringSlice("nats-tls-root-cas")) > 0 {
+		for _, rootCA := range c.StringSlice("nats-tls-root-cas") {
+			natsOpts = append(natsOpts, nats.RootCAs(rootCA))
+		}
+	}
+
+	if c.String("nats-tls-client-cert") != "" {
+		cert := nats.ClientCert(c.String("nats-tls-client-cert"), c.String("nats-tls-client-key"))
+		natsOpts = append(natsOpts, cert)
+	}
+
+	server, err := server.NewServer(storeSet, c.String("tls-cert-file"), c.String("tls-private-key-file"), c.String("nats-url"), natsOpts)
 	if err != nil {
 		logger.Fatalw("error while initiating tarian-server", "err", err)
 		return err

@@ -13,6 +13,7 @@ import (
 	"github.com/kube-tarian/tarian/pkg/server"
 	"github.com/kube-tarian/tarian/pkg/server/dgraphstore"
 	"github.com/kube-tarian/tarian/pkg/store"
+	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -51,7 +52,7 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
 	storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
 
-	srv, err := server.NewServer(storeSet, "", "", "")
+	srv, err := server.NewServer(storeSet, "", "", "", []nats.Option{})
 	grpcServer := srv.GrpcServer
 	require.Nil(t, err)
 

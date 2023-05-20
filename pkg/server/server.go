@@ -9,6 +9,7 @@ import (
 	"github.com/kube-tarian/tarian/pkg/protoqueue"
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -45,7 +46,7 @@ type Server struct {
 	eventStore store.EventStore
 }
 
-func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, natsURL string) (*Server, error) {
+func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, natsURL string, natsOptions []nats.Option) (*Server, error) {
 	opts := []grpc.ServerOption{}
 	if certFile != "" && privateKeyFile != "" {
 		creds, _ := credentials.NewServerTLSFromFile(certFile, privateKeyFile)
@@ -62,7 +63,7 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, 
 		queuePublisher = channelQueue
 		queueSubscriber = channelQueue
 	} else {
-		jetstreamQueue, err := protoqueue.NewJetstream(natsURL, "tarian-server-event-ingestion")
+		jetstreamQueue, err := protoqueue.NewJetstream(natsURL, natsOptions, "tarian-server-event-ingestion")
 
 		if err == nil {
 			queuePublisher = jetstreamQueue
