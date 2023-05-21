@@ -46,7 +46,7 @@ type Server struct {
 	eventStore store.EventStore
 }
 
-func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, natsURL string, natsOptions []nats.Option) (*Server, error) {
+func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, natsURL string, natsOptions []nats.Option, natsStreamConfig nats.StreamConfig) (*Server, error) {
 	opts := []grpc.ServerOption{}
 	if certFile != "" && privateKeyFile != "" {
 		creds, _ := credentials.NewServerTLSFromFile(certFile, privateKeyFile)
@@ -63,7 +63,7 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, 
 		queuePublisher = channelQueue
 		queueSubscriber = channelQueue
 	} else {
-		jetstreamQueue, err := protoqueue.NewJetstream(natsURL, natsOptions, "tarian-server-event-ingestion")
+		jetstreamQueue, err := protoqueue.NewJetstream(natsURL, natsOptions, natsStreamConfig.Name)
 
 		if err == nil {
 			queuePublisher = jetstreamQueue
@@ -93,7 +93,7 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, 
 		backoffInit := retry.NewConstant(5 * time.Second)
 		backoffInit = retry.WithCappedDuration(1*time.Minute, backoffInit)
 		err = retry.Do(ctx, backoffInit, func(ctx context.Context) error {
-			err = jetstreamQueue.Init()
+			err = jetstreamQueue.Init(natsStreamConfig)
 			if err != nil {
 				logger.Warnw("failed to init stream, retrying...", "err", err)
 				return retry.RetryableError(err)

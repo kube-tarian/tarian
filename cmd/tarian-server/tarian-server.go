@@ -118,6 +118,26 @@ func getCliApp() *cli.App {
 						Usage: "The TLS client key to be used to connect to NATS",
 						Value: "",
 					},
+					&cli.Int64Flag{
+						Name:  "nats-stream-config-max-msgs",
+						Value: 10000,
+					},
+					&cli.Int64Flag{
+						Name:  "nats-stream-config-max-bytes",
+						Value: 50 * 1000 * 1000,
+					},
+					&cli.DurationFlag{
+						Name:  "nats-stream-config-max-age",
+						Value: 24 * time.Hour,
+					},
+					&cli.IntFlag{
+						Name:  "nats-stream-config-replicas",
+						Value: 1,
+					},
+					&cli.DurationFlag{
+						Name:  "nats-stream-config-duplicates",
+						Value: 1 * time.Minute,
+					},
 				},
 				Action: run,
 			},
@@ -184,7 +204,21 @@ func run(c *cli.Context) error {
 		natsOpts = append(natsOpts, cert)
 	}
 
-	server, err := server.NewServer(storeSet, c.String("tls-cert-file"), c.String("tls-private-key-file"), c.String("nats-url"), natsOpts)
+	streamName := "tarian-server-event-ingestion"
+	streamConfig := nats.StreamConfig{
+		Name:       streamName,
+		Subjects:   []string{streamName},
+		Retention:  nats.LimitsPolicy,
+		Discard:    nats.DiscardOld,
+		MaxMsgs:    c.Int64("nats-stream-config-max-msgs"),
+		MaxAge:     c.Duration("nats-stream-config-max-age"),
+		MaxBytes:   c.Int64("nats-stream-config-max-bytes"),
+		Storage:    nats.FileStorage,
+		Replicas:   c.Int("nats-stream-config-replicas"),
+		Duplicates: c.Duration("nats-stream-config-duplicates"),
+	}
+
+	server, err := server.NewServer(storeSet, c.String("tls-cert-file"), c.String("tls-private-key-file"), c.String("nats-url"), natsOpts, streamConfig)
 	if err != nil {
 		logger.Fatalw("error while initiating tarian-server", "err", err)
 		return err

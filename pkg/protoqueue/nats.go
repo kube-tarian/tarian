@@ -71,8 +71,8 @@ func (j *JetStream) Connect() error {
 	return nil
 }
 
-func (j *JetStream) Init() error {
-	if err := j.CreateStreamIfNotExist(); err != nil {
+func (j *JetStream) Init(streamConfig nats.StreamConfig) error {
+	if err := j.CreateStreamIfNotExist(streamConfig); err != nil {
 		return err
 	}
 
@@ -83,7 +83,7 @@ func (j *JetStream) Init() error {
 	return j.CreateSubscription()
 }
 
-func (j *JetStream) CreateStreamIfNotExist() error {
+func (j *JetStream) CreateStreamIfNotExist(streamConfig nats.StreamConfig) error {
 	if j.Conn.JSContext == nil {
 		return errors.New("can not create stream due to nil connection")
 	}
@@ -98,19 +98,6 @@ func (j *JetStream) CreateStreamIfNotExist() error {
 
 	if err != nil && err != nats.ErrStreamNotFound {
 		logger.Warnw("error calling jetstream StreamInfo", "stream", j.StreamName, "err", err)
-	}
-
-	streamConfig := nats.StreamConfig{
-		Name:      j.StreamName,
-		Subjects:  []string{j.StreamName},
-		Retention: nats.LimitsPolicy,
-		Discard:   nats.DiscardOld,
-		MaxMsgs:   10000,            // TODO: extract to param
-		MaxAge:    24 * time.Hour,   // TODO: extract to param
-		MaxBytes:  50 * 1000 * 1000, // TODO: extract to param
-		Storage:   nats.FileStorage,
-		Replicas:  1, // TODO: extract to param
-		// Duplicates: v.GetDuration("duplicates"), // TODO: extract to param
 	}
 
 	logger.Infow("will use this config to create stream", "stream", j.StreamName, "config", streamConfig)

@@ -52,7 +52,7 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
 	storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
 
-	srv, err := server.NewServer(storeSet, "", "", "", []nats.Option{})
+	srv, err := server.NewServer(storeSet, "", "", "", []nats.Option{}, nats.StreamConfig{})
 	grpcServer := srv.GrpcServer
 	require.Nil(t, err)
 
