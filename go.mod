@@ -90,9 +90,10 @@ require (
 )
 
 require (
-	github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0
 	github.com/cilium/ebpf v0.10.0
 	github.com/dgraph-io/dgo/v210 v210.0.0-20220113041351-ba0e5dfc4c3e
+	github.com/nats-io/nats.go v1.22.1
+	github.com/sethvargo/go-retry v0.2.4
 )
 
 require (
@@ -101,10 +102,8 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nats-io/nats.go v1.22.1 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
-	github.com/sethvargo/go-retry v0.2.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect

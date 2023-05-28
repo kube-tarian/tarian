@@ -36,39 +36,16 @@ help: ## Display this help.
 
 ##@ eBPF
 
-BASEDIR = $(abspath ./)
 OUTPUT = ./output
-ARCH := $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
-
-LIBBPF_SRC = $(abspath ./3rdparty/libbpf/src)
-LIBBPF_OBJ = $(abspath $(OUTPUT)/libbpf.a)
-LIBBPF_OBJDIR = $(abspath $(OUTPUT)/libbpf)
-LIBBPF_DESTDIR = $(abspath $(OUTPUT))
-
-CC = gcc
-CLANG = clang
-GO = go
-CFLAGS = -g -O2 -Wall -fpie
-LDFLAGS =
-
-CGO_CFLAGS_STATIC = "-I$(abspath $(OUTPUT)) -Wno-unknown-attributes"
-CGO_LDFLAGS_STATIC = "-lelf -lz $(LIBBPF_OBJ)"
-CGO_EXTLDFLAGS_STATIC = '-w -extldflags "-static"'
-CGO_CFGLAGS_DYN = "-I. -I/usr/include/"
-CGO_LDFLAGS_DYN = "-lelf -lz -lbpf"
 
 BTFFILE = /sys/kernel/btf/vmlinux
 BPFTOOL = $(shell which bpftool || /bin/false)
 VMLINUXH = $(OUTPUT)/vmlinux.h
-NODEAGENT_EBPF_DIR = pkg/nodeagent/ebpf
 
 # output
 
 $(OUTPUT):
 	mkdir -p $(OUTPUT)
-
-$(OUTPUT)/libbpf:
-	mkdir -p $(OUTPUT)/libbpf
 
 # vmlinux header file
 
@@ -89,22 +66,11 @@ $(VMLINUXH): $(OUTPUT)
 		$(BPFTOOL) btf dump file $(BTFFILE) format c > $(VMLINUXH); \
 	fi
 
-# libbpf
-
-$(LIBBPF_OBJ): $(LIBBPF_SRC) $(wildcard $(LIBBPF_SRC)/*.[ch]) | $(OUTPUT)/libbpf
-	CC="$(CC)" CFLAGS="$(CFLAGS)" LD_FLAGS="$(LDFLAGS)" \
-		$(MAKE) -C $(LIBBPF_SRC) \
-		BUILD_STATIC_ONLY=1 \
-		OBJDIR=$(LIBBPF_OBJDIR) \
-		DESTDIR=$(LIBBPF_DESTDIR) \
-		INCLUDEDIR= LIBDIR= UAPIDIR= install
-
-libbpfgo-static: $(VMLINUXH) | $(LIBBPF_OBJ)
-
-$(NODEAGENT_EBPF_DIR)/capture_exec.bpf.o: vmlinuxh libbpfgo-static ## Build eBPF object
-	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -c $(NODEAGENT_EBPF_DIR)/c/capture_exec.bpf.c -o $@
-
 ##@ Development
+
+ebpf: vmlinuxh
+	wget -O output/bpf_helpers.h https://raw.githubusercontent.com/libbpf/libbpf/master/src/bpf_helpers.h
+	wget -O output/bpf_helper_defs.h https://raw.githubusercontent.com/libbpf/libbpf/master/src/bpf_helper_defs.h
 
 generate: bin/controller-gen ebpf ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/clusteragent/..."
@@ -114,11 +80,9 @@ fmt: ## Run go fmt against code.
 	go fmt ./...
 
 vet: ## Run go vet against code.
-	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) go vet ./...
+	go vet ./...
 
-ebpf: $(NODEAGENT_EBPF_DIR)/capture_exec.bpf.o
-
-build: bin/goreleaser generate proto ebpf ## Build binaries and copy to ./bin/
+build: bin/goreleaser generate proto ## Build binaries and copy to ./bin/
 	./bin/goreleaser build --single-target --snapshot --rm-dist --single-target
 	cp dist/*/tarian* ./bin/
 
@@ -128,7 +92,7 @@ proto: bin/protoc
 
 lint: fmt vet
 	revive -formatter stylish -config .revive.toml ./pkg/...
-	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) staticcheck ./...
+	staticcheck ./...
 
 local-images: build
 	docker build -f Dockerfile-server -t localhost:5000/tarian-server dist/tarian-server_linux_amd64/ && docker push localhost:5000/tarian-server
@@ -143,10 +107,10 @@ push-local-images:
 	docker push localhost:5000/tarian-node-agent
 
 unit-test:
-	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) go test -v -race -count=1 ./pkg/...
+	go test -v -race -count=1 ./pkg/...
 
 e2e-test:
-	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) go test -v -race -count=1 ./test/e2e/...
+	go test -v -race -count=1 ./test/e2e/...
 
 k8s-test:
 	./test/k8s/test.sh

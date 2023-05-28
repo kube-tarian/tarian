@@ -4,5 +4,4 @@
 /vendor
 /.local
 /.vscode
-/pkg/**/capture_exec.bpf.o
 /pkg/**/ebpf/exec2/*.o
