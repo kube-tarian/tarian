@@ -145,5 +145,6 @@ jobs:
             docker push ghcr.io/${{ github.repository_owner}}/tarian-cluster-agent
             docker push ghcr.io/${{ github.repository_owner}}/tarian-node-agent
             docker push ghcr.io/${{ github.repository_owner}}/tarian-pod-agent
+            docker push ghcr.io/${{ github.repository_owner}}/tarianctl
           fi
 

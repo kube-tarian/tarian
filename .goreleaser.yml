@@ -120,3 +120,18 @@ dockers:
     - "--label=org.opencontainers.image.revision={{.FullCommit}}"
     - "--label=org.opencontainers.image.version={{.Version}}"
     - "--label=org.opencontainers.image.source={{ .GitURL }}"
+  - ids:
+    - tarianctl
+    goos: linux
+    goarch: amd64
+    image_templates:
+    - '{{ .Env.CONTAINER_REGISTRY }}/tarianctl:{{ if .IsSnapshot }}latest{{ else }}{{ trimprefix .Tag "v" }}{{ end }}'
+    dockerfile: Dockerfile-tarianctl
+    skip_push: false
+    build_flag_templates:
+    - "--pull"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.title={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source={{ .GitURL }}"

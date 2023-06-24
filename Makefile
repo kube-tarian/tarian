@@ -134,12 +134,14 @@ local-images: build
 	docker build -f Dockerfile-cluster-agent -t localhost:5000/tarian-cluster-agent dist/tarian-cluster-agent_linux_amd64/ && docker push localhost:5000/tarian-cluster-agent
 	docker build -f Dockerfile-pod-agent -t localhost:5000/tarian-pod-agent dist/tarian-pod-agent_linux_amd64/ && docker push localhost:5000/tarian-pod-agent
 	docker build -f Dockerfile-node-agent -t localhost:5000/tarian-node-agent dist/tarian-node-agent_linux_amd64/ && docker push localhost:5000/tarian-node-agent
+	docker build -f Dockerfile-tarianctl -t localhost:5000/tarianctl dist/tarianctl_linux_amd64/ && docker push localhost:5000/tarianctl
 
 push-local-images:
 	docker push localhost:5000/tarian-server
 	docker push localhost:5000/tarian-cluster-agent
 	docker push localhost:5000/tarian-pod-agent
 	docker push localhost:5000/tarian-node-agent
+	docker push localhost:5000/tarianctl
 
 unit-test:
 	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) go test -v -race -count=1 ./pkg/...
