@@ -77,7 +77,7 @@ You can use any [Dgraph installation](https://dgraph.io/docs/deploy/kubernetes/)
 1. Install tarian using Helm
 
 ```bash
-helm repo add tarian https://kube-tarian.github.io/tarian
+helm repo add tarian https://kube-tarian.github.io/helm-charts
 helm repo update
 
 helm upgrade -i tarian-server tarian/tarian-server --devel -n tarian-system --set server.dgraph.address=DGRAPH_ADDRESS:PORT
