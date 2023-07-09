@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/cilium/ebpf/rlimit"
 	"github.com/kube-tarian/tarian/pkg/logger"
 	"github.com/kube-tarian/tarian/pkg/nodeagent"
 	cli "github.com/urfave/cli/v2"
@@ -100,6 +101,11 @@ func run(c *cli.Context) error {
 		logger.Infow("Host proc is mounted", "dir", nodeagent.HostProcDir)
 	} else if os.IsNotExist(err) {
 		logger.Fatalw("Host proc directory is not properly mounted", "dir", nodeagent.HostProcDir)
+	}
+
+	err = rlimit.RemoveMemlock()
+	if err != nil {
+		logger.Fatal(err)
 	}
 
 	agent := nodeagent.NewNodeAgent(c.String("cluster-agent-host") + ":" + c.String("cluster-agent-port"))

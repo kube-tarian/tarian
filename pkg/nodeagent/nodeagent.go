@@ -2,14 +2,20 @@ package nodeagent
 
 import (
 	"context"
+	"errors"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/intelops/tarian-detector/pkg/detector"
+	"github.com/intelops/tarian-detector/pkg/ebpf/c/process_entry"
+	"github.com/intelops/tarian-detector/pkg/ebpf/c/process_exit"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/scylladb/go-set/strset"
+	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -71,7 +77,7 @@ func (n *NodeAgent) Run() {
 	defer n.grpcConn.Close()
 
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(3)
 
 	go func() {
 		n.loopSyncConstraints(n.cancelCtx)
@@ -80,6 +86,11 @@ func (n *NodeAgent) Run() {
 
 	go func() {
 		n.loopValidateProcesses(n.cancelCtx)
+		wg.Done()
+	}()
+
+	go func() {
+		n.loopTarianDetectorReadEvents(n.cancelCtx)
 		wg.Done()
 	}()
 
@@ -341,4 +352,46 @@ func matchLabelsFromPodLabels(labels map[string]string) []*tarianpb.MatchLabel {
 	}
 
 	return matchLabels
+}
+
+func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
+	processEntryDetector := process_entry.NewProcessEntryDetector()
+	processExitDetector := process_exit.NewProcessExitDetector()
+
+	eventsDetector := detector.NewEventsDetector()
+	eventsDetector.Add(processEntryDetector)
+	eventsDetector.Add(processExitDetector)
+
+	err := eventsDetector.Start()
+	if err != nil {
+		return err
+	}
+
+	defer eventsDetector.Close()
+
+	go func() {
+		for {
+			e, err := eventsDetector.ReadAsInterface()
+			if errors.Is(err, os.ErrClosed) {
+				break
+			}
+
+			if err != nil {
+				logger.Errorw("tarian-detector: error on reading as itnerface", "err", err)
+			}
+
+			switch event := e.(type) {
+			case process_entry.EntryEventData:
+				binaryFilePath := unix.ByteSliceToString(event.BinaryFilepath[:])
+				comm := unix.ByteSliceToString(event.Comm[:])
+				logger.Infow("tarian-detector: process_entry.EntryEventData", "binary_file_path", binaryFilePath, "pid", event.Pid, "comm", comm)
+			case process_exit.ExitEventData:
+				comm := unix.ByteSliceToString(event.Comm[:])
+				logger.Infow("tarian-detector: process_exit.ExitEventData", "pid", event.Pid, "comm", comm)
+			}
+		}
+	}()
+
+	<-ctx.Done()
+	return ctx.Err()
 }
