@@ -268,8 +268,8 @@ github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:
 github.com/imdario/mergo v0.3.12 h1:b6R2BslTbIEToALKP7LxUvijTsNI9TAe80pLWN2g/HU=
 github.com/imdario/mergo v0.3.12/go.mod h1:jmQim1M+e3UYxmgPu/WyfjB3N3VflVyUjjjwH0dnCYA=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
-github.com/intelops/tarian-detector v0.0.0-20230616010724-1f284dace300 h1:FNCWzFsRc2PdzsadGmztgP6XwUddlt+quH9jUIUE3cg=
-github.com/intelops/tarian-detector v0.0.0-20230616010724-1f284dace300/go.mod h1:2K2wafY22B+k3YqSasoE5ql2J7uVFOSJQAWCpCmqu2A=
+github.com/intelops/tarian-detector v0.0.0-20230716034731-4dee440b6e1c h1:ZtZ2v5owdrPUaMOFwTqeRJPGld4SDXP+y+Xo6pnDl0s=
+github.com/intelops/tarian-detector v0.0.0-20230716034731-4dee440b6e1c/go.mod h1:2K2wafY22B+k3YqSasoE5ql2J7uVFOSJQAWCpCmqu2A=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jessevdk/go-flags v1.5.0/go.mod h1:Fw0T6WPc1dYxT4mKEZRfG5kJhaTDP9pj1c2EWnYs/m4=
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=

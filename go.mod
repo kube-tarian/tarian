@@ -93,7 +93,7 @@ require (
 	github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0
 	github.com/cilium/ebpf v0.10.0
 	github.com/dgraph-io/dgo/v210 v210.0.0-20220113041351-ba0e5dfc4c3e
-	github.com/intelops/tarian-detector v0.0.0-20230616010724-1f284dace300
+	github.com/intelops/tarian-detector v0.0.0-20230716034731-4dee440b6e1c
 	github.com/nats-io/nats.go v1.22.1
 	github.com/sethvargo/go-retry v0.2.4
 )
