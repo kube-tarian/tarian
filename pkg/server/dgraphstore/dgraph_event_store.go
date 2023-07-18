@@ -101,9 +101,7 @@ func (d *dgraphEventList) toPbEvents() []*tarianpb.Event {
 			}
 
 			t.DetectionDataType = evtTarget.DetectionDataType
-			if evtTarget.DetectionData != "" {
-				json.Unmarshal([]byte(evtTarget.DetectionData), &t.DetectionData)
-			}
+			t.DetectionData = evtTarget.DetectionData
 
 			event.Targets = append(event.Targets, t)
 		}
@@ -136,6 +134,8 @@ const eventFields = `
 			pod_name
 			pod_labels
 		}
+		target_detection_data_type
+		target_detection_data
 	}
 `
 

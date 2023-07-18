@@ -70,6 +70,13 @@ func NewGetEventsCommand() *cli.Command {
 						evt.WriteString("pod deleted")
 					}
 
+					if e.GetType() == tarianpb.EventTypeDetection {
+						evt.WriteString("detection: ")
+						evt.WriteString(t.DetectionDataType)
+						evt.WriteString(": ")
+						evt.WriteString(t.DetectionData)
+					}
+
 					evt.WriteString("\n")
 
 					table.Append(

@@ -394,7 +394,7 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 					continue
 				}
 
-				// n.SendDetectionEventToClusterAgent(detectionDataType, string(buf))
+				n.SendDetectionEventToClusterAgent(detectionDataType, string(buf))
 				logger.Infow("tarian-detector: process_entry.EntryEventData", "binary_file_path", event.BinaryFilepath, "pid", event.Pid, "comm", event.Comm, "json", string(buf), "err", err)
 
 			case *process_exit.ExitEventData:
@@ -405,7 +405,7 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 					continue
 				}
 
-				// n.SendDetectionEventToClusterAgent(detectionDataType, string(buf))
+				n.SendDetectionEventToClusterAgent(detectionDataType, string(buf))
 				logger.Infow("tarian-detector: process_exit.ExitEventData", "pid", event.Pid, "comm", event.Comm, "json", string(buf), "err", err)
 			}
 		}
