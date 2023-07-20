@@ -2,6 +2,7 @@ package nodeagent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"regexp"
@@ -15,7 +16,6 @@ import (
 	"github.com/intelops/tarian-detector/pkg/ebpf/c/process_exit"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/scylladb/go-set/strset"
-	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -378,20 +378,57 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 
 			if err != nil {
 				logger.Errorw("tarian-detector: error on reading as itnerface", "err", err)
+				continue
 			}
 
 			switch event := e.(type) {
-			case process_entry.EntryEventData:
-				binaryFilePath := unix.ByteSliceToString(event.BinaryFilepath[:])
-				comm := unix.ByteSliceToString(event.Comm[:])
-				logger.Infow("tarian-detector: process_entry.EntryEventData", "binary_file_path", binaryFilePath, "pid", event.Pid, "comm", comm)
-			case process_exit.ExitEventData:
-				comm := unix.ByteSliceToString(event.Comm[:])
-				logger.Infow("tarian-detector: process_exit.ExitEventData", "pid", event.Pid, "comm", comm)
+			case *process_entry.EntryEventData:
+				detectionDataType := "process_entry.EntryEventData"
+				data, err := json.Marshal(event)
+				if err != nil {
+					logger.Errorw("tarian-detector: error while marshaling json", "err", err, "detectionDataType", detectionDataType)
+					continue
+				}
+
+				n.SendDetectionEventToClusterAgent(detectionDataType, string(data))
+				logger.Infow("tarian-detector: process_entry.EntryEventData", "binary_file_path", event.BinaryFilepath, "pid", event.Pid, "comm", event.Comm)
+
+			case *process_exit.ExitEventData:
+				detectionDataType := "process_exit.ExitEventData"
+				data, err := json.Marshal(event)
+				if err != nil {
+					logger.Errorw("tarian-detector: error while marshaling json", "err", err, "detectionDataType", detectionDataType)
+					continue
+				}
+
+				n.SendDetectionEventToClusterAgent(detectionDataType, string(data))
+				logger.Infow("tarian-detector: process_exit.ExitEventData", "pid", event.Pid, "comm", event.Comm)
 			}
 		}
 	}()
 
 	<-ctx.Done()
 	return ctx.Err()
+}
+
+func (n *NodeAgent) SendDetectionEventToClusterAgent(detectionDataType string, detectionData string) {
+	req := &tarianpb.IngestEventRequest{
+		Event: &tarianpb.Event{
+			Type:            tarianpb.EventTypeDetection,
+			ClientTimestamp: timestamppb.Now(),
+			Targets: []*tarianpb.Target{
+				{
+					DetectionDataType: detectionDataType,
+					DetectionData:     detectionData,
+				},
+			},
+		},
+	}
+
+	response, err := n.eventClient.IngestEvent(context.Background(), req)
+	if err != nil {
+		logger.Errorw("error while sending detection events", "err", err)
+	} else {
+		logger.Debugw("ingest event response", "response", response)
+	}
 }

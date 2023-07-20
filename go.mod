@@ -91,22 +91,20 @@ require (
 
 require (
 	github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0
+	github.com/cilium/ebpf v0.11.0
 	github.com/dgraph-io/dgo/v210 v210.0.0-20220113041351-ba0e5dfc4c3e
 	github.com/nats-io/nats.go v1.22.1
 	github.com/sethvargo/go-retry v0.2.4
 )
 
-require (
-	github.com/cilium/ebpf v0.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2 // indirect
-)
+require golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2 // indirect
 
 require (
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
-	github.com/intelops/tarian-detector v0.0.0-20230616010724-1f284dace300
+	github.com/intelops/tarian-detector v0.0.0-20230716034731-4dee440b6e1c
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
