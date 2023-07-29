@@ -57,4 +57,6 @@ type Target struct {
 	ViolatedFiles     string `json:"target_violated_files,omitempty"`
 	FalcoAlert        string `json:"target_falco_alert,omitempty"`
 	Pod               *Pod   `json:"pod,omitempty"`
+	DetectionDataType string `json:"target_detection_data_type,omitempty"`
+	DetectionData     string `json:"target_detection_data,omitempty"`
 }

@@ -74,6 +74,8 @@ var schema = `
 	target_violated_processes: string . # json
 	target_violated_files: string . # json
 	target_falco_alert: string .
+	target_detection_data_type: string .
+	target_detection_data: string .
 
 	type Target {
 		pod: Pod
@@ -81,6 +83,8 @@ var schema = `
 		target_violated_processes
 		target_violated_files
 		target_falco_alert
+		target_detection_data_type
+		target_detection_data
 	}
 `
 

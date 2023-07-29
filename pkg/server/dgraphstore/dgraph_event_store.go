@@ -100,6 +100,9 @@ func (d *dgraphEventList) toPbEvents() []*tarianpb.Event {
 				json.Unmarshal([]byte(evtTarget.Pod.Labels), &t.Pod.Labels)
 			}
 
+			t.DetectionDataType = evtTarget.DetectionDataType
+			t.DetectionData = evtTarget.DetectionData
+
 			event.Targets = append(event.Targets, t)
 		}
 
@@ -131,6 +134,9 @@ const eventFields = `
 			pod_name
 			pod_labels
 		}
+
+		target_detection_data_type
+		target_detection_data
 	}
 `
 
@@ -237,6 +243,9 @@ func dgraphEventFromPb(pbEvent *tarianpb.Event) (*Event, error) {
 				Labels:    string(labelsJSON),
 			}
 		}
+
+		t.DetectionDataType = pbTarget.GetDetectionDataType()
+		t.DetectionData = pbTarget.GetDetectionData()
 
 		dgraphEvent.Targets = append(dgraphEvent.Targets, t)
 	}
