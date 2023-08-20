@@ -184,7 +184,7 @@ deploy: manifests bin/kustomize ## Deploy controller to the K8s cluster specifie
 	cd dev/config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build dev/config/default | kubectl apply -f -
 	helm repo add nats https://nats-io.github.io/k8s/helm/charts/
-	helm upgrade -i nats nats/nats -n tarian-system -f ./dev/nats-helm-values.yaml
+	helm upgrade -i nats nats/nats -n tarian-system -f ./dev/nats-helm-values.yaml --version 0.19.16
 
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build dev/config/default | kubectl delete -f -

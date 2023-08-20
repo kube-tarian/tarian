@@ -2,19 +2,22 @@ package add
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
-	"github.com/kube-tarian/tarian/pkg/logger"
+	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
 
 type actionCommand struct {
 	globalFlags *flags.GlobalFlags
+	logger      *logrus.Logger
 
 	name              string
 	namespace         string
@@ -30,14 +33,14 @@ type actionCommand struct {
 func newAddActionCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &actionCommand{
 		globalFlags: globalFlags,
+		logger:      log.GetLogger(),
 	}
+
 	actionsCmd := &cobra.Command{
 		Use:     "actions",
 		Aliases: []string{"action", "a"},
 		Short:   "Add an action to the Tarian Server.",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("actions called")
-		},
+		RunE:    cmd.run,
 		Example: "tarianctl add action --name NAME --namespace NAMESPACE --match-labels=KEY_1=VAL_1,... --action=delete-pod",
 	}
 
@@ -54,14 +57,15 @@ func newAddActionCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return actionsCmd
 }
 
-func (c *actionCommand) run(cmd *cobra.Command, args []string) {
-	logger := logger.GetLogger(c.globalFlags.LogLevel, c.globalFlags.LogEncoding)
-	util.SetLogger(logger)
+func (c *actionCommand) run(cmd *cobra.Command, args []string) error {
+	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
+	if err != nil {
+		return fmt.Errorf("add action: %w", err)
+	}
 
-	opts := util.ClientOptionsFromCliContext(c.globalFlags)
 	configClient, err := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
 	if err != nil {
-		logger.Fatal(err)
+		return fmt.Errorf("add action: failed to create config client: %w", err)
 	}
 
 	req := &tarianpb.AddActionRequest{
@@ -86,21 +90,21 @@ func (c *actionCommand) run(cmd *cobra.Command, args []string) {
 	if c.dryRun {
 		d, err := yaml.Marshal(req.GetAction())
 		if err != nil {
-			logger.Fatal(err)
+			return fmt.Errorf("add action: %w", err)
 		}
-
-		fmt.Println(string(d))
+		c.logger.Info(string(d))
 	} else {
 		response, err := configClient.AddAction(context.Background(), req)
-
 		if err != nil {
-			logger.Fatal(err)
+			return fmt.Errorf("add action: failed to add action: %w", err)
 		}
 
 		if response.GetSuccess() {
-			logger.Info("Action was added successfully")
+			c.logger.Info("Action was added successfully")
 		} else {
-			logger.Fatal("failed to add Action")
+			err := errors.New("failed to add action")
+			return fmt.Errorf("add action: %w", err)
 		}
 	}
+	return nil
 }

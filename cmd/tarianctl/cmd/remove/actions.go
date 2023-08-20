@@ -2,20 +2,22 @@ package remove
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
-	"github.com/kube-tarian/tarian/pkg/logger"
+	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 type removeActionsCmd struct {
 	globalFlags *flags.GlobalFlags
+	logger      *logrus.Logger
 
 	namespace string
 }
@@ -23,13 +25,15 @@ type removeActionsCmd struct {
 func newRemoveActionsCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &removeActionsCmd{
 		globalFlags: globalFlags,
+		logger:      log.GetLogger(),
 	}
+
 	actionsCmd := &cobra.Command{
 		Use:     "actions",
 		Aliases: []string{"action", "a"},
 		Short:   "Remove actions from the Tarian Server.",
 		Example: "Tarianctl remove actions [command options] names...",
-		Run:     cmd.run,
+		RunE:    cmd.run,
 	}
 
 	// add flags
@@ -37,29 +41,35 @@ func newRemoveActionsCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return actionsCmd
 }
 
-func (c *removeActionsCmd) run(cmd *cobra.Command, args []string) {
+func (c *removeActionsCmd) run(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		fmt.Println("Please specify the names of the constraint to be removed")
-		os.Exit(1)
+		err := errors.New("please specify the name of the action to be removed")
+		return fmt.Errorf("remove action: %w", err)
 	}
 
-	logger := logger.GetLogger(c.globalFlags.LogLevel, c.globalFlags.LogEncoding)
-	util.SetLogger(logger)
+	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
+	if err != nil {
+		return fmt.Errorf("remove action: %w", err)
+	}
 
-	opts := util.ClientOptionsFromCliContext(c.globalFlags)
-	client, _ := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
+	client, err := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
+	if err != nil {
+		return fmt.Errorf("remove action: %w", err)
+	}
 
 	for _, name := range args {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		response, err := client.RemoveAction(ctx, &tarianpb.RemoveActionRequest{Namespace: c.namespace, Name: name})
 		cancel()
-
 		if err != nil {
-			logger.Fatal(err)
+			return fmt.Errorf("remove action: %w", err)
 		}
 
 		if response.GetSuccess() {
-			fmt.Printf("Action %s is deleted succesfully\n", name)
+			c.logger.Infof("Action '%s' is deleted successfully\n", name)
+		} else {
+			c.logger.Warnf("Action '%s' is not deleted\n", name)
 		}
 	}
+	return nil
 }

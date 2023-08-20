@@ -8,25 +8,30 @@ import (
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
-	"github.com/kube-tarian/tarian/pkg/logger"
+	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/olekukonko/tablewriter"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
 
 type actionCommand struct {
 	globalFlags *flags.GlobalFlags
-	namespace   string
-	output      string
+	logger      *logrus.Logger
+
+	namespace string
+	output    string
 }
 
 // actionsCmd represents the actions command
 func newGetActionsCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &actionCommand{
 		globalFlags: globalFlags,
+		logger:      log.GetLogger(),
 	}
+
 	actionsCmd := &cobra.Command{
 		Use:     "actions",
 		Aliases: []string{"action", "a"},
@@ -35,7 +40,7 @@ func newGetActionsCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 tarianctl get action -o yaml
 tctl get a -o yaml
 `,
-		Run: cmd.run,
+		RunE: cmd.run,
 	}
 
 	// add flags
@@ -44,24 +49,26 @@ tctl get a -o yaml
 	return actionsCmd
 }
 
-func (c *actionCommand) run(cmd *cobra.Command, args []string) {
-	logger := logger.GetLogger(c.globalFlags.LogLevel, c.globalFlags.LogEncoding)
-	util.SetLogger(logger)
+func (c *actionCommand) run(cmd *cobra.Command, args []string) error {
+	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
+	if err != nil {
+		return fmt.Errorf("get actions: %w", err)
+	}
 
-	opts := util.ClientOptionsFromCliContext(c.globalFlags)
-	client, _ := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
+	client, err := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
+	if err != nil {
+		return fmt.Errorf("get actions: %w", err)
+	}
 
 	request := &tarianpb.GetActionsRequest{}
-
 	ns := c.namespace
 	if ns != "" {
 		request.Namespace = ns
 	}
 
 	response, err := client.GetActions(context.Background(), request)
-
 	if err != nil {
-		logger.Fatal(err)
+		return fmt.Errorf("get actions: failed to get actions: %w", err)
 	}
 
 	outputFormat := c.output
@@ -78,16 +85,17 @@ func (c *actionCommand) run(cmd *cobra.Command, args []string) {
 
 		table.Render()
 	} else if outputFormat == "yaml" {
-		for _, c := range response.GetActions() {
-			d, err := yaml.Marshal(c)
+		for _, action := range response.GetActions() {
+			d, err := yaml.Marshal(action)
 			if err != nil {
-				logger.Fatal(err)
+				return fmt.Errorf("get actions: %w", err)
 			}
 
 			fmt.Print(string(d))
 			fmt.Println("---")
 		}
 	}
+	return nil
 }
 
 func formatActionTrigger(action *tarianpb.Action) string {

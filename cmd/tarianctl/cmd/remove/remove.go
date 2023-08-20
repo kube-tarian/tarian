@@ -1,6 +1,7 @@
 package remove
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
@@ -14,8 +15,12 @@ func NewRemoveCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 		Aliases: []string{"delete", "rm"},
 		Short:   "Remove resources from the Tarian Server.",
 		Long:    "Remove resources from the Tarian Server.",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("remove called")
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				err := errors.New("no resource specified, use `tarianctl remove --help` for command usage")
+				return fmt.Errorf("remove: %w", err)
+			}
+			return nil
 		},
 		Args: cobra.MinimumNArgs(1),
 	}

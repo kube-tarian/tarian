@@ -68,7 +68,7 @@ sleep 5
 tarianctl get constraints
 
 # test register constraint using annotation
-tarianctl get constraints |  grep run=nginx2 | grep pwd
+tarianctl get constraints | grep run=nginx2 | grep pwd
 
 # action
 tarianctl add action --name nginx-delete --match-labels=run=nginx --action=delete-pod

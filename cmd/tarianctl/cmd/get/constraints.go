@@ -8,8 +8,9 @@ import (
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
-	"github.com/kube-tarian/tarian/pkg/logger"
+	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
+	"github.com/sirupsen/logrus"
 
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/olekukonko/tablewriter"
@@ -19,20 +20,23 @@ import (
 
 type constraintsCommand struct {
 	globalFlags *flags.GlobalFlags
-	output      string
+	logger      *logrus.Logger
+
+	output string
 }
 
 // constraintsCmd represents the constraints command
 func newGetConstraintsCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &constraintsCommand{
 		globalFlags: globalFlags,
+		logger:      log.GetLogger(),
 	}
+
 	constraintsCmd := &cobra.Command{
 		Use:     "constraints",
 		Aliases: []string{"constraint", "c"},
 		Short:   "Get constraints from the Tarian Server.",
-		Long:    "Get constraints from the Tarian Server.",
-		Run:     cmd.run,
+		RunE:    cmd.run,
 		Example: `tarianctl get constraints
 tarianctl get constraints -o yaml
 tctl get c -o yaml
@@ -44,16 +48,20 @@ tctl get c -o yaml
 	return constraintsCmd
 }
 
-func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) {
-	logger := logger.GetLogger(c.globalFlags.LogLevel, c.globalFlags.LogEncoding)
-	util.SetLogger(logger)
-
-	opts := util.ClientOptionsFromCliContext(c.globalFlags)
-	client, _ := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
-	response, err := client.GetConstraints(context.Background(), &tarianpb.GetConstraintsRequest{})
-
+func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) error {
+	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
 	if err != nil {
-		logger.Fatal(err)
+		return fmt.Errorf("get constraints: %w", err)
+	}
+
+	client, err := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
+	if err != nil {
+		return fmt.Errorf("get constraints: %w", err)
+	}
+
+	response, err := client.GetConstraints(context.Background(), &tarianpb.GetConstraintsRequest{})
+	if err != nil {
+		return fmt.Errorf("get constraints: failed to get constraints: %w", err)
 	}
 
 	outputFormat := c.output
@@ -76,15 +84,16 @@ func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) {
 
 		table.Render()
 	} else if outputFormat == "yaml" {
-		for _, c := range response.GetConstraints() {
-			d, err := yaml.Marshal(c)
+		for _, constraint := range response.GetConstraints() {
+			d, err := yaml.Marshal(constraint)
 			if err != nil {
-				logger.Fatal(err)
+				return fmt.Errorf("get constraints: %w", err)
 			}
 			fmt.Print(string(d))
 			fmt.Println("---")
 		}
 	}
+	return nil
 }
 
 func matchLabelsToString(labels []*tarianpb.MatchLabel) string {
