@@ -6,26 +6,42 @@ import (
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/add"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/get"
+	importCommand "github.com/kube-tarian/tarian/cmd/tarianctl/cmd/import"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/remove"
+	"github.com/kube-tarian/tarian/pkg/log"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
-var (
-	LogLevel                    string
-	LogEncoding                 string
-	ServerAddr                  string
-	ServerTLSEnabled            bool
-	ServerTLSCAFile             string
-	ServerTLSInsecureSkipVerify bool
-)
+var globalFlags *flags.GlobalFlags
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:     "tarianctl",
-	Aliases: []string{"tctl"},
-	Version: versionStr,
-	Short:   "tarianctl is the CLI tool to control the Tarian Server.",
-	Long: `
+func newRootCommand(logger *logrus.Logger) *cobra.Command {
+	return &cobra.Command{
+		Use:           "tarianctl",
+		Aliases:       []string{"tctl"},
+		Version:       versionStr,
+		Short:         "tarianctl is the CLI tool to control the Tarian Server.",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			err := globalFlags.ValidateGlobalFlags()
+			if err != nil {
+				return err
+			}
+
+			globalFlags.GetFlagValuesFromEnvVar()
+
+			logLevel, _ := logrus.ParseLevel(globalFlags.LogLevel)
+			logger.SetLevel(logrus.Level(logLevel))
+
+			if globalFlags.LogFormatter == "json" {
+				logger.SetFormatter(&logrus.JSONFormatter{
+					PrettyPrint: true,
+				})
+			}
+			return nil
+		},
+		Long: `
  _                    _                          _     _
 | |_    __ _   _ __  (_)   __ _   _ __     ___  | |_  | |
 | __|  / _  | | '__| | |  / _  | | '_ \   / __| | __| | |
@@ -34,30 +50,33 @@ var rootCmd = &cobra.Command{
 
 tarianctl is the CLI tool to control the Tarian Server.
 `,
-}
-
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
 	}
 }
 
-func addSubCommand(globalFlags *flags.GlobalFlags) {
+func buildRootCommand(logger *logrus.Logger) *cobra.Command {
+	rootCmd := newRootCommand(logger)
+
+	// Add global flags
+	persistentFlags := rootCmd.PersistentFlags()
+	globalFlags = flags.SetGlobalFlags(persistentFlags)
+
+	rootCmd.SetVersionTemplate("tarianctl version: {{.Version}}\n")
+
+	// Add subcommand to the root command
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(get.NewGetCommand(globalFlags))
 	rootCmd.AddCommand(add.NewAddCommand(globalFlags))
 	rootCmd.AddCommand(remove.NewRemoveCommand(globalFlags))
-	rootCmd.AddCommand(NewImportCommand(globalFlags))
-
-	rootCmd.SetVersionTemplate("tarianctl version: {{.Version}}\n")
+	rootCmd.AddCommand(importCommand.NewImportCommand(globalFlags))
+	return rootCmd
 }
 
-func init() {
-	// Add global flags
-	persistentFlags := rootCmd.PersistentFlags()
-	globalFlags := flags.SetGlobalFlags(persistentFlags)
-
-	// Add subcommand to the root command
-	addSubCommand(globalFlags)
+func Execute() {
+	logger := log.GetLogger()
+	rootCmd := buildRootCommand(logger)
+	err := rootCmd.Execute()
+	if err != nil {
+		logger.Errorf("command failed: %s", err)
+		os.Exit(1)
+	}
 }

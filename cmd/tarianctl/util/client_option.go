@@ -4,32 +4,17 @@ package util
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"os"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var logger *zap.SugaredLogger
-
-func init() {
-	l, err := zap.NewProduction()
-
-	if err != nil {
-		panic("Can not create logger")
-	}
-
-	logger = l.Sugar()
-}
-
-func SetLogger(l *zap.SugaredLogger) {
-	logger = l
-}
-
-func ClientOptionsFromCliContext(globalFlags *flags.GlobalFlags) []grpc.DialOption {
+func ClientOptionsFromCliContext(logger *logrus.Logger, globalFlags *flags.GlobalFlags) ([]grpc.DialOption, error) {
 	o := []grpc.DialOption{}
 
 	if globalFlags.ServerTLSEnabled {
@@ -43,11 +28,11 @@ func ClientOptionsFromCliContext(globalFlags *flags.GlobalFlags) []grpc.DialOpti
 		if serverCAFile != "" {
 			serverCACert, err := os.ReadFile(serverCAFile)
 			if err != nil {
-				logger.Fatalw("failed to read server tls ca files", "filename", serverCAFile, "err", err)
+				return nil, fmt.Errorf("failed to read server TLS CA file: serverCAFile: %s, error: %s", serverCAFile, err)
 			}
 
 			if ok := certPool.AppendCertsFromPEM(serverCACert); !ok {
-				logger.Errorw("failed to append server ca file")
+				logger.Error("failed to append server ca file")
 			}
 		}
 		tlsConfig := &tls.Config{ServerName: "", RootCAs: certPool}
@@ -58,5 +43,5 @@ func ClientOptionsFromCliContext(globalFlags *flags.GlobalFlags) []grpc.DialOpti
 		o = append(o, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	return o
+	return o, nil
 }

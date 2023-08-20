@@ -2,20 +2,22 @@ package remove
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
-	"github.com/kube-tarian/tarian/pkg/logger"
+	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 type removeConstraintsCmd struct {
 	globalFlags *flags.GlobalFlags
+	logger      *logrus.Logger
 
 	namespace string
 }
@@ -23,13 +25,15 @@ type removeConstraintsCmd struct {
 func newRemoveConstraintsCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &removeConstraintsCmd{
 		globalFlags: globalFlags,
+		logger:      log.GetLogger(),
 	}
+
 	constraintsCmd := &cobra.Command{
 		Use:     "constraints",
 		Aliases: []string{"constraint", "c"},
 		Short:   "Remove constraints from the Tarian Server.",
 		Example: `Tarianctl remove constraints [command options] names...`,
-		Run:     cmd.run,
+		RunE:    cmd.run,
 	}
 
 	// add flags
@@ -37,29 +41,34 @@ func newRemoveConstraintsCommand(globalFlags *flags.GlobalFlags) *cobra.Command 
 	return constraintsCmd
 }
 
-func (c *removeConstraintsCmd) run(cmd *cobra.Command, args []string) {
+func (c *removeConstraintsCmd) run(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		fmt.Println("Please specify the names of the constraint to be removed")
-		os.Exit(1)
+		err := errors.New("please specify the names of the constraint to be removed")
+		return fmt.Errorf("remove constraint: %w", err)
+	}
+	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
+	if err != nil {
+		return fmt.Errorf("remove constraint: %w", err)
 	}
 
-	logger := logger.GetLogger(c.globalFlags.LogLevel, c.globalFlags.LogEncoding)
-	util.SetLogger(logger)
-
-	opts := util.ClientOptionsFromCliContext(c.globalFlags)
-	client, _ := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
+	client, err := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
+	if err != nil {
+		return fmt.Errorf("remove constraint: %w", err)
+	}
 
 	for _, name := range args {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		response, err := client.RemoveConstraint(ctx, &tarianpb.RemoveConstraintRequest{Namespace: c.namespace, Name: name})
 		cancel()
-
 		if err != nil {
-			logger.Fatal(err)
+			return fmt.Errorf("remove constraint: %w", err)
 		}
 
 		if response.GetSuccess() {
-			fmt.Printf("Constraint %s is deleted succesfully\n", name)
+			c.logger.Infof("Constraint %s is deleted succesfully\n", name)
+		} else {
+			c.logger.Warnf("Constraint %s is not deleted\n", name)
 		}
 	}
+	return nil
 }

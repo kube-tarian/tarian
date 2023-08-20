@@ -1,6 +1,7 @@
 package add
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
@@ -14,10 +15,13 @@ func NewAddCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 		Aliases: []string{"create"},
 		Short:   "Add resources to the Tarian Server.",
 		Long:    "Add resources to the Tarian Server.",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("add called")
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				err := errors.New("no resource specified, use `tarianctl add --help` for command usage")
+				return fmt.Errorf("add: %w", err)
+			}
+			return nil
 		},
-		Args: cobra.MinimumNArgs(1),
 	}
 
 	// add subcommands

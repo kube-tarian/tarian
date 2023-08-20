@@ -2,6 +2,7 @@ package add
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,16 +10,18 @@ import (
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
-	"github.com/kube-tarian/tarian/pkg/logger"
+	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 )
 
 type constraintsCommand struct {
-	globalFlags           *flags.GlobalFlags
+	globalFlags *flags.GlobalFlags
+	logger      *logrus.Logger
+
 	name                  string
 	namespace             string
 	matchLabels           []string
@@ -32,7 +35,9 @@ type constraintsCommand struct {
 func newAddConstraintCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &constraintsCommand{
 		globalFlags: globalFlags,
+		logger:      log.GetLogger(),
 	}
+
 	constraintsCmd := &cobra.Command{
 		Use:     "constraints",
 		Aliases: []string{"constraint", "c"},
@@ -42,7 +47,7 @@ func newAddConstraintCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 tarianctl add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx
   
 tarianctl add constraint --name nginx --namespace default --match-labels run=nginx --allowed-file-sha256sums=/etc/nginx/nginx.conf=c01b39c7a35ccc3b081a3e83d2c71fa9a767ebfeb45c69f08e17dfe3ef375a7b`,
-		Run: cmd.run,
+		RunE: cmd.run,
 	}
 
 	// add flags
@@ -56,19 +61,20 @@ tarianctl add constraint --name nginx --namespace default --match-labels run=ngi
 	return constraintsCmd
 }
 
-func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) {
-	logger := logger.GetLogger(c.globalFlags.LogLevel, c.globalFlags.LogEncoding)
-	util.SetLogger(logger)
+func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) error {
+	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
+	if err != nil {
+		return fmt.Errorf("add constraints: %w", err)
+	}
 
-	opts := util.ClientOptionsFromCliContext(c.globalFlags)
 	configClient, err := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
 	if err != nil {
-		logger.Fatal(err)
+		return fmt.Errorf("add constraints: failed to create config client: %w", err)
 	}
 
 	eventClient, err := client.NewEventClient(c.globalFlags.ServerAddr, opts...)
 	if err != nil {
-		logger.Fatal(err)
+		return fmt.Errorf("add constraints: failed to create event client: %w", err)
 	}
 
 	fromViolatedPod := c.fromViolatedPod
@@ -77,14 +83,15 @@ func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) {
 
 	// validate required fields
 	if fromViolatedPod == "" && c.name == "" {
-		fmt.Println("Constraint name or from-violated-pod is required")
-		_ = cobraCmd.Help()
-		return
+		err := errors.New("either constraint name or from-violated-pod is required")
+		return fmt.Errorf("add constraints: %w", err)
 	}
 
 	if fromViolatedPod != "" {
-		constraint := c.buildConstraintFromViolatedPod(fromViolatedPod, eventClient, configClient, logger)
-
+		constraint, err := c.buildConstraintFromViolatedPod(fromViolatedPod, eventClient, configClient, c.logger)
+		if err != nil {
+			return fmt.Errorf("add constraints: %w", err)
+		}
 		if constraint != nil {
 			req = &tarianpb.AddConstraintRequest{
 				Constraint: constraint,
@@ -109,26 +116,27 @@ func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) {
 		if c.dryRun {
 			d, err := yaml.Marshal(req.GetConstraint())
 			if err != nil {
-				logger.Fatal(err)
+				return fmt.Errorf("add constraints: %w", err)
 			}
 
-			logger.Info(string(d))
+			c.logger.Info(string(d))
 		} else {
 			response, err := configClient.AddConstraint(context.Background(), req)
-
 			if err != nil {
-				logger.Fatal(err)
+				return fmt.Errorf("add constraints: failed to add constraints: %w", err)
 			}
 
 			if response.GetSuccess() {
-				logger.Info("Constraint was added successfully")
+				c.logger.Info("Constraint was added successfully")
 			} else {
-				logger.Fatal("failed to add Constraint")
+				err := errors.New("failed to add Constraint")
+				return fmt.Errorf("add constraints: %w", err)
 			}
 		}
 	} else {
-		logger.Info("No new constraint")
+		c.logger.Warn("No new constraint")
 	}
+	return nil
 }
 
 func matchLabelsFromString(strLabels []string) []*tarianpb.MatchLabel {
@@ -222,15 +230,14 @@ func collectEventTargetsByPodName(events []*tarianpb.Event, podName string) []*t
 	return targets
 }
 
-func (c *constraintsCommand) buildConstraintFromViolatedPod(podName string, eventClient tarianpb.EventClient, configClient tarianpb.ConfigClient, logger *zap.SugaredLogger) *tarianpb.Constraint {
+func (c *constraintsCommand) buildConstraintFromViolatedPod(podName string, eventClient tarianpb.EventClient, configClient tarianpb.ConfigClient, logger *logrus.Logger) (*tarianpb.Constraint, error) {
 	// Pull recent violations
 	// TODO: filter namespace
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	resp, err := eventClient.GetEvents(ctx, &tarianpb.GetEventsRequest{Limit: 1000})
 	cancel()
-
 	if err != nil {
-		logger.Fatal(err)
+		return nil, fmt.Errorf("add constraints: buildConstraintFromViolatedPod: %w", err)
 	}
 
 	targets := []*tarianpb.Target{}
@@ -239,7 +246,8 @@ func (c *constraintsCommand) buildConstraintFromViolatedPod(podName string, even
 	}
 
 	if len(targets) == 0 {
-		return nil
+		err := errors.New("zero target found")
+		return nil, fmt.Errorf("add constraints: buildConstraintFromViolatedPod: %w", err)
 	}
 
 	// build process rules
@@ -262,13 +270,14 @@ func (c *constraintsCommand) buildConstraintFromViolatedPod(podName string, even
 	}
 
 	if targets[0].GetPod() == nil {
-		return nil
+		err := errors.New("no pod found")
+		return nil, fmt.Errorf("add constraints: buildConstraintFromViolatedPod: %w", err)
 	}
 
 	labels := targets[0].GetPod().GetLabels()
-
 	if labels == nil {
-		return nil
+		err := errors.New("no labels found")
+		return nil, fmt.Errorf("add constraints: buildConstraintFromViolatedPod: %w", err)
 	}
 
 	ignoredLabel := "pod-template-hash"
@@ -291,7 +300,8 @@ func (c *constraintsCommand) buildConstraintFromViolatedPod(podName string, even
 	}
 
 	if len(allowedProcesses) == 0 && len(allowedFiles) == 0 {
-		return nil
+		err := errors.New("no allowed processes or files found")
+		return nil, fmt.Errorf("add constraints: buildConstraintFromViolatedPod: %w", err)
 	}
 
 	constraintName := c.name
@@ -310,7 +320,7 @@ func (c *constraintsCommand) buildConstraintFromViolatedPod(podName string, even
 		AllowedFiles:     allowedFiles,
 	}
 
-	return constraint
+	return constraint, nil
 }
 
 func deduplicateRules(allowedProcesses []*tarianpb.AllowedProcessRule, allowedFiles []*tarianpb.AllowedFileRule, constraints []*tarianpb.Constraint) ([]*tarianpb.AllowedProcessRule, []*tarianpb.AllowedFileRule) {

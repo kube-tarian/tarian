@@ -1,22 +1,24 @@
 package get
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/spf13/cobra"
 )
 
-// getCmd represents the get command
 func NewGetCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get resources from the Tarian Server.",
-		Long:  "Get resources from the Tarian Server.",
-		Run: func(cobraCmd *cobra.Command, args []string) {
-			fmt.Println("get called")
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				err := errors.New("no resource specified, use `tarianctl get --help` for command usage")
+				return fmt.Errorf("get: %w", err)
+			}
+			return nil
 		},
-		Args: cobra.MinimumNArgs(1),
 	}
 
 	// add subcommands

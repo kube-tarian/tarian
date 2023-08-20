@@ -2,6 +2,7 @@ package get
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -9,29 +10,34 @@ import (
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
-	"github.com/kube-tarian/tarian/pkg/logger"
+	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/olekukonko/tablewriter"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 type eventsCommand struct {
 	globalFlags *flags.GlobalFlags
-	limit       uint
+	logger      *logrus.Logger
+
+	limit uint
 }
 
 // eventsCmd represents the events command
 func newGetEventsCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &eventsCommand{
 		globalFlags: globalFlags,
+		logger:      log.GetLogger(),
 	}
+
 	eventsCmd := &cobra.Command{
 		Use:     "events",
 		Aliases: []string{"event", "e"},
 		Short:   "Get events from the Tarian Server.",
 		Example: `tarinactl get events`,
-		Run:     cmd.run,
+		RunE:    cmd.run,
 	}
 
 	// add flags
@@ -39,17 +45,20 @@ func newGetEventsCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return eventsCmd
 }
 
-func (c *eventsCommand) run(cmd *cobra.Command, args []string) {
-	logger := logger.GetLogger(c.globalFlags.LogLevel, c.globalFlags.LogEncoding)
-	util.SetLogger(logger)
+func (c *eventsCommand) run(cmd *cobra.Command, args []string) error {
+	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
+	if err != nil {
+		return fmt.Errorf("get events: %w", err)
+	}
 
-	opts := util.ClientOptionsFromCliContext(c.globalFlags)
-	client, _ := client.NewEventClient(c.globalFlags.ServerAddr, opts...)
+	client, err := client.NewEventClient(c.globalFlags.ServerAddr, opts...)
+	if err != nil {
+		return fmt.Errorf("get events: %w", err)
+	}
 
 	response, err := client.GetEvents(context.Background(), &tarianpb.GetEventsRequest{Limit: uint32(c.limit)})
-
 	if err != nil {
-		logger.Fatal(err)
+		return fmt.Errorf("get events: failed to get events: %w", err)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
@@ -96,6 +105,7 @@ func (c *eventsCommand) run(cmd *cobra.Command, args []string) {
 	}
 
 	table.Render()
+	return nil
 }
 
 func violatedProcessesToString(processes []*tarianpb.Process) string {
