@@ -6,6 +6,7 @@ import (
 	"github.com/gogo/status"
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 
 	"github.com/scylladb/go-set/strset"
@@ -15,14 +16,22 @@ type ConfigServer struct {
 	tarianpb.UnimplementedConfigServer
 	constraintStore store.ConstraintStore
 	actionStore     store.ActionStore
+	logger          *logrus.Logger
 }
 
-func NewConfigServer(constraintStore store.ConstraintStore, actionStore store.ActionStore) *ConfigServer {
-	return &ConfigServer{constraintStore: constraintStore, actionStore: actionStore}
+func NewConfigServer(logger *logrus.Logger, constraintStore store.ConstraintStore, actionStore store.ActionStore) *ConfigServer {
+	return &ConfigServer{
+		constraintStore: constraintStore,
+		actionStore:     actionStore,
+		logger:          logger,
+	}
 }
 
 func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
-	logger.Debugw("Received get config RPC", "namespace", request.GetNamespace(), "labels", request.GetLabels())
+	cs.logger.WithFields(logrus.Fields{
+		"namespace": request.GetNamespace(),
+		"labels":    request.GetLabels(),
+	}).Debug("Received get config RPC")
 
 	var constraints []*tarianpb.Constraint
 	var err error
@@ -62,7 +71,7 @@ func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.Ge
 	}
 
 	if err != nil {
-		logger.Errorw("error while handling get constraints RPC", "error", err)
+		cs.logger.WithError(err).Error("error while handling get constraints RPC")
 	}
 
 	return &tarianpb.GetConstraintsResponse{
@@ -85,7 +94,7 @@ func (cs *ConfigServer) AddConstraint(ctx context.Context, request *tarianpb.Add
 
 	exist, err := cs.constraintStore.NamespaceAndNameExist(request.GetConstraint().GetNamespace(), request.GetConstraint().GetName())
 	if err != nil {
-		logger.Errorw("error while handling add constraint RPC", "err", err)
+		cs.logger.WithError(err).Error("error while handling add constraint RPC")
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
@@ -95,7 +104,7 @@ func (cs *ConfigServer) AddConstraint(ctx context.Context, request *tarianpb.Add
 
 	err = cs.constraintStore.Add(request.GetConstraint())
 	if err != nil {
-		logger.Errorw("error while handling add constraint RPC", "err", err)
+		cs.logger.WithError(err).Error("error while handling add constraint RPC")
 		return &tarianpb.AddConstraintResponse{Success: false}, nil
 	}
 
@@ -109,7 +118,7 @@ func (cs *ConfigServer) RemoveConstraint(ctx context.Context, request *tarianpb.
 
 	exist, err := cs.constraintStore.NamespaceAndNameExist(request.GetNamespace(), request.GetName())
 	if err != nil {
-		logger.Errorw("error while handling remove constraint RPC", "err", err)
+		cs.logger.WithError(err).Error("error while handling remove constraint RPC")
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
@@ -119,7 +128,7 @@ func (cs *ConfigServer) RemoveConstraint(ctx context.Context, request *tarianpb.
 
 	err = cs.constraintStore.RemoveByNamespaceAndName(request.GetNamespace(), request.GetName())
 	if err != nil {
-		logger.Errorw("error while handling remove constraint RPC", "err", err)
+		cs.logger.WithError(err).Error("error while handling remove constraint RPC")
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
@@ -139,11 +148,11 @@ func (cs *ConfigServer) AddAction(ctx context.Context, request *tarianpb.AddActi
 		return nil, status.Error(codes.InvalidArgument, "required field is empty: name")
 	}
 
-	logger.Infow("add action", "request", request)
+	cs.logger.WithField("request", request).Info("Received add action RPC")
 
 	exist, err := cs.actionStore.NamespaceAndNameExist(request.GetAction().GetNamespace(), request.GetAction().GetName())
 	if err != nil {
-		logger.Errorw("error while handling add action RPC", "err", err)
+		cs.logger.WithError(err).Error("error while handling add action RPC")
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
@@ -153,7 +162,7 @@ func (cs *ConfigServer) AddAction(ctx context.Context, request *tarianpb.AddActi
 
 	err = cs.actionStore.Add(request.GetAction())
 	if err != nil {
-		logger.Errorw("error while handling add action RPC", "err", err)
+		cs.logger.WithError(err).Error("error while handling add action RPC")
 		return &tarianpb.AddActionResponse{Success: false}, nil
 	}
 
@@ -161,7 +170,10 @@ func (cs *ConfigServer) AddAction(ctx context.Context, request *tarianpb.AddActi
 }
 
 func (cs *ConfigServer) GetActions(ctx context.Context, request *tarianpb.GetActionsRequest) (*tarianpb.GetActionsResponse, error) {
-	logger.Debugw("Received get actions RPC", "namespace", request.GetNamespace(), "labels", request.GetLabels())
+	cs.logger.WithFields(logrus.Fields{
+		"namespace": request.GetNamespace(),
+		"labels":    request.GetLabels(),
+	}).Debug("Received get actions RPC")
 
 	var actions []*tarianpb.Action
 	var err error
@@ -201,7 +213,7 @@ func (cs *ConfigServer) GetActions(ctx context.Context, request *tarianpb.GetAct
 	}
 
 	if err != nil {
-		logger.Errorw("error while handling get actions RPC", "error", err)
+		cs.logger.WithError(err).Error("error while handling get actions RPC")
 	}
 
 	return &tarianpb.GetActionsResponse{
@@ -216,7 +228,7 @@ func (cs *ConfigServer) RemoveAction(ctx context.Context, request *tarianpb.Remo
 
 	exist, err := cs.actionStore.NamespaceAndNameExist(request.GetNamespace(), request.GetName())
 	if err != nil {
-		logger.Errorw("error while handling remove action RPC", "err", err)
+		cs.logger.WithError(err).Error("error while handling remove action RPC")
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
@@ -226,7 +238,7 @@ func (cs *ConfigServer) RemoveAction(ctx context.Context, request *tarianpb.Remo
 
 	err = cs.actionStore.RemoveByNamespaceAndName(request.GetNamespace(), request.GetName())
 	if err != nil {
-		logger.Errorw("error while handling remove action RPC", "err", err)
+		cs.logger.WithError(err).Error("error while handling remove action RPC")
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
