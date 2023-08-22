@@ -7,6 +7,7 @@ import (
 	"github.com/kube-tarian/tarian/pkg/protoqueue"
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 )
 
@@ -14,14 +15,21 @@ type EventServer struct {
 	tarianpb.UnimplementedEventServer
 	eventStore     store.EventStore
 	ingestionQueue protoqueue.QueuePublisher
+	logger         *logrus.Logger
 }
 
-func NewEventServer(s store.EventStore, ingestionQueue protoqueue.QueuePublisher) *EventServer {
-	return &EventServer{eventStore: s, ingestionQueue: ingestionQueue}
+func NewEventServer(logger *logrus.Logger, s store.EventStore, ingestionQueue protoqueue.QueuePublisher) *EventServer {
+	return &EventServer{
+		eventStore:     s,
+		ingestionQueue: ingestionQueue,
+		logger:         logger,
+	}
 }
 
 func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.IngestEventRequest) (*tarianpb.IngestEventResponse, error) {
-	logger.Debugw("ingest event", "request", request)
+	es.logger.WithFields(logrus.Fields{
+		"request": request,
+	}).Debug("ingest event")
 
 	event := request.GetEvent()
 	if event == nil {
@@ -31,7 +39,7 @@ func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.Ingest
 	err := es.ingestionQueue.Publish(request.GetEvent())
 
 	if err != nil {
-		logger.Errorw("error while handling ingest event", "err", err)
+		es.logger.WithError(err).Error("error while handling ingest event")
 		return nil, status.Error(codes.Internal, "internal server error")
 	}
 
@@ -56,7 +64,7 @@ func (es *EventServer) GetEvents(ctxt context.Context, request *tarianpb.GetEven
 	}
 
 	if err != nil {
-		logger.Errorw("error while handling get events RPC", "err", err)
+		es.logger.WithError(err).Error("error while handling get events RPC")
 	}
 
 	return &tarianpb.GetEventsResponse{

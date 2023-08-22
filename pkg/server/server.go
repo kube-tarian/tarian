@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/url"
 	"time"
@@ -10,28 +11,12 @@ import (
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/nats-io/nats.go"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/sethvargo/go-retry"
 )
-
-var logger *zap.SugaredLogger
-
-func init() {
-	l, err := zap.NewProduction()
-
-	if err != nil {
-		panic("Can not create logger")
-	}
-
-	logger = l.Sugar()
-}
-
-func SetLogger(l *zap.SugaredLogger) {
-	logger = l
-}
 
 type Server struct {
 	GrpcServer      *grpc.Server
@@ -44,9 +29,10 @@ type Server struct {
 	cancelFunc context.CancelFunc
 
 	eventStore store.EventStore
+	logger     *logrus.Logger
 }
 
-func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, natsURL string, natsOptions []nats.Option, natsStreamConfig nats.StreamConfig) (*Server, error) {
+func NewServer(logger *logrus.Logger, storeSet store.StoreSet, certFile string, privateKeyFile string, natsURL string, natsOptions []nats.Option, natsStreamConfig nats.StreamConfig) (*Server, error) {
 	opts := []grpc.ServerOption{}
 	if certFile != "" && privateKeyFile != "" {
 		creds, _ := credentials.NewServerTLSFromFile(certFile, privateKeyFile)
@@ -63,13 +49,13 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, 
 		queuePublisher = channelQueue
 		queueSubscriber = channelQueue
 	} else {
-		jetstreamQueue, err := protoqueue.NewJetstream(natsURL, natsOptions, natsStreamConfig.Name)
+		jetstreamQueue, err := protoqueue.NewJetstream(logger, natsURL, natsOptions, natsStreamConfig.Name)
 
 		if err == nil {
 			queuePublisher = jetstreamQueue
 			queueSubscriber = jetstreamQueue
 		} else {
-			logger.Errorw("failed to create Jetstream queue", "err", err)
+			logger.WithError(err).Error("failed to create Jetstream queue")
 		}
 
 		ctx := context.Background()
@@ -78,7 +64,13 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, 
 		err = retry.Do(ctx, backoffConnect, func(ctx context.Context) error {
 			err = jetstreamQueue.Connect()
 			if err != nil {
-				logger.Warnw("failed to connect to NATS, retrying...", "err", err)
+				logger.Errorf("failed to connect to NATS: %s", err)
+				logger.Info("retrying to connect to NATS.......")
+				logger.WithFields(logrus.Fields{
+					"natsURL": natsURL,
+					"error":   err,
+				}).Warn("retrying to connect to NATS.......")
+				err = fmt.Errorf("NewServer: %w", err)
 				return retry.RetryableError(err)
 			}
 
@@ -86,7 +78,7 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, 
 		})
 
 		if err != nil {
-			logger.Errorw("failed to connect to NATS, giving up after retrying", "err", err)
+			logger.WithError(err).Error("failed to connect to NATS")
 			return nil, err
 		}
 
@@ -95,21 +87,26 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, 
 		err = retry.Do(ctx, backoffInit, func(ctx context.Context) error {
 			err = jetstreamQueue.Init(natsStreamConfig)
 			if err != nil {
-				logger.Warnw("failed to init stream, retrying...", "err", err)
+				logger.WithFields(logrus.Fields{
+					"natsURL": natsURL,
+					"error":   err,
+				}).Warn("retrying to connect to NATS.......")
+				err = fmt.Errorf("NewServer: %w", err)
 				return retry.RetryableError(err)
 			}
 
 			return nil
 		})
 		if err != nil {
-			logger.Errorw("failed to init stream and subscription, giving up after retrying", "err", err)
+			logger.WithError(err).Error("failed to init stream and subscription")
+			err = fmt.Errorf("NewServer: %w", err)
 			return nil, err
 		}
 	}
 
-	configServer := NewConfigServer(storeSet.ConstraintStore, storeSet.ActionStore)
-	eventServer := NewEventServer(storeSet.EventStore, queuePublisher)
-	ingestionWorker := NewIngestionWorker(storeSet.EventStore, queueSubscriber)
+	configServer := NewConfigServer(logger, storeSet.ConstraintStore, storeSet.ActionStore)
+	eventServer := NewEventServer(logger, storeSet.EventStore, queuePublisher)
+	ingestionWorker := NewIngestionWorker(logger, storeSet.EventStore, queueSubscriber)
 
 	tarianpb.RegisterConfigServer(grpcServer, configServer)
 	tarianpb.RegisterEventServer(grpcServer, eventServer)
@@ -124,6 +121,7 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, 
 		cancelCtx:       cancelCtx,
 		cancelFunc:      cancelFunc,
 		eventStore:      storeSet.EventStore,
+		logger:          logger,
 	}
 
 	return server, nil
@@ -132,24 +130,22 @@ func NewServer(storeSet store.StoreSet, certFile string, privateKeyFile string, 
 func (s *Server) Start(grpcListenAddress string) error {
 	listener, err := net.Listen("tcp", grpcListenAddress)
 	if err != nil {
-		logger.Errorw("failed to listen", "err", err)
-		return err
+		return fmt.Errorf("server start: failed to listen: %w", err)
 	}
 
-	logger.Infow("tarian-server is listening at", "address", listener.Addr())
+	s.logger.WithField("address", listener.Addr()).Info("tarian-server is listening")
 
 	go s.IngestionWorker.Start()
 
 	if err := s.GrpcServer.Serve(listener); err != nil {
-		logger.Errorw("failed to serve", "err", err)
-		return err
+		return fmt.Errorf("server start: failed to serve: %w", err)
 	}
 
 	return nil
 }
 
 func (s *Server) WithAlertDispatcher(alertManagerAddress *url.URL, alertEvaluationInterval time.Duration) *Server {
-	s.AlertDispatcher = NewAlertDispatcher(alertManagerAddress, alertEvaluationInterval)
+	s.AlertDispatcher = NewAlertDispatcher(s.logger, alertManagerAddress, alertEvaluationInterval)
 
 	return s
 }
