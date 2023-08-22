@@ -9,6 +9,7 @@ import (
 
 	"github.com/dgraph-io/dgo/v210"
 	"github.com/kube-tarian/tarian/pkg/clusteragent"
+	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/podagent"
 	"github.com/kube-tarian/tarian/pkg/server"
 	"github.com/kube-tarian/tarian/pkg/server/dgraphstore"
@@ -52,7 +53,7 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
 	storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
 
-	srv, err := server.NewServer(storeSet, "", "", "", []nats.Option{}, nats.StreamConfig{})
+	srv, err := server.NewServer(log.GetLogger(), storeSet, "", "", "", []nats.Option{}, nats.StreamConfig{})
 	grpcServer := srv.GrpcServer
 	require.Nil(t, err)
 

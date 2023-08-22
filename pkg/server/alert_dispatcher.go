@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/alertmanager/api/v2/client"
 	"github.com/prometheus/alertmanager/api/v2/client/alert"
 	"github.com/prometheus/alertmanager/api/v2/models"
+	"github.com/sirupsen/logrus"
 
 	clientruntime "github.com/go-openapi/runtime/client"
 )
@@ -25,13 +26,17 @@ const (
 type AlertDispatcher struct {
 	amClient                *client.Alertmanager
 	alertEvaluationInterval time.Duration
+
+	logger *logrus.Logger
 }
 
-func NewAlertDispatcher(amURL *url.URL, alertEvaluationInterval time.Duration) *AlertDispatcher {
+func NewAlertDispatcher(logger *logrus.Logger, amURL *url.URL, alertEvaluationInterval time.Duration) *AlertDispatcher {
 	amClient := NewAlertmanagerClient(amURL)
 
 	return &AlertDispatcher{
-		amClient, alertEvaluationInterval,
+		amClient:                amClient,
+		alertEvaluationInterval: alertEvaluationInterval,
+		logger:                  logger,
 	}
 }
 
@@ -51,7 +56,7 @@ func (a *AlertDispatcher) LoopSendAlerts(ctx context.Context, es store.EventStor
 		events, err := es.FindWhereAlertNotSent()
 
 		if err != nil {
-			logger.Errorw("alertdispatcher: error while finding events to alert", "err", err)
+			a.logger.WithError(err).Error("alertdispatcher: error while finding events to alert")
 		}
 
 		for _, event := range events {
@@ -59,7 +64,10 @@ func (a *AlertDispatcher) LoopSendAlerts(ctx context.Context, es store.EventStor
 				err := a.SendAlert(event)
 
 				if err == nil {
-					es.UpdateAlertSent(event.GetUid())
+					err = es.UpdateAlertSent(event.GetUid())
+					if err != nil {
+						a.logger.WithError(err).Warn("alertdispatcher: error while updating alert sent")
+					}
 				}
 			}
 		}
@@ -107,9 +115,9 @@ func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) error {
 		status, err := a.amClient.Alert.PostAlerts(alertParams)
 
 		if err != nil {
-			logger.Errorw("error while sending alerts", "err", err)
+			a.logger.Error("error while sending alerts: ", err)
 		} else {
-			logger.Infow("alerts sent to alertmanager", "result", status.Error())
+			a.logger.WithField("result", status.Error()).Info("alerts sent to alertmanager")
 		}
 
 		return err

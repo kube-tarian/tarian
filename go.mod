@@ -96,6 +96,12 @@ require (
 	github.com/spf13/cobra v1.7.0
 )
 
+require (
+	github.com/mattn/go-colorable v0.1.12 // indirect
+	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mattn/go-runewidth v0.0.9 // indirect
+)
+
 require github.com/mattn/go-runewidth v0.0.9 // indirect
 
 require (
@@ -104,6 +110,8 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
+	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
