@@ -16,7 +16,7 @@ require (
 	go.uber.org/zap v1.24.0
 	google.golang.org/grpc v1.52.3
 	google.golang.org/protobuf v1.28.1
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v0.26.1
@@ -92,26 +92,19 @@ require (
 	github.com/dgraph-io/dgo/v210 v210.0.0-20220113041351-ba0e5dfc4c3e
 	github.com/nats-io/nats.go v1.22.1
 	github.com/sethvargo/go-retry v0.2.4
-	github.com/sirupsen/logrus v1.9.2
+	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0
 )
 
-require (
-	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/mattn/go-runewidth v0.0.9 // indirect
-)
-
 require github.com/mattn/go-runewidth v0.0.9 // indirect
+
+require github.com/inconshreveable/mousetrap v1.1.0 // indirect
 
 require (
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
-	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
-	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect

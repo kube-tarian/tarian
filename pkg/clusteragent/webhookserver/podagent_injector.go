@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -18,7 +18,7 @@ type PodAgentInjector struct {
 	Client  client.Client
 	decoder *admission.Decoder
 	config  PodAgentContainerConfig
-	logger  *zap.SugaredLogger
+	logger  *logrus.Logger
 }
 
 type PodAgentContainerConfig struct {
@@ -38,18 +38,18 @@ const (
 
 // podAnnotator adds an annotation to every incoming pods.
 func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) admission.Response {
-	p.logger.Debugw("handling a webhook request")
+	p.logger.Debug("handling a webhook request")
 
 	pod := &corev1.Pod{}
 
 	err := p.decoder.Decode(req, pod)
 	if err != nil {
-		p.logger.Errorw("error while decoding webhook request payload", "err", err)
+		p.logger.WithError(err).Error("error while decoding webhook request payload")
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
 	if pod.Annotations == nil {
-		p.logger.Debugw("not injecting container because no annotation is found", "pod_name", pod.GetObjectMeta().GetName())
+		p.logger.WithField("pod_name", pod.GetObjectMeta().GetName()).Debug("not injecting container because no annotation found")
 		return admission.Allowed("no annotation found")
 	}
 
@@ -58,7 +58,7 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 	registerFileIgnorePathsAnnotationValue, registerFileIgnorePathsAnnotationPresent := pod.Annotations[RegisterFileIgnorePathsAnnotation]
 
 	if !threatScanAnnotationPresent && !registerAnnotationPresent {
-		p.logger.Debugw("not injecting container because no tarian annotation is found", "pod_name", pod.GetObjectMeta().GetName())
+		p.logger.WithField("pod_name", pod.GetObjectMeta().GetName()).Debug("not injecting container because no tarian annotation found")
 		return admission.Allowed("annotation " + ThreatScanAnnotation + " or " + RegisterAnnotation + " not found")
 	}
 
@@ -89,7 +89,7 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 	}
 
 	podAgentArgs := []string{
-		"--log-encoding=" + p.config.LogEncoding,
+		"--log-formatter=" + p.config.LogEncoding,
 		podAgentCommand,
 		"--host=" + p.config.Host,
 		"--port=" + p.config.Port,
@@ -168,11 +168,14 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 
 	marshaledPod, err := json.Marshal(pod)
 	if err != nil {
-		p.logger.Errorw("error while marshalling pod into json", "pod_name", pod.GetObjectMeta().GetName(), "err", err)
+		p.logger.WithFields(logrus.Fields{
+			"pod_name": pod.GetObjectMeta().GetName(),
+			"err":      err,
+		}).Error("error while marshalling pod into json")
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	p.logger.Infow("responding webhook with a sidecar container", "pod_name", pod.GetObjectMeta().GetName())
+	p.logger.WithField("pod_name", pod.GetObjectMeta().GetName()).Debug("responding webhook with a sidecar container")
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledPod)
 }
 

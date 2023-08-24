@@ -107,7 +107,7 @@ $(NODEAGENT_EBPF_DIR)/capture_exec.bpf.o: vmlinuxh libbpfgo-static ## Build eBPF
 ##@ Development
 
 generate: bin/controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/clusteragent/..."
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/clusteragent/..." -w
 
 fmt: ## Run go fmt against code.
 	go fmt ./...

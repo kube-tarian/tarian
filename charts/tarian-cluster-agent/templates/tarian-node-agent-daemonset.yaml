@@ -16,7 +16,7 @@ spec:
       - name: tarian-node-agent
         image: "{{ .Values.nodeAgent.image.name }}:{{ .Values.nodeAgent.image.tag | default .Chart.AppVersion }}"
         args:
-        - "--log-encoding={{ .Values.nodeAgent.log.encoding }}"
+        - "--log-formatter={{ .Values.nodeAgent.log.encoding }}"
         - "--log-level={{ .Values.nodeAgent.log.level }}"
         - run
         - --cluster-agent-host={{ .Release.Name }}.{{ .Release.Namespace }}.svc
