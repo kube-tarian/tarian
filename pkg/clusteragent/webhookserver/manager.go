@@ -1,10 +1,10 @@
 package webhookserver
 
 import (
-	"os"
+	"fmt"
 
 	"github.com/open-policy-agent/cert-controller/pkg/rotator"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -16,8 +16,7 @@ import (
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme = runtime.NewScheme()
 )
 
 const (
@@ -33,7 +32,7 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
-func NewManager(port int, healthProbeBindAddress string, leaderElection bool) manager.Manager {
+func NewManager(logger *logrus.Logger, port int, healthProbeBindAddress string, leaderElection bool) (manager.Manager, error) {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     "0",
@@ -43,26 +42,26 @@ func NewManager(port int, healthProbeBindAddress string, leaderElection bool) ma
 		LeaderElectionID:       leaderElectionID,
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		logger.WithError(err).Error("unable to start manager")
+		return nil, fmt.Errorf("NewManager: unable to start manager: %w", err)
 	}
 
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
+		logger.WithError(err).Error("unable to set up health check")
+		return nil, fmt.Errorf("NewManager: unable to set up health check: %w", err)
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
+		logger.WithError(err).Error("unable to set up ready check")
+		return nil, fmt.Errorf("NewManager: unable to set up ready check: %w", err)
 	}
 
-	return mgr
+	return mgr, nil
 
 }
 
-func RegisterControllers(mgr manager.Manager, cfg PodAgentContainerConfig, logger *zap.SugaredLogger) {
+func RegisterControllers(logger *logrus.Logger, mgr manager.Manager, cfg PodAgentContainerConfig) {
 	mgr.GetWebhookServer().Register(
 		"/inject-pod-agent",
 		&webhook.Admission{
@@ -75,7 +74,8 @@ func RegisterControllers(mgr manager.Manager, cfg PodAgentContainerConfig, logge
 	)
 }
 
-func RegisterCertRotator(mgr manager.Manager, isReady chan struct{}, namespace string, mutatingWebhookConfigurationName string, secretName string) {
+func RegisterCertRotator(logger *logrus.Logger, mgr manager.Manager, isReady chan struct{},
+	namespace string, mutatingWebhookConfigurationName string, secretName string) error {
 	dnsName := "*." + namespace + ".svc"
 	certDir := "/tmp/k8s-webhook-server/serving-certs"
 
@@ -86,7 +86,7 @@ func RegisterCertRotator(mgr manager.Manager, isReady chan struct{}, namespace s
 		},
 	}
 
-	setupLog.Info("setting up cert rotation")
+	logger.Info("setting up cert rotation")
 	if err := rotator.AddRotator(mgr, &rotator.CertRotator{
 		SecretKey: types.NamespacedName{
 			Namespace: namespace,
@@ -99,7 +99,8 @@ func RegisterCertRotator(mgr manager.Manager, isReady chan struct{}, namespace s
 		IsReady:        isReady,
 		Webhooks:       webhooks,
 	}); err != nil {
-		setupLog.Error(err, "unable to set up cert rotation")
-		os.Exit(1)
+		logger.WithError(err).Error("unable to set up cert rotation")
+		return fmt.Errorf("RegisterCertRotator: unable to set up cert rotation: %w", err)
 	}
+	return nil
 }

@@ -21,7 +21,7 @@ spec:
       - name: manager
         image: "{{ .Values.clusterAgent.image.name }}:{{ .Values.clusterAgent.image.tag | default .Chart.AppVersion }}"
         args:
-        - "--log-encoding={{ .Values.clusterAgent.log.encoding }}"
+        - "--log-formatter={{ .Values.clusterAgent.log.encoding }}"
         - "--log-level={{ .Values.clusterAgent.log.level }}"
         - run-webhook-server
         - "--cert-rotator-secret-name={{ $name }}-cert"

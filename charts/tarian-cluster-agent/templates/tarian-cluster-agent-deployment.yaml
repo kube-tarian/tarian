@@ -16,7 +16,7 @@ spec:
       - name: tarian-cluster-agent
         image: "{{ .Values.clusterAgent.image.name }}:{{ .Values.clusterAgent.image.tag | default .Chart.AppVersion }}"
         args:
-        - "--log-encoding={{ .Values.clusterAgent.log.encoding }}"
+        - "--log-formatter={{ .Values.clusterAgent.log.encoding }}"
         - "--log-level={{ .Values.clusterAgent.log.level }}"
         - run
         - "--server-address={{ .Values.clusterAgent.serverAddress}}"

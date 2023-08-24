@@ -2,30 +2,15 @@ package clusteragent
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/gogo/status"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
-
-var logger *zap.SugaredLogger
-
-func init() {
-	l, err := zap.NewProduction()
-
-	if err != nil {
-		panic("Can not create logger")
-	}
-
-	logger = l.Sugar()
-}
-
-func SetLogger(l *zap.SugaredLogger) {
-	logger = l
-}
 
 type ConfigServer struct {
 	tarianpb.UnimplementedConfigServer
@@ -34,19 +19,26 @@ type ConfigServer struct {
 	configClient tarianpb.ConfigClient
 
 	enableAddConstraint bool
+
+	logger *logrus.Logger
 }
 
-func NewConfigServer(tarianServerAddress string, opts []grpc.DialOption) *ConfigServer {
-	logger.Infow("connecting to the tarian server", "address", tarianServerAddress)
-	grpcConn, err := grpc.Dial(tarianServerAddress, opts...)
+func NewConfigServer(logger *logrus.Logger, tarianServerAddress string, opts []grpc.DialOption) (*ConfigServer, error) {
+	logger.WithField("address", tarianServerAddress).Info("connecting to the tarian server")
 
+	grpcConn, err := grpc.Dial(tarianServerAddress, opts...)
 	if err != nil {
-		logger.Fatalw("couldn't not connect to tarian-server", "err", err)
+		logger.WithError(err).Error("couldn't not connect to tarian-server")
+		return nil, fmt.Errorf("NewConfigServer: couldn't not connect to tarian-server: %w", err)
 	}
 
 	logger.Info("connected to the tarian server")
 
-	return &ConfigServer{grpcConn: grpcConn, configClient: tarianpb.NewConfigClient(grpcConn)}
+	return &ConfigServer{
+		grpcConn:     grpcConn,
+		configClient: tarianpb.NewConfigClient(grpcConn),
+		logger:       logger,
+	}, nil
 }
 
 func (cs *ConfigServer) EnableAddConstraint(value bool) {
@@ -54,7 +46,7 @@ func (cs *ConfigServer) EnableAddConstraint(value bool) {
 }
 
 func (cs *ConfigServer) GetConstraints(reqCtx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
-	logger.Debug("Received get config RPC")
+	cs.logger.Debug("Received get config RPC")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -66,20 +58,21 @@ func (cs *ConfigServer) GetConstraints(reqCtx context.Context, request *tarianpb
 
 func (cs *ConfigServer) AddConstraint(reqCtx context.Context, request *tarianpb.AddConstraintRequest) (*tarianpb.AddConstraintResponse, error) {
 	if !cs.enableAddConstraint {
-		return nil, status.Errorf(codes.Unimplemented, "Method AddConstraint is disabled in tarian-cluster-agent")
+		err := status.Errorf(codes.Unimplemented, "Method AddConstraint is disabled in tarian-cluster-agent")
+		return nil, fmt.Errorf("AddConstraint: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	r, err := cs.configClient.AddConstraint(ctx, request)
-
-	return r, err
+	return r, fmt.Errorf("AddConstraint: %w", err)
 }
 
 func (cs *ConfigServer) RemoveConstraint(reqCtx context.Context, request *tarianpb.RemoveConstraintRequest) (*tarianpb.RemoveConstraintResponse, error) {
 	if !cs.enableAddConstraint {
-		return nil, status.Errorf(codes.Unimplemented, "Method RemoveConstraint is not supported in tarian-cluster-agent, send it to tarian-server instead.")
+		err := status.Errorf(codes.Unimplemented, "Method RemoveConstraint is not supported in tarian-cluster-agent, send it to tarian-server instead.")
+		return nil, fmt.Errorf("RemoveConstraint: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -87,7 +80,7 @@ func (cs *ConfigServer) RemoveConstraint(reqCtx context.Context, request *tarian
 
 	r, err := cs.configClient.RemoveConstraint(ctx, request)
 
-	return r, err
+	return r, fmt.Errorf("RemoveConstraint: %w", err)
 }
 
 func (cs *ConfigServer) Close() {
@@ -105,17 +98,20 @@ type EventServer struct {
 	cancelCtx  context.Context
 
 	actionHandler *actionHandler
+	logger        *logrus.Logger
 }
 
-func NewEventServer(tarianServerAddress string, opts []grpc.DialOption, actionHandler *actionHandler) *EventServer {
-	logger.Infow("connecting to the tarian server", "address", tarianServerAddress)
-	grpcConn, err := grpc.Dial(tarianServerAddress, opts...)
+func NewEventServer(logger *logrus.Logger, tarianServerAddress string, opts []grpc.DialOption, actionHandler *actionHandler) (*EventServer, error) {
+	logger.WithField("address", tarianServerAddress).Info("connecting to the tarian server")
 
+	grpcConn, err := grpc.Dial(tarianServerAddress, opts...)
 	if err != nil {
-		logger.Fatalw("couldn't not connect to tarian-server", "err", err)
+		logger.WithError(err).Error("couldn't not connect to tarian-server")
+		return nil, fmt.Errorf("NewEventServer: couldn't not connect to tarian-server: %w", err)
 	}
 
 	logger.Info("connected to the tarian server")
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &EventServer{
@@ -124,11 +120,12 @@ func NewEventServer(tarianServerAddress string, opts []grpc.DialOption, actionHa
 		eventClient:  tarianpb.NewEventClient(grpcConn),
 		cancelFunc:   cancel, cancelCtx: ctx,
 		actionHandler: actionHandler,
-	}
+		logger:        logger,
+	}, nil
 }
 
 func (es *EventServer) IngestEvent(requestContext context.Context, request *tarianpb.IngestEventRequest) (*tarianpb.IngestEventResponse, error) {
-	logger.Debug("Received ingest violation event RPC")
+	es.logger.Debug("Received ingest violation event RPC")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -136,7 +133,7 @@ func (es *EventServer) IngestEvent(requestContext context.Context, request *tari
 	r, err := es.eventClient.IngestEvent(ctx, request)
 	es.actionHandler.QueueEvent(request.GetEvent())
 
-	return r, err
+	return r, fmt.Errorf("IngestEvent: %w", err)
 }
 
 func (es *EventServer) Close() {

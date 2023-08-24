@@ -17,6 +17,7 @@ import (
 	"github.com/kube-tarian/tarian/pkg/stringutil"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/scylladb/go-set/strset"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	v1 "k8s.io/api/core/v1"
@@ -36,21 +37,25 @@ type FalcoSidekickListener struct {
 	eventClient  tarianpb.EventClient
 
 	actionHandler *actionHandler
+
+	logger *logrus.Logger
 }
 
 func NewFalcoSidekickListener(
+	logger *logrus.Logger,
 	addr string,
 	tarianServerAddress string,
 	opts []grpc.DialOption,
 	informers informers.SharedInformerFactory,
 	configCache *ConfigCache,
-	actionHandler *actionHandler) *FalcoSidekickListener {
+	actionHandler *actionHandler) (*FalcoSidekickListener, error) {
 	mux := http.NewServeMux()
 	server := &http.Server{Addr: addr, Handler: mux}
 
 	grpcConn, err := grpc.Dial(tarianServerAddress, opts...)
 	if err != nil {
-		logger.Fatalw("couldn't not connect to tarian-server", "err", err)
+		logger.WithError(err).Error("couldn't not connect to tarian-server")
+		return nil, fmt.Errorf("NewFalcoSidekickListener: couldn't not connect to tarian-server: %w", err)
 	}
 
 	f := &FalcoSidekickListener{
@@ -65,19 +70,17 @@ func NewFalcoSidekickListener(
 
 	mux.HandleFunc("/", f.handleFalcoAlert)
 
-	return f
+	return f, nil
 }
 
 func (f *FalcoSidekickListener) handleFalcoAlert(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		http.Error(w, "Request body can not be empty", http.StatusBadRequest)
-
 		return
 	}
 
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST http method is supported", http.StatusBadRequest)
-
 		return
 	}
 
@@ -85,16 +88,21 @@ func (f *FalcoSidekickListener) handleFalcoAlert(w http.ResponseWriter, r *http.
 	falcopayload, err := newFalcoPayload(bytes.NewBuffer(body))
 
 	if err != nil {
-		logger.Errorw("error while decoding falco payload", "err", err)
+		f.logger.WithError(err).Error("error while decoding falco payload")
 		http.Error(w, "Error encountered while decoding falco payload", http.StatusBadRequest)
-
 		return
 	}
 
-	f.processFalcoPayload(&falcopayload)
+	err = f.processFalcoPayload(&falcopayload)
+	if err != nil {
+		f.logger.WithError(err).Error("error while processing falco payload")
+	}
 
 	w.WriteHeader(200)
-	w.Write([]byte("OK"))
+	_, err = w.Write([]byte("OK"))
+	if err != nil {
+		f.logger.WithError(err).Error("error while writing response")
+	}
 }
 
 // sanitizeK8sResourceName sanitizes input from falco for additional security and satisfies codeql analysis:
@@ -108,7 +116,8 @@ func sanitizeK8sResourceName(str string) string {
 func (f *FalcoSidekickListener) processFalcoPayload(payload *types.FalcoPayload) error {
 	if payload.Rule == tarianRuleSpawnedProcess {
 		if !f.configCache.IsConstraintInitialized() {
-			logger.Infow("can not validate process because constraint is not yet initialized")
+			f.logger.WithField("payload", payload).
+				Info("can not validate process because constraint is not yet initialized")
 			return nil
 		}
 
@@ -120,8 +129,11 @@ func (f *FalcoSidekickListener) processFalcoPayload(payload *types.FalcoPayload)
 		k8sPod, err := f.informers.Core().V1().Pods().Lister().Pods(k8sNsName).Get(k8sPodName)
 
 		if err != nil {
-			logger.Errorw("error while getting pod by name and namespace", "err", err, "name",
-				sanitizeK8sResourceName(k8sPodName), "namespace", sanitizeK8sResourceName(k8sNsName))
+			f.logger.WithFields(logrus.Fields{
+				"pod_name":  sanitizeK8sResourceName(k8sPodName),
+				"namespace": sanitizeK8sResourceName(k8sNsName),
+				"error":     err,
+			}).Error("error while getting pod by name and namespace")
 			return nil
 		}
 
@@ -170,8 +182,11 @@ func (f *FalcoSidekickListener) processFalcoPayload(payload *types.FalcoPayload)
 		k8sPod, err := f.informers.Core().V1().Pods().Lister().Pods(k8sNsName).Get(k8sPodName)
 
 		if err != nil {
-			logger.Errorw("error while getting pod by name and namespace", "err", err,
-				"name", sanitizeK8sResourceName(k8sPodName), "namespace", sanitizeK8sResourceName(k8sNsName))
+			f.logger.WithFields(logrus.Fields{
+				"pod_name":  sanitizeK8sResourceName(k8sPodName),
+				"namespace": sanitizeK8sResourceName(k8sNsName),
+				"error":     err,
+			}).Error("error while getting pod by name and namespace")
 			return nil
 		}
 
@@ -192,7 +207,7 @@ func newFalcoPayload(payload io.Reader) (types.FalcoPayload, error) {
 
 	err := d.Decode(&falcopayload)
 	if err != nil {
-		return types.FalcoPayload{}, err
+		return types.FalcoPayload{}, fmt.Errorf("newFalcoPayload: %w", err)
 	}
 
 	return falcopayload, nil
@@ -238,11 +253,11 @@ func (f *FalcoSidekickListener) validateProcessAgainstConstraints(processName st
 			rgx, err := regexp.Compile(allowedProcess.GetRegex())
 
 			if err != nil {
-				logger.Errorw("can not compile regex", "err", err)
+				f.logger.WithError(err).Error("can not compile regex")
 				continue
 			}
 
-			logger.Debugw("looking for running processes that violate regex", "expr", rgx.String())
+			f.logger.WithField("expr", rgx.String()).Debug("checking process name against regex")
 
 			if rgx.MatchString(processName) {
 				return true
@@ -279,9 +294,9 @@ func (f *FalcoSidekickListener) registerConstraintFromTarianRuleSpawnedProcessAl
 	response, err := f.configClient.AddConstraint(context.Background(), req)
 
 	if err != nil {
-		logger.Errorw("error while registering process constraint", "err", err)
+		f.logger.WithError(err).Error("error while registering process constraint")
 	} else {
-		logger.Debugw("add constraint response", "response", response)
+		f.logger.WithField("response", response).Info("registered process constraint")
 	}
 }
 
@@ -310,7 +325,10 @@ func (f *FalcoSidekickListener) ingestEventFromTarianRuleSpawnedProcessAlert(pay
 	if err != nil {
 		procPid := fmt.Sprintf("%s", outputFields["proc.pid"])
 		procPid = strings.Replace(procPid, "\n", "", -1)
-		logger.Warnw("expected proc.pid to be int value, but got non-int", "proc.pid", procPid, "err", err)
+		f.logger.WithFields(logrus.Fields{
+			"proc.pid": procPid,
+			"err":      err,
+		}).Warn("expected proc.pid to be int value, but got non-int")
 	}
 	violatedProcesses[0] = &tarianpb.Process{Pid: int32(pid), Name: fmt.Sprintf("%s", outputFields["proc.name"])}
 
@@ -334,9 +352,9 @@ func (f *FalcoSidekickListener) ingestEventFromTarianRuleSpawnedProcessAlert(pay
 	defer cancel()
 
 	if err != nil {
-		logger.Errorw("error while reporting falco spawned process", "err", err)
+		f.logger.WithError(err).Error("error while reporting falco spawned process")
 	} else {
-		logger.Debugw("ingest event response", "response", response)
+		f.logger.WithField("response", response).Info("ingest event response")
 	}
 
 	return event, err
@@ -388,12 +406,12 @@ func (f *FalcoSidekickListener) ingestEventFromGenericFalcoAlert(payload *types.
 	defer cancel()
 
 	if err != nil {
-		logger.Errorw("error while reporting falco alerts", "err", err)
+		f.logger.WithError(err).Error("error while reporting falco alerts")
 	} else {
-		logger.Debugw("ingest event response", "response", response)
+		f.logger.WithField("response", response).Debug("ingest event response")
 	}
 
-	return event, err
+	return event, fmt.Errorf("ingestEventFromGenericFalcoAlert: %w", err)
 }
 
 func matchLabelsFromPodLabels(labels map[string]string) []*tarianpb.MatchLabel {
