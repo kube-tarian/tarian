@@ -2,6 +2,7 @@ package nodeagent
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/scylladb/go-set/strset"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -32,15 +34,22 @@ type NodeAgent struct {
 
 	cancelFunc context.CancelFunc
 	cancelCtx  context.Context
+	logger     *logrus.Logger
 
 	enableAddConstraint bool
 	nodeName            string
 }
 
-func NewNodeAgent(clusterAgentAddress string) *NodeAgent {
+func NewNodeAgent(logger *logrus.Logger, clusterAgentAddress string) *NodeAgent {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return &NodeAgent{clusterAgentAddress: clusterAgentAddress, cancelCtx: ctx, cancelFunc: cancel, constraintsInitialized: false}
+	return &NodeAgent{
+		clusterAgentAddress:    clusterAgentAddress,
+		cancelCtx:              ctx,
+		cancelFunc:             cancel,
+		constraintsInitialized: false,
+		logger:                 logger,
+	}
 }
 
 func (n *NodeAgent) EnableAddConstraint(enabled bool) {
@@ -58,7 +67,7 @@ func (n *NodeAgent) Dial() {
 	n.eventClient = tarianpb.NewEventClient(n.grpcConn)
 
 	if err != nil {
-		logger.Fatalw("couldn't connect to the cluster agent", "err", err)
+		n.logger.WithError(err).Fatal("couldn't connect to the cluster agent")
 	}
 }
 
@@ -74,12 +83,12 @@ func (n *NodeAgent) Run() {
 	wg.Add(2)
 
 	go func() {
-		n.loopSyncConstraints(n.cancelCtx)
+		_ = n.loopSyncConstraints(n.cancelCtx)
 		wg.Done()
 	}()
 
 	go func() {
-		n.loopValidateProcesses(n.cancelCtx)
+		_ = n.loopValidateProcesses(n.cancelCtx)
 		wg.Done()
 	}()
 
@@ -104,7 +113,7 @@ func (n *NodeAgent) loopSyncConstraints(ctx context.Context) error {
 		select {
 		case <-time.After(3 * time.Second):
 		case <-ctx.Done():
-			return ctx.Err()
+			return fmt.Errorf("nodeagent: %w", ctx.Err())
 		}
 	}
 }
@@ -115,10 +124,10 @@ func (n *NodeAgent) SyncConstraints() {
 	r, err := n.configClient.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{})
 
 	if err != nil {
-		logger.Errorw("error while getting constraints from the cluster agent", "err", err)
+		n.logger.WithError(err).Fatal("couldn't get constraints from the cluster agent")
 	}
 
-	logger.Debugw("received constraints from the cluster agent", "constraint", r.GetConstraints())
+	n.logger.WithField("constraints", r.GetConstraints()).Debug("received constraints from the cluster agent")
 	cancel()
 
 	n.SetConstraints(r.GetConstraints())
@@ -127,9 +136,9 @@ func (n *NodeAgent) SyncConstraints() {
 }
 
 func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
-	captureExec, err := NewCaptureExec()
+	captureExec, err := NewCaptureExec(n.logger)
 	if err != nil {
-		logger.Fatal(err)
+		return fmt.Errorf("nodeagent: %w", err)
 	}
 
 	captureExec.SetNodeName(n.nodeName)
@@ -141,7 +150,7 @@ func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			captureExec.Close()
-			return ctx.Err()
+			return fmt.Errorf("nodeagent: %w", ctx.Err())
 		case evt := <-execEvent:
 			if !n.constraintsInitialized {
 				continue
@@ -172,12 +181,10 @@ func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
 				}
 
 				if registerProcess {
-					logger.Infow("violated process detected, going to register", "comm", evt.Comm)
-
+					n.logger.WithField("comm", evt).Debug("violated process detected, going to register")
 					n.RegisterViolationsAsNewConstraint(violation)
 				} else {
-					logger.Infow("violated process detected", "comm", evt.Comm)
-
+					n.logger.WithField("comm", evt).Debug("violated process detected")
 					n.ReportViolationsToClusterAgent(violation)
 				}
 			}
@@ -214,11 +221,11 @@ out:
 			rgx, err := regexp.Compile(allowedProcess.GetRegex())
 
 			if err != nil {
-				logger.Errorw("can not compile regex", "err", err)
+				n.logger.WithError(err).Error("can not compile regex")
 				continue
 			}
 
-			logger.Debugw("validating process againts regex", "expr", rgx.String())
+			n.logger.WithField("expr", rgx.String()).Debug("validating process againts regex")
 
 			if rgx.MatchString(evt.Comm) {
 				violated = false
@@ -292,11 +299,10 @@ func (n *NodeAgent) ReportViolationsToClusterAgent(violation *ProcessViolation) 
 	}
 
 	response, err := n.eventClient.IngestEvent(context.Background(), req)
-
 	if err != nil {
-		logger.Errorw("error while reporting violation events", "err", err)
+		n.logger.WithError(err).Error("error while reporting violation events")
 	} else {
-		logger.Debugw("ingest event response", "response", response)
+		n.logger.WithField("response", response).Debug("ingest event response")
 	}
 }
 
@@ -323,11 +329,10 @@ func (n *NodeAgent) RegisterViolationsAsNewConstraint(violation *ProcessViolatio
 	}
 
 	response, err := n.configClient.AddConstraint(context.Background(), req)
-
 	if err != nil {
-		logger.Errorw("error while registering process constraint", "err", err)
+		n.logger.WithError(err).Error("error while registering process constraint")
 	} else {
-		logger.Debugw("add constraint response", "response", response)
+		n.logger.WithField("response", response).Debug("add constraint response")
 	}
 }
 

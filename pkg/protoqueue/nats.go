@@ -152,5 +152,8 @@ func (j *JetStream) NextMessage(message proto.Message) (proto.Message, error) {
 	}
 
 	err = proto.Unmarshal(msg.Data, message)
-	return message, fmt.Errorf("nats: jetstream NextMessage: failed to unmarshal message: %w", err)
+	if err != nil {
+		return nil, fmt.Errorf("nats: jetstream NextMessage: failed to unmarshal message: %w", err)
+	}
+	return message, nil
 }

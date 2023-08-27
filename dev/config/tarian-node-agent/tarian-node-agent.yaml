@@ -15,7 +15,6 @@ spec:
       - name: tarian-node-agent
         image: localhost:5000/tarian-node-agent:latest
         args:
-        - --log-encoding=json
         - --log-level=debug
         - run
         - --cluster-agent-host=tarian-cluster-agent.tarian-system.svc
