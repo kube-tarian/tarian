@@ -3,9 +3,10 @@ package ebpf
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 
 	"github.com/aquasecurity/libbpfgo"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 
 	_ "embed"
 )
@@ -31,31 +32,22 @@ type BpfCaptureExec struct {
 	bpfProg       *libbpfgo.BPFProg
 	bpfRingBuffer *libbpfgo.RingBuffer
 
-	logger *zap.SugaredLogger
+	logger *logrus.Logger
 }
 
-func NewBpfCaptureExec() (*BpfCaptureExec, error) {
-	l, err := zap.NewProduction()
-	if err != nil {
-		return nil, err
-	}
-
+func NewBpfCaptureExec(logger *logrus.Logger) (*BpfCaptureExec, error) {
 	b := &BpfCaptureExec{
 		bpfEventsChan:  make(chan []byte, 1000),
 		execEventsChan: make(chan BpfExecEvent, 1000),
-		logger:         l.Sugar(),
+		logger:         logger,
 	}
 
-	err = b.loadBpfObject()
+	err := b.loadBpfObject()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("NewBpfCaptureExec: failed to load bpf object: %w", err)
 	}
 
 	return b, nil
-}
-
-func (b *BpfCaptureExec) SetLogger(l *zap.SugaredLogger) {
-	b.logger = l
 }
 
 func (b *BpfCaptureExec) loadBpfObject() error {
@@ -97,7 +89,7 @@ func (b *BpfCaptureExec) Start() {
 
 		var bpfExecEvent BpfExecEvent
 		if err := binary.Read(bytes.NewBuffer(evt), binary.LittleEndian, &bpfExecEvent); err != nil {
-			b.logger.Errorw("error parsing ringbuf event", "err", err)
+			b.logger.WithError(err).Error("error parsing ringbuf event")
 			continue
 		}
 

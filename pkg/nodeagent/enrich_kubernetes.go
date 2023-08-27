@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -91,9 +92,11 @@ type K8sPodWatcher interface {
 type PodWatcher struct {
 	podInformer     cache.SharedIndexInformer
 	informerFactory informers.SharedInformerFactory
+
+	logger *logrus.Logger
 }
 
-func NewPodWatcher(k8sClient *kubernetes.Clientset, nodeName string) *PodWatcher {
+func NewPodWatcher(logger *logrus.Logger, k8sClient *kubernetes.Clientset, nodeName string) (*PodWatcher, error) {
 	k8sInformerFactory := informers.NewSharedInformerFactoryWithOptions(k8sClient, 60*time.Second,
 		informers.WithTweakListOptions(func(options *metav1.ListOptions) {
 			if nodeName != "" {
@@ -105,17 +108,20 @@ func NewPodWatcher(k8sClient *kubernetes.Clientset, nodeName string) *PodWatcher
 		containerIdx: containerIndexFunc,
 	})
 	if err != nil {
-		logger.Fatal(err)
+		return nil, fmt.Errorf("NewPodWatcher: %w", err)
 	}
 
-	return &PodWatcher{podInformer: podInformer, informerFactory: k8sInformerFactory}
+	return &PodWatcher{
+		podInformer:     podInformer,
+		informerFactory: k8sInformerFactory,
+		logger:          logger,
+	}, nil
 }
 
 func (watcher *PodWatcher) Start() {
 	watcher.informerFactory.Start(wait.NeverStop)
 	watcher.informerFactory.WaitForCacheSync(wait.NeverStop)
-
-	logger.Infow("PodWatcher: initial pods sync", "num", len(watcher.podInformer.GetStore().ListKeys()))
+	watcher.logger.WithField("num", len(watcher.podInformer.GetStore().ListKeys())).Info("PodWatcher: initial pods sync")
 }
 
 func (watcher *PodWatcher) FindPod(containerID string) *corev1.Pod {
