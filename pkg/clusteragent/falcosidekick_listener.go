@@ -116,8 +116,7 @@ func sanitizeK8sResourceName(str string) string {
 func (f *FalcoSidekickListener) processFalcoPayload(payload *types.FalcoPayload) error {
 	if payload.Rule == tarianRuleSpawnedProcess {
 		if !f.configCache.IsConstraintInitialized() {
-			f.logger.WithField("payload", payload).
-				Info("can not validate process because constraint is not yet initialized")
+			f.logger.Info("can not validate process because constraint is not yet initialized")
 			return nil
 		}
 

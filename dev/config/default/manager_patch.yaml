@@ -11,7 +11,6 @@ spec:
       containers:
       - command: null
         args:
-        - --log-formatter=json
         - --log-level=debug
         - run-webhook-server
         name: manager

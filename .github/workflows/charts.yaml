@@ -66,7 +66,7 @@ jobs:
       - name: Install NATS
         run: |
           helm repo add nats https://nats-io.github.io/k8s/helm/charts/
-          helm upgrade -i nats nats/nats -n tarian-system -f ./dev/nats-helm-values.yaml
+          helm upgrade -i nats nats/nats -n tarian-system -f ./dev/nats-helm-values.yaml --version 0.19.16
 
       - name: Install charts
         run: |
