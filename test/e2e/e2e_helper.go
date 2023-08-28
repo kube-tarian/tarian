@@ -64,7 +64,7 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 
 	clusterAgent, err := clusteragent.NewClusterAgent(log.GetLogger(), clusterAgentConfig)
 	require.Nil(t, err)
-	podAgent := podagent.NewPodAgent("localhost:" + e2eClusterAgentPort)
+	podAgent := podagent.NewPodAgent(log.GetLogger(), "localhost:"+e2eClusterAgentPort)
 
 	return &TestHelper{t: t, dgraphConfig: cfg, dg: dg, server: grpcServer, clusterAgent: clusterAgent, podAgent: podAgent}
 }

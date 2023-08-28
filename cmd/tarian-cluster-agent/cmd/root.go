@@ -29,9 +29,7 @@ func newRootCommand(logger *logrus.Logger) *cobra.Command {
 			logger.SetLevel(logrus.Level(logLevel))
 
 			if globalFlags.LogFormatter == "json" {
-				logger.SetFormatter(&logrus.JSONFormatter{
-					PrettyPrint: true,
-				})
+				logger.SetFormatter(&logrus.JSONFormatter{})
 			}
 			return nil
 		},

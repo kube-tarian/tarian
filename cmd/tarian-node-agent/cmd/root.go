@@ -29,9 +29,7 @@ detecting new processes from all containers in the node.`,
 			logger.SetLevel(logrus.Level(logLevel))
 
 			if globalFlags.LogFormatter == "json" {
-				logger.SetFormatter(&logrus.JSONFormatter{
-					PrettyPrint: true,
-				})
+				logger.SetFormatter(&logrus.JSONFormatter{})
 			}
 			return nil
 		},

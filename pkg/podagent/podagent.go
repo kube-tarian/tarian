@@ -14,27 +14,11 @@ import (
 	"time"
 
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
-
-var logger *zap.SugaredLogger
-
-func init() {
-	l, err := zap.NewProduction()
-
-	if err != nil {
-		panic("Can not create logger")
-	}
-
-	logger = l.Sugar()
-}
-
-func SetLogger(l *zap.SugaredLogger) {
-	logger = l
-}
 
 type PodAgent struct {
 	clusterAgentAddress string
@@ -54,16 +38,23 @@ type PodAgent struct {
 
 	cancelFunc context.CancelFunc
 	cancelCtx  context.Context
+	logger     *logrus.Logger
 
 	enableRegisterFiles     bool
 	registerFilePaths       []string
 	registerFileIgnorePaths []string
 }
 
-func NewPodAgent(clusterAgentAddress string) *PodAgent {
+func NewPodAgent(logger *logrus.Logger, clusterAgentAddress string) *PodAgent {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return &PodAgent{clusterAgentAddress: clusterAgentAddress, cancelCtx: ctx, cancelFunc: cancel, constraintsInitialized: false}
+	return &PodAgent{
+		cancelCtx:              ctx,
+		cancelFunc:             cancel,
+		logger:                 logger,
+		constraintsInitialized: false,
+		clusterAgentAddress:    clusterAgentAddress,
+	}
 }
 
 func (p *PodAgent) SetPodLabels(labels []*tarianpb.Label) {
@@ -105,7 +96,7 @@ func (p *PodAgent) Dial() {
 	p.eventClient = tarianpb.NewEventClient(p.grpcConn)
 
 	if err != nil {
-		logger.Fatalw("couldn't connect to the cluster agent", "err", err)
+		p.logger.WithError(err).Fatal("couldn't connect to the cluster agent")
 	}
 }
 
@@ -125,12 +116,12 @@ func (p *PodAgent) RunThreatScan() {
 	wg.Add(2)
 
 	go func() {
-		p.loopSyncConstraints(p.cancelCtx)
+		_ = p.loopSyncConstraints(p.cancelCtx)
 		wg.Done()
 	}()
 
 	go func() {
-		p.loopValidateFileChecksums(p.cancelCtx)
+		_ = p.loopValidateFileChecksums(p.cancelCtx)
 		wg.Done()
 	}()
 
@@ -145,14 +136,14 @@ func (p *PodAgent) RunRegister() {
 	wg.Add(1)
 
 	go func() {
-		p.loopSyncConstraints(p.cancelCtx)
+		_ = p.loopSyncConstraints(p.cancelCtx)
 		wg.Done()
 	}()
 
 	if p.enableRegisterFiles {
 		wg.Add(1)
 		go func() {
-			p.loopRegisterFileChecksums(p.cancelCtx)
+			_ = p.loopRegisterFileChecksums(p.cancelCtx)
 			wg.Done()
 		}()
 	}
@@ -187,12 +178,12 @@ func (p *PodAgent) SyncConstraints() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 	r, err := p.configClient.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{Namespace: p.namespace, Labels: p.podLabels})
-
 	if err != nil {
-		logger.Errorw("error while getting constraints from the cluster agent", "err", err)
+		p.logger.WithError(err).Fatal("couldn't get constraints from the cluster agent")
 	}
 
-	logger.Debugw("received constraints from the cluster agent", "constraint", r.GetConstraints())
+	p.logger.WithField("constraints", r.GetConstraints()).Debug("received constraints from the cluster agent")
+
 	cancel()
 
 	p.SetConstraints(r.GetConstraints())
@@ -215,7 +206,11 @@ func (p *PodAgent) loopValidateFileChecksums(ctx context.Context) error {
 		violatedFiles := p.validateFileChecksums()
 
 		for _, violation := range violatedFiles {
-			logger.Debugw("found a file that violates checksum", "file", violation.name, "actual", violation.actualSha256Sum, "expected", violation.expectedSha256Sum)
+			p.logger.WithFields(logrus.Fields{
+				"file":     violation.name,
+				"actual":   violation.actualSha256Sum,
+				"expected": violation.expectedSha256Sum,
+			}).Warn("found a file that violates checksum")
 		}
 
 		if len(violatedFiles) > 0 {
@@ -251,17 +246,25 @@ func (p *PodAgent) validateFileChecksums() map[string]*violatedFile {
 			if allowedFile.GetName() == "" || allowedFile.GetSha256Sum() == "" {
 				continue
 			}
-
-			logger.Debugw("validating file sha256 checksum", "file", allowedFile.GetName(), "allowedSha256Sum", allowedFile.GetSha256Sum())
+			p.logger.WithFields(logrus.Fields{
+				"file":             allowedFile.GetName(),
+				"allowedSha256Sum": allowedFile.GetSha256Sum(),
+			}).Debug("validating file sha256 checksum")
 
 			f, err := os.Open(allowedFile.GetName())
 			if err != nil {
-				logger.Errorw("can not open file to check the sha256 checksum", "file", allowedFile.GetName(), "err", err)
+				p.logger.WithFields(logrus.Fields{
+					"file":  allowedFile.GetName(),
+					"error": err,
+				}).Error("can not open file to check the sha256 checksum")
 			}
 
 			s256 := sha256.New()
 			if _, err := io.Copy(s256, f); err != nil {
-				logger.Errorw("can not read file to check the sha256 checksum", "file", allowedFile.GetName(), "err", err)
+				p.logger.WithFields(logrus.Fields{
+					"file":  allowedFile.GetName(),
+					"error": err,
+				}).Error("can not read file to check the sha256 checksum")
 			}
 
 			actualSha256Sum := fmt.Sprintf("%x", s256.Sum(nil))
@@ -319,9 +322,9 @@ func (p *PodAgent) ReportViolatedFilesToClusterAgent(violatedFiles map[string]*v
 	response, err := p.eventClient.IngestEvent(context.Background(), req)
 
 	if err != nil {
-		logger.Errorw("error while reporting violation events", "err", err)
+		p.logger.WithError(err).Error("couldn't report violation events to the cluster agent")
 	} else {
-		logger.Debugw("ingest event response", "response", response)
+		p.logger.WithField("response", response).Debug("ingest event response")
 	}
 }
 
@@ -339,7 +342,7 @@ func matchLabelsFromLabels(labels []*tarianpb.Label) []*tarianpb.MatchLabel {
 
 func (p *PodAgent) loopRegisterFileChecksums(ctx context.Context) error {
 	for {
-		p.registerFileChecksums(ctx)
+		_ = p.registerFileChecksums(ctx)
 
 		select {
 		case <-time.After(p.fileValidationInterval):
@@ -382,18 +385,25 @@ func (p *PodAgent) registerFileChecksums(ctx context.Context) error {
 
 			fd, err2 := os.Open(path)
 			if err2 != nil {
-				logger.Warnw("can not open file to check the sha256 checksum", "file", path, "err", err)
+				p.logger.WithError(err2).Warn("can not open file to check the sha256 checksum")
 			}
 
 			s256 := sha256.New()
 			if _, err := io.Copy(s256, fd); err != nil {
-				logger.Errorw("can not read file to check the sha256 checksum", "file", path, "err", err)
+				p.logger.WithFields(logrus.Fields{
+					"file":  path,
+					"error": err,
+				}).Error("can not read file to check the sha256 checksum")
 			}
 
 			actualSha256Sum := fmt.Sprintf("%x", s256.Sum(nil))
 			if expectedSha256Sum, ok := registeredSha256Sums[path]; ok {
 				if actualSha256Sum != expectedSha256Sum {
-					logger.Infow("found violated file during auto registration, going to replace with the new checksum", "name", path, "old_sha256", expectedSha256Sum, "new_sha256", actualSha256Sum)
+					p.logger.WithFields(logrus.Fields{
+						"name":       path,
+						"old_sha256": expectedSha256Sum,
+						"new_sha256": actualSha256Sum,
+					}).Info("found violated file during auto registration, going to replace with the new checksum")
 
 					pathSha := sha256.New()
 					pathSha.Write([]byte(path))
@@ -401,19 +411,27 @@ func (p *PodAgent) registerFileChecksums(ctx context.Context) error {
 
 					err := p.deleteConstraintByNamePrefix(p.podName + "-" + pathShaStr + "-")
 					if err != nil {
-						logger.Errorw("error while deleting constraint with previous sha256Sum", "file", path, "err", err)
+						p.logger.WithFields(logrus.Fields{
+							"name":  path,
+							"error": err,
+						}).Error("error while deleting constraint with previous sha256Sum")
 					}
 
 					response, err := p.createConstraintWithFileRule(p.podName+"-"+pathShaStr+"-"+actualSha256Sum[:10], path, actualSha256Sum)
-
 					if err != nil {
-						logger.Errorw("error while registering file constraint", "name", path, "err", err)
+						p.logger.WithFields(logrus.Fields{
+							"name":  path,
+							"error": err,
+						}).Error("error while registering file constraint")
 					} else {
-						logger.Debugw("add constraint response", "response", response)
+						p.logger.WithField("response", response).Debug("add constraint response")
 					}
 				}
 			} else {
-				logger.Infow("found new file, going to register", "name", path, "checksum", actualSha256Sum)
+				p.logger.WithFields(logrus.Fields{
+					"name":   path,
+					"sha256": actualSha256Sum,
+				}).Info("found new file, going to register")
 
 				pathSha := sha256.New()
 				pathSha.Write([]byte(path))
@@ -422,9 +440,12 @@ func (p *PodAgent) registerFileChecksums(ctx context.Context) error {
 				response, err := p.createConstraintWithFileRule(p.podName+"-"+pathShaStr+"-"+actualSha256Sum[:10], path, actualSha256Sum)
 
 				if err != nil {
-					logger.Errorw("error while registering file constraint", "name", path, "err", err)
+					p.logger.WithFields(logrus.Fields{
+						"name":  path,
+						"error": err,
+					}).Error("error while registering file constraint")
 				} else {
-					logger.Debugw("add constraint response", "response", response)
+					p.logger.WithField("response", response).Debug("add constraint response")
 				}
 			}
 
@@ -432,7 +453,10 @@ func (p *PodAgent) registerFileChecksums(ctx context.Context) error {
 		})
 
 		if err != nil {
-			logger.Errorw("error while traversing registerFilePaths", "path", registerFilePath, "err", err)
+			p.logger.WithFields(logrus.Fields{
+				"path":  registerFilePath,
+				"error": err,
+			}).Error("error while traversing registerFilePaths")
 		}
 	}
 
