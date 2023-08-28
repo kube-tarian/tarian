@@ -17,8 +17,8 @@ type runCommand struct {
 	globalFlags *flags.GlobalFlags
 	logger      *logrus.Logger
 
-	host                string
-	port                string
+	clusterAgentHost    string
+	clusterAgentPort    string
 	nodeNmae            string
 	enableAddConstraint bool
 }
@@ -36,8 +36,8 @@ func newRunCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	}
 
 	// Add flags
-	runCmd.Flags().StringVar(&cmd.host, "host", "tarian-cluster-agent.tarian-system.svc", "The host to listen on")
-	runCmd.Flags().StringVar(&cmd.port, "port", "80", "The port to listen on")
+	runCmd.Flags().StringVar(&cmd.clusterAgentHost, "cluster-agent-host", "tarian-cluster-agent.tarian-system.svc", "The host to listen on")
+	runCmd.Flags().StringVar(&cmd.clusterAgentPort, "cluster-agent-port", "80", "The port to listen on")
 	runCmd.Flags().StringVar(&cmd.nodeNmae, "node-name", "", "The node name")
 	runCmd.Flags().BoolVar(&cmd.enableAddConstraint, "enable-add-constraint", false, "Enable add constraint RPC. Enable this to allow register mode.")
 	return runCmd
@@ -65,7 +65,7 @@ func (c *runCommand) run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("host proc is not mounted: %w", err)
 	}
 
-	addr := c.host + ":" + c.port
+	addr := c.clusterAgentHost + ":" + c.clusterAgentPort
 	agent := nodeagent.NewNodeAgent(c.logger, addr)
 	agent.EnableAddConstraint(c.enableAddConstraint)
 	agent.SetNodeName(c.nodeNmae)

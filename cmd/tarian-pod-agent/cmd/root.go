@@ -3,11 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/add"
-	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
-	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/get"
-	importCommand "github.com/kube-tarian/tarian/cmd/tarianctl/cmd/import"
-	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/remove"
+	"github.com/kube-tarian/tarian/cmd/tarian-pod-agent/cmd/flags"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -16,11 +12,10 @@ import (
 var globalFlags *flags.GlobalFlags
 
 func newRootCommand(logger *logrus.Logger) *cobra.Command {
-	return &cobra.Command{
-		Use:           "tarianctl",
-		Aliases:       []string{"tctl"},
+	var rootCmd = &cobra.Command{
+		Use:           "Tarian Pod Agent",
+		Short:         "The Tarian pod agent is the component which runs as a sidecar to monitor your main container.",
 		Version:       versionStr,
-		Short:         "tarianctl is the CLI tool to control the Tarian Server.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -28,8 +23,6 @@ func newRootCommand(logger *logrus.Logger) *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			globalFlags.GetFlagValuesFromEnvVar()
 
 			logLevel, _ := logrus.ParseLevel(globalFlags.LogLevel)
 			logger.SetLevel(logrus.Level(logLevel))
@@ -39,33 +32,24 @@ func newRootCommand(logger *logrus.Logger) *cobra.Command {
 			}
 			return nil
 		},
-		Long: `
- _                    _                          _     _
-| |_    __ _   _ __  (_)   __ _   _ __     ___  | |_  | |
-| __|  / _  | | '__| | |  / _  | | '_ \   / __| | __| | |
-| |_  | (_| | | |    | | | (_| | | | | | | (__  | |_  | |
- \__|  \__,_| |_|    |_|  \__,_| |_| |_|  \___|  \__| |_|
-
-tarianctl is the CLI tool to control the Tarian Server.
-`,
 	}
+
+	return rootCmd
 }
 
 func buildRootCommand(logger *logrus.Logger) *cobra.Command {
 	rootCmd := newRootCommand(logger)
+	rootCmd.SetVersionTemplate("tarian pod version: {{.Version}}\n")
 
 	// Add global flags
 	persistentFlags := rootCmd.PersistentFlags()
 	globalFlags = flags.SetGlobalFlags(persistentFlags)
 
-	rootCmd.SetVersionTemplate("tarianctl version: {{.Version}}\n")
-
 	// Add subcommand to the root command
 	rootCmd.AddCommand(versionCmd)
-	rootCmd.AddCommand(get.NewGetCommand(globalFlags))
-	rootCmd.AddCommand(add.NewAddCommand(globalFlags))
-	rootCmd.AddCommand(remove.NewRemoveCommand(globalFlags))
-	rootCmd.AddCommand(importCommand.NewImportCommand(globalFlags))
+	rootCmd.AddCommand(newThreatScanCommand(globalFlags))
+	rootCmd.AddCommand(newRegisterCommand(globalFlags))
+
 	return rootCmd
 }
 
