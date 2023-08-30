@@ -6,7 +6,7 @@ import (
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/add"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/get"
-	importCommand "github.com/kube-tarian/tarian/cmd/tarianctl/cmd/import"
+	importcommand "github.com/kube-tarian/tarian/cmd/tarianctl/cmd/import"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/remove"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -65,7 +65,7 @@ func buildRootCommand(logger *logrus.Logger) *cobra.Command {
 	rootCmd.AddCommand(get.NewGetCommand(globalFlags))
 	rootCmd.AddCommand(add.NewAddCommand(globalFlags))
 	rootCmd.AddCommand(remove.NewRemoveCommand(globalFlags))
-	rootCmd.AddCommand(importCommand.NewImportCommand(globalFlags))
+	rootCmd.AddCommand(importcommand.NewImportCommand(globalFlags))
 	return rootCmd
 }
 

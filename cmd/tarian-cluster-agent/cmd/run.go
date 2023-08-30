@@ -25,7 +25,7 @@ const (
 
 	defaultServerAddress = "localhost:50051"
 
-	defaultSidekickListenerHttpPort = "8088"
+	defaultSidekickListenerHTTPPort = "8088"
 )
 
 type runCommand struct {
@@ -42,7 +42,7 @@ type runCommand struct {
 
 	enableAddConstraint bool
 
-	falcoListenerHttpPort string
+	falcoListenerHTTPPort string
 }
 
 func newRunCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
@@ -65,7 +65,7 @@ func newRunCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	runCmd.Flags().StringVar(&cmd.serverTLSCAFile, "server-tls-ca-file", "", "CA certificate file for the Tarian Server")
 	runCmd.Flags().BoolVar(&cmd.serverTLSInsecureSkipVerify, "server-tls-insecure-skip-verify", true, "skip TLS verification for the Tarian Server")
 	runCmd.Flags().BoolVar(&cmd.enableAddConstraint, "enable-add-constraint", false, "enable to support pod agent running in register mode")
-	runCmd.Flags().StringVar(&cmd.falcoListenerHttpPort, "falco-listener-http-port", defaultSidekickListenerHttpPort, "falco listener http port")
+	runCmd.Flags().StringVar(&cmd.falcoListenerHTTPPort, "falco-listener-http-port", defaultSidekickListenerHTTPPort, "falco listener http port")
 
 	return runCmd
 }

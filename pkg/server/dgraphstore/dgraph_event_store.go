@@ -8,6 +8,7 @@ import (
 
 	"github.com/dgraph-io/dgo/v210"
 	"github.com/dgraph-io/dgo/v210/protos/api"
+	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -57,6 +58,7 @@ type dgraphEventList struct {
 }
 
 func (d *dgraphEventList) toPbEvents() []*tarianpb.Event {
+	logger := log.GetLogger()
 	events := []*tarianpb.Event{}
 	for _, evt := range d.Events {
 		event := tarianpb.NewEvent()
@@ -81,15 +83,24 @@ func (d *dgraphEventList) toPbEvents() []*tarianpb.Event {
 			t := &tarianpb.Target{}
 
 			if evtTarget.ViolatedProcesses != "" {
-				json.Unmarshal([]byte(evtTarget.ViolatedProcesses), &t.ViolatedProcesses)
+				err := json.Unmarshal([]byte(evtTarget.ViolatedProcesses), &t.ViolatedProcesses)
+				if err != nil {
+					logger.WithError(err).Warn("Failed to unmarshal violated processes")
+				}
 			}
 
 			if evtTarget.ViolatedFiles != "" {
-				json.Unmarshal([]byte(evtTarget.ViolatedFiles), &t.ViolatedFiles)
+				err := json.Unmarshal([]byte(evtTarget.ViolatedFiles), &t.ViolatedFiles)
+				if err != nil {
+					logger.WithError(err).Warn("Failed to unmarshal violated processes")
+				}
 			}
 
 			if evtTarget.FalcoAlert != "" {
-				json.Unmarshal([]byte(evtTarget.FalcoAlert), &t.FalcoAlert)
+				err := json.Unmarshal([]byte(evtTarget.FalcoAlert), &t.FalcoAlert)
+				if err != nil {
+					logger.WithError(err).Warn("Failed to unmarshal violated processes")
+				}
 			}
 
 			if evtTarget.Pod != nil {
@@ -97,7 +108,10 @@ func (d *dgraphEventList) toPbEvents() []*tarianpb.Event {
 				t.Pod.Uid = evtTarget.Pod.PodUID
 				t.Pod.Namespace = evtTarget.Pod.Namespace
 				t.Pod.Name = evtTarget.Pod.Name
-				json.Unmarshal([]byte(evtTarget.Pod.Labels), &t.Pod.Labels)
+				err := json.Unmarshal([]byte(evtTarget.Pod.Labels), &t.Pod.Labels)
+				if err != nil {
+					logger.WithError(err).Warn("Failed to unmarshal violated processes")
+				}
 			}
 
 			event.Targets = append(event.Targets, t)

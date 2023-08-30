@@ -72,7 +72,7 @@ func (da *dgraphActionList) toPbActions() []*tarianpb.Action {
 		pbAction := tarianpb.NewAction()
 		pbAction.Namespace = dgraphAction.Namespace
 		pbAction.Name = dgraphAction.Name
-		json.Unmarshal([]byte(dgraphAction.Selector), &pbAction.Selector)
+		_ = json.Unmarshal([]byte(dgraphAction.Selector), &pbAction.Selector)
 		pbAction.OnViolatedProcess = dgraphAction.OnViolatedProcess
 		pbAction.OnViolatedFile = dgraphAction.OnViolatedFile
 		pbAction.OnFalcoAlert = dgraphAction.OnFalcoAlert
@@ -194,7 +194,9 @@ func (d *DgraphActionStore) RemoveByNamespaceAndName(namespace, name string) err
 
 	ctxDiscard, cancelDiscard := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancelDiscard()
-	defer txn.Discard(ctxDiscard)
+	defer func() {
+		_ = txn.Discard(ctxDiscard)
+	}()
 
 	ctxMutate, cancelMutate := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancelMutate()

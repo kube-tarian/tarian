@@ -27,8 +27,10 @@ func TestPodAgentSyncConstraints(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	configClient.AddConstraint(ctx, createConstraintRequest("default", "nginx", "nginx.*", []*tarianpb.MatchLabel{{Key: "app", Value: "nginx"}}))
-	configClient.AddConstraint(ctx, createConstraintRequest("default2", "nginx", "nginx.*", []*tarianpb.MatchLabel{{Key: "app2", Value: "nginx2"}}))
+	_, err = configClient.AddConstraint(ctx, createConstraintRequest("default", "nginx", "nginx.*", []*tarianpb.MatchLabel{{Key: "app", Value: "nginx"}}))
+	require.Nil(t, err)
+	_, err = configClient.AddConstraint(ctx, createConstraintRequest("default2", "nginx", "nginx.*", []*tarianpb.MatchLabel{{Key: "app2", Value: "nginx2"}}))
+	require.Nil(t, err)
 
 	podAgent := e2eHelper.podAgent
 	podAgent.SetNamespace("default")
