@@ -65,7 +65,7 @@ func (c *removeConstraintsCmd) run(cmd *cobra.Command, args []string) error {
 		}
 
 		if response.GetSuccess() {
-			c.logger.Infof("Constraint %s is deleted succesfully\n", name)
+			c.logger.Infof("Constraint %s is deleted successfully\n", name)
 		} else {
 			c.logger.Warnf("Constraint %s is not deleted\n", name)
 		}

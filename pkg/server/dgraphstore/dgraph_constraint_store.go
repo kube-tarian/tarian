@@ -70,9 +70,9 @@ func (d *dgraphConstraintList) toPbConstraints() []*tarianpb.Constraint {
 		constraint := tarianpb.NewConstraint()
 		constraint.Namespace = c.Namespace
 		constraint.Name = c.Name
-		json.Unmarshal([]byte(c.Selector), &constraint.Selector)
-		json.Unmarshal([]byte(c.AllowedProcesses), &constraint.AllowedProcesses)
-		json.Unmarshal([]byte(c.AllowedFiles), &constraint.AllowedFiles)
+		_ = json.Unmarshal([]byte(c.Selector), &constraint.Selector)
+		_ = json.Unmarshal([]byte(c.AllowedProcesses), &constraint.AllowedProcesses)
+		_ = json.Unmarshal([]byte(c.AllowedFiles), &constraint.AllowedFiles)
 
 		constraints = append(constraints, constraint)
 	}
@@ -196,7 +196,9 @@ func (d *DgraphConstraintStore) RemoveByNamespaceAndName(namespace, name string)
 
 	ctxDiscard, cancelDiscard := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancelDiscard()
-	defer txn.Discard(ctxDiscard)
+	defer func() {
+		_ = txn.Discard(ctxDiscard)
+	}()
 
 	ctxMutate, cancelMutate := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancelMutate()

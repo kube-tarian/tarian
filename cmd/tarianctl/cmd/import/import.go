@@ -1,4 +1,4 @@
-package importCommand
+package importcommand
 
 import (
 	"context"

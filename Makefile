@@ -125,9 +125,8 @@ proto: bin/protoc
 	$(PROTOC) --experimental_allow_proto3_optional=true -I=./.local/include -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/types.proto
 	$(PROTOC) --experimental_allow_proto3_optional=true -I=./.local/include -I=./pkg --go_out=./pkg --go-grpc_out=./pkg --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative ./pkg/tarianpb/api.proto
 
-lint: fmt vet
-	revive -formatter stylish -config .revive.toml ./pkg/...
-	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) staticcheck ./...
+lint: ## Run golangci-lint against code.
+	docker run --rm -v $(BASEDIR):/app -w /app golangci/golangci-lint:v1.54.2 golangci-lint run -v --config=.golangci.yml
 
 local-images: build
 	docker build -f Dockerfile-server -t localhost:5000/tarian-server dist/tarian-server_linux_amd64/ && docker push localhost:5000/tarian-server

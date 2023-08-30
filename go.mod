@@ -10,7 +10,7 @@ require (
 	github.com/open-policy-agent/cert-controller v0.6.0
 	github.com/prometheus/alertmanager v0.24.0
 	github.com/scylladb/go-set v1.0.2
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	google.golang.org/grpc v1.52.3
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v3 v3.0.1
