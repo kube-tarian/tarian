@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	version "github.com/kube-tarian/tarian/cmd"
 	"github.com/kube-tarian/tarian/cmd/tarian-node-agent/cmd/flags"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -16,7 +17,7 @@ func newRootCommand(logger *logrus.Logger) *cobra.Command {
 		Use: "tarian-node-agent",
 		Short: `The Tarian Node Agent is the component which runs as a daemonset,
 detecting new processes from all containers in the node.`,
-		Version:       versionStr,
+		Version:       version.GetVersion(),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {

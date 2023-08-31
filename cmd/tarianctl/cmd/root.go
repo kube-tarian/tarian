@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	version "github.com/kube-tarian/tarian/cmd"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/add"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/get"
@@ -19,7 +20,7 @@ func newRootCommand(logger *logrus.Logger) *cobra.Command {
 	return &cobra.Command{
 		Use:           "tarianctl",
 		Aliases:       []string{"tctl"},
-		Version:       versionStr,
+		Version:       version.GetVersion(),
 		Short:         "tarianctl is the CLI tool to control the Tarian Server.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
