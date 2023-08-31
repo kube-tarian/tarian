@@ -3,22 +3,15 @@ package cmd
 import (
 	"fmt"
 
+	version "github.com/kube-tarian/tarian/cmd"
 	"github.com/spf13/cobra"
 )
 
-// nolint: gochecknoglobals
-var (
-	version    = "dev"
-	commit     = "main"
-	versionStr = version + " (" + commit + ")"
-)
-
-// versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Args:  cobra.NoArgs,
-	Short: "Prints version of tarian cluster agent",
+	Short: "Prints version of tarian-cluster-agent",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("tarian cluster agent version: %s\n", versionStr)
+		fmt.Printf("tarian cluster agent version: %s\n", version.GetVersion())
 	},
 }

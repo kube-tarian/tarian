@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	version "github.com/kube-tarian/tarian/cmd"
 	"github.com/kube-tarian/tarian/cmd/tarian-cluster-agent/cmd/flags"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -16,7 +17,7 @@ func newRootCommand(logger *logrus.Logger) *cobra.Command {
 		Use:           "tarian-cluster-agent",
 		Short:         "Tarian Cluster Agent",
 		Long:          "The Tarian Cluster Agent is the controller that runs in each kubernetes cluster that controls the pod agents",
-		Version:       versionStr,
+		Version:       version.GetVersion(),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {

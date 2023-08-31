@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	version "github.com/kube-tarian/tarian/cmd"
 	"github.com/kube-tarian/tarian/cmd/tarian-pod-agent/cmd/flags"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -15,7 +16,7 @@ func newRootCommand(logger *logrus.Logger) *cobra.Command {
 	var rootCmd = &cobra.Command{
 		Use:           "Tarian Pod Agent",
 		Short:         "The Tarian pod agent is the component which runs as a sidecar to monitor your main container.",
-		Version:       versionStr,
+		Version:       version.GetVersion(),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -39,7 +40,7 @@ func newRootCommand(logger *logrus.Logger) *cobra.Command {
 
 func buildRootCommand(logger *logrus.Logger) *cobra.Command {
 	rootCmd := newRootCommand(logger)
-	rootCmd.SetVersionTemplate("tarian pod version: {{.Version}}\n")
+	rootCmd.SetVersionTemplate("tarian pod agent version: {{.Version}}\n")
 
 	// Add global flags
 	persistentFlags := rootCmd.PersistentFlags()
