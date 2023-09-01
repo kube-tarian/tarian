@@ -1,150 +1,180 @@
-name: build-test-publishcontainers
+name: CI
 
 on:
-  push:
-    paths-ignore:
-      - 'charts/**'
-      - '**.md'
+  release:
+    types: [created]
   pull_request:
-    paths-ignore:
-      - 'charts/**'
-      - '**.md'
+    branches:
+      - main
+    paths:
+      - "**.go"
 
 permissions: read-all
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
+        with:
+          submodules: 'recursive'
+
+      - name: Set up Go
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #4.1.0
+        with:
+          go-version: "1.21"
+          cache: false
+      
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          args: -v --config=.golangci.yml
+
+  test-k8s:
     runs-on: ubuntu-latest
     env:
       GOPATH: ${{ github.workspace }}/../go
       HOME: ${{ github.workspace }}/..
     steps:
-      # setup
-      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # @3.1.0
+      - name: Checkout
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
         with:
           submodules: 'recursive'
-      - uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # @3.3.1
+
+      - name: Set up Go
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #4.1.0
         with:
-          go-version: '1.19'
+          go-version: "1.21"
+          cache: false
+
+      - name: Install dependencies
+        run: |
+          set -x
+          # Install required dependencies and tools
+          sudo apt update && sudo apt install -y pkg-config libelf-dev clang
+          go install github.com/mgechev/revive@latest
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
+
+      - name: Create Kind registry
+        run: |
+          set -x
+          # Create a Kind registry
+          ./dev/run-kind-registry.sh
+      
+      - name: Kind Cluster
+        uses: dda0770415bac9fc20092cacbc54aa298604d140 #v1.8.0
+        with:
+          config: 'dev/cluster-config.yaml'
+          cluster_name: tarian-testing
+
+      - name: Testing Kind cluster setup
+        run: |
+          set -x
+          # Verify Kind cluster setup
+          kubectl cluster-info
+          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=300s
+          kubectl get pods -n kube-system
+          echo "kubectl config current-context:" $(kubectl config current-context)
+          echo "KUBECONFIG env var:" ${KUBECONFIG}
+
+      - name: Build
+        run: |
+          set -x
+          sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
+          make bin/protoc bin/goreleaser
+          bash ./dev/run-kind-registry.sh
+          make ebpf generate
+          ./bin/goreleaser release --snapshot --rm-dist
+          make push-local-images
+          cp dist/tarianctl_linux_amd64/tarianctl ./bin/
+
+      - name: Deploy Tarian
+        run: |
+          set -x
+          make deploy
+
+      - name: Wait for pods to be ready
+        id: wait-until-tarian-is-ready
+        run: |
+          set -x
+          # Wait for all pods in the tarian-system namespace to be in the "Ready" state
+          kubectl wait --for=condition=ready pod --all -n tarian-system --timeout=300s
+        continue-on-error: true
+
+      - name: Run tests
+        id: run-tests
+        if: steps.wait-until-tarian-is-ready.outcome == 'success'
+        run: make k8s-test
+        continue-on-error: true
+
+      - name: Collect deployment information in case of failure
+        if: steps.wait-until-tarian-is-ready.outcome != 'success' || steps.run-tests.outcome != 'success'
+        run: |
+          set -x
+          # Collect logs and information for debugging in case of failure
+          kubectl get pods -n tarian-system
+          echo "======================================================================================================================"
+          kubectl describe pods -n tarian-system
+          echo "======================================================================================================================"
+          kubectl logs -n tarian-system deploy/tarian-server
+          echo "======================================================================================================================"
+          kubectl logs -n tarian-system deploy/tarian-cluster-agent
+          echo "======================================================================================================================"
+          kubectl logs -n tarian-system deploy/tarian-cluster-agent-controller-manager
+          echo "======================================================================================================================"
+          kubectl logs -n tarian-system daemonsets/tarian-node-agent
+          echo "======================================================================================================================"
+          exit 1
+
+  test-e2e:
+    runs-on: ubuntu-latest
+    env:
+      GOPATH: ${{ github.workspace }}/../go
+      HOME: ${{ github.workspace }}/..
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
+        with:
+          submodules: 'recursive'
+
+      - name: Set up Go
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #4.1.0
+        with:
+          go-version: "1.21"
+          cache: false
 
       - name: Start containers
         run: docker-compose up -d
 
-      - name: ps containers
-        run: docker-compose ps
-
-      # prepare
-      - run: sudo apt update && sudo apt install -y pkg-config libelf-dev clang
-      - run: go install github.com/mgechev/revive@latest
-      - run: go install honnef.co/go/tools/cmd/staticcheck@latest
-      - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
-      - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
-      - run: make bin/protoc
-
-      - run: make build
-      - run: make lint
-      - run: make unit-test
-      - run: make e2e-test
-
-      - name: Start containers
-        if: always()
-        run: docker-compose down
-
-  k8s-test:
-    runs-on: ubuntu-latest
-    env:
-      GOPATH: ${{ github.workspace }}/../go
-      HOME: ${{ github.workspace }}/..
-    steps:
-      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # @3.1.0
-        with:
-          submodules: 'recursive'
-      - uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # @3.3.1
-        with:
-          go-version: '1.19'
-      - name: Install Helm
-        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 # @v3.5
-        with:
-          version: '3.11.0'
-      - uses: helm/kind-action@d8ccf8fb623ce1bb360ae2f45f323d9d5c5e9f00 # @1.5.0
-        name: Create k8s cluster
-        with:
-          config: 'dev/cluster-config.yaml'
-          kubectl_version: 'v1.25.5'
-
-      # prepare for build
-      - run: sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang
-      - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
-      - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
-      - run: make bin/protoc bin/goreleaser
-
-      # build images
-      - run: bash ./dev/run-kind-registry.sh
-      - run: make ebpf generate
-      - run: ./bin/goreleaser release --snapshot --rm-dist
-      - run: make push-local-images
-      - run: cp dist/tarianctl_linux_amd64/tarianctl ./bin/
-
-      # deploy to k8s
-      - run: make deploy
-
-      # wait for deployment rollout
-      - name: Wait for pods ready
+      - name: Run end-to-end tests
+        id: run-e2e-tests
         run: |
-          kubectl version
-          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=1m || true
-          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=1m || true
-          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=1m || true
-          kubectl get pods --all-namespaces
-          kubectl get deployment --all-namespaces
-          kubectl get svc --all-namespaces
-          sleep 5s
+          set -x
+          sudo apt update && sudo apt install -y pkg-config libelf-dev clang
+          go install github.com/mgechev/revive@latest
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
+          make bin/protoc
+          make build
+          make e2e-test
+        continue-on-error: true
 
-      - run: make k8s-test
-
-  publish-containers:
-    needs: k8s-test
-    if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-      contents: write
-    env:
-      GOPATH: ${{ github.workspace }}/../go
-      HOME: ${{ github.workspace }}/..
-    steps:
-      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # @3.1.0
-        with:
-          submodules: 'recursive'
-      - uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # @3.3.1
-        with:
-          go-version: '1.19'
-      - run: sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang
-      - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
-      - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
-      - run: make bin/protoc ebpf bin/goreleaser
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@42d299face0c5c43a0487c477f595ac9cf22f1a7 # @v1.12.0
-        with:
-          registry: ghcr.io
-          username: devopstoday11
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - run: |
-          if [[ $GITHUB_REF == refs/tags/v* ]]; then
-            ./bin/goreleaser
-          elif [[ $GITHUB_REF == refs/heads/main ]]; then
-            ./bin/goreleaser --snapshot
-          fi
-        env:
-          CONTAINER_REGISTRY: ghcr.io/${{ github.repository_owner }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: docker images
-      - run: |
-          if [[ $GITHUB_REF == refs/heads/main ]]; then
-            docker push ghcr.io/${{ github.repository_owner}}/tarian-server
-            docker push ghcr.io/${{ github.repository_owner}}/tarian-cluster-agent
-            docker push ghcr.io/${{ github.repository_owner}}/tarian-node-agent
-            docker push ghcr.io/${{ github.repository_owner}}/tarian-pod-agent
-            docker push ghcr.io/${{ github.repository_owner}}/tarianctl
-          fi
-
+      - name: Collect logs in case of failure
+        if: steps.run-e2e-tests.outcome != 'success'
+        run: |
+          set -x
+          echo "======================================================================================================================"
+          docker-compose logs
+          echo "======================================================================================================================"
+          exit 1

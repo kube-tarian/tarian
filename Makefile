@@ -140,7 +140,6 @@ push-local-images:
 	docker push localhost:5000/tarian-cluster-agent
 	docker push localhost:5000/tarian-pod-agent
 	docker push localhost:5000/tarian-node-agent
-	docker push localhost:5000/tarianctl
 
 unit-test:
 	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) go test -v -race -count=1 ./pkg/...
