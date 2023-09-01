@@ -1,27 +1,18 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-# This workflow checks out code, builds an image, performs a container image
-# vulnerability scan with Anchore's Grype tool, and integrates the results with GitHub Advanced Security
-# code scanning feature.  For more information on the Anchore scan action usage
-# and parameters, see https://github.com/anchore/scan-action. For more
-# information on Anchore's container image scanning tool Grype, see
-# https://github.com/anchore/grype
-name: Anchore Container Scan
+name: Vulnerability Scan
 
 on:
-  push:
-    branches: [ "main" ]
+  release:
+    types: [created]
   pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ "main" ]
-  schedule:
-    - cron: '42 3 * * 1'
+    branches:
+      - main
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   scan-tarian-server:
@@ -32,13 +23,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout the code
-      uses: actions/checkout@v3
+      uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
+
     - name: Run the Anchore scan action against tarian-server
       uses: anchore/scan-action@b08527d5ae7f7dc76f9621edb6e49eaf47933ccd
       with:
         image: ghcr.io/kube-tarian/tarian-server:latest
         acs-report-enable: true
         fail-build: false
+        
     - name: Upload Anchore Scan Report
       uses: github/codeql-action/upload-sarif@v2
       with:
@@ -52,13 +45,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout the code
-      uses: actions/checkout@v3
+      uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
+
     - name: Run the Anchore scan action against tarian-cluster-agent
       uses: anchore/scan-action@b08527d5ae7f7dc76f9621edb6e49eaf47933ccd
       with:
         image: ghcr.io/kube-tarian/tarian-cluster-agent:latest
         acs-report-enable: true
         fail-build: false
+
     - name: Upload Anchore Scan Report
       uses: github/codeql-action/upload-sarif@v2
       with:
@@ -71,14 +66,17 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status 
     runs-on: ubuntu-latest
     steps:
+
     - name: Checkout the code
-      uses: actions/checkout@v3
+      uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
+
     - name: Run the Anchore scan action against tarian-pod-agent
       uses: anchore/scan-action@b08527d5ae7f7dc76f9621edb6e49eaf47933ccd
       with:
         image: ghcr.io/kube-tarian/tarian-pod-agent:latest
         acs-report-enable: true
         fail-build: false
+
     - name: Upload Anchore Scan Report
       uses: github/codeql-action/upload-sarif@v2
       with:

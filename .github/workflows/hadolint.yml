@@ -6,16 +6,14 @@
 # that helps you build best practice Docker images.
 # More details at https://github.com/hadolint/hadolint
 
-name: Hadolint
+name: Dockerfile linting
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ "main" ]
-  schedule:
-    - cron: '38 2 * * 6'
+    branches:
+      - main
+    paths:
+      - Dockerfile*
 
 permissions:
   contents: read
@@ -30,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
 
       - name: Run hadolint
         uses: hadolint/hadolint-action@f988afea3da57ee48710a9795b6bb677cc901183 # @2.1.0
@@ -55,7 +53,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
 
       - name: Run hadolint
         uses: hadolint/hadolint-action@f988afea3da57ee48710a9795b6bb677cc901183 # @2.1.0
