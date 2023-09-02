@@ -175,9 +175,3 @@ func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) ad
 	p.logger.Infow("responding webhook with a sidecar container", "pod_name", pod.GetObjectMeta().GetName())
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledPod)
 }
-
-// InjectDecoder injects the decoder.
-func (p *PodAgentInjector) InjectDecoder(d *admission.Decoder) error {
-	p.decoder = d
-	return nil
-}
