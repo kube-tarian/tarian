@@ -2,9 +2,8 @@ package nodeagent
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"os"
+	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -12,8 +11,23 @@ import (
 	"time"
 
 	"github.com/intelops/tarian-detector/pkg/detector"
-	"github.com/intelops/tarian-detector/pkg/ebpf/c/process_entry"
-	"github.com/intelops/tarian-detector/pkg/ebpf/c/process_exit"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_close"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_open"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_openat"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_openat2"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_read"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_readv"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_write"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_writev"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/network_accept"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/network_bind"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/network_connect"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/network_listen"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/network_socket"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/process_execve"
+	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/process_execveat"
+	"github.com/intelops/tarian-detector/pkg/linker"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/scylladb/go-set/strset"
 	"google.golang.org/grpc"
@@ -41,6 +55,24 @@ type NodeAgent struct {
 
 	enableAddConstraint bool
 	nodeName            string
+}
+
+var BpfModules = []bpf.Module{
+	process_execve.NewProcessExecve(),
+	process_execveat.NewProcessExecveat(),
+	file_open.NewFileOpen(),
+	file_openat.NewFileOpenat(),
+	file_openat2.NewFileOpenat2(),
+	file_read.NewFileRead(),
+	file_readv.NewFileReadv(),
+	file_write.NewFileWrite(),
+	file_writev.NewFileWritev(),
+	file_close.NewFileClose(),
+	network_socket.NewNetworkSocket(),
+	network_bind.NewNetworkBind(),
+	network_listen.NewNetworkListen(),
+	network_accept.NewNetworkAccept(),
+	network_connect.NewNetworkConnect(),
 }
 
 func NewNodeAgent(clusterAgentAddress string) *NodeAgent {
@@ -355,60 +387,57 @@ func matchLabelsFromPodLabels(labels map[string]string) []*tarianpb.MatchLabel {
 }
 
 func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
-	processEntryDetector := process_entry.NewProcessEntryDetector()
-	processExitDetector := process_exit.NewProcessExitDetector()
-
-	eventsDetector := detector.NewEventsDetector()
-	eventsDetector.Add(processEntryDetector)
-	eventsDetector.Add(processExitDetector)
-
-	err := eventsDetector.Start()
+	// Loads the ebpf programs
+	bpfLinker, err := LoadPrograms(BpfModules)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 
+	// Converts bpf handlers to detectors
+	eventDetectors, err := GetDetectors(bpfLinker.ProbeHandlers)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Instantiate event detectors
+	eventsDetector := detector.NewEventsDetector()
+
+	// Add ebpf programs to detectors
+	eventsDetector.Add(eventDetectors)
+
+	// Start and defer Close
+	err = eventsDetector.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer eventsDetector.Close()
 
+	log.Printf("%d detectors running...\n\n", eventsDetector.Count())
+
+	// Loop read events
 	go func() {
 		for {
-			e, err := eventsDetector.ReadAsInterface()
-			if errors.Is(err, os.ErrClosed) {
-				break
-			}
-
+			_, err := eventsDetector.ReadAsInterface()
 			if err != nil {
-				logger.Errorw("tarian-detector: error on reading as itnerface", "err", err)
-				continue
+				fmt.Println(err)
 			}
 
-			switch event := e.(type) {
-			case *process_entry.EntryEventData:
-				detectionDataType := "process_entry.EntryEventData"
-				data, err := json.Marshal(event)
-				if err != nil {
-					logger.Errorw("tarian-detector: error while marshaling json", "err", err, "detectionDataType", detectionDataType)
-					continue
-				}
-
-				n.SendDetectionEventToClusterAgent(detectionDataType, string(data))
-				logger.Infow("tarian-detector: process_entry.EntryEventData", "binary_file_path", event.BinaryFilepath, "pid", event.Pid, "comm", event.Comm)
-
-			case *process_exit.ExitEventData:
-				detectionDataType := "process_exit.ExitEventData"
-				data, err := json.Marshal(event)
-				if err != nil {
-					logger.Errorw("tarian-detector: error while marshaling json", "err", err, "detectionDataType", detectionDataType)
-					continue
-				}
-
-				n.SendDetectionEventToClusterAgent(detectionDataType, string(data))
-				logger.Infow("tarian-detector: process_exit.ExitEventData", "pid", event.Pid, "comm", event.Comm)
-			}
+			// printEvent(e)
 		}
 	}()
 
 	<-ctx.Done()
 	return ctx.Err()
+}
+
+func printEvent(data map[string]any) {
+	div := "======================"
+	msg := ""
+	for ky, val := range data {
+		msg += fmt.Sprintf("%s: %v\n", ky, val)
+	}
+
+	log.Printf("%s\n%s%s\n", div, msg, div)
 }
 
 func (n *NodeAgent) SendDetectionEventToClusterAgent(detectionDataType string, detectionData string) {
@@ -431,4 +460,30 @@ func (n *NodeAgent) SendDetectionEventToClusterAgent(detectionDataType string, d
 	} else {
 		logger.Debugw("ingest event response", "response", response)
 	}
+}
+
+// attaches the ebpf programs to kernel and returns the refrences of maps and link.
+func LoadPrograms(modules []bpf.Module) (*linker.Linker, error) {
+	linker := linker.NewLinker()
+
+	for _, module := range modules {
+		bpfModule, err := module.NewModule()
+		if err != nil {
+			return linker, err
+		}
+
+		linker.Attach(bpfModule)
+	}
+
+	return linker, nil
+}
+
+func GetDetectors(handlers []*linker.Handler) ([]detector.EventDetector, error) {
+	detectors := make([]detector.EventDetector, 0)
+
+	for _, handler := range handlers {
+		detectors = append(detectors, handler)
+	}
+
+	return detectors, nil
 }
