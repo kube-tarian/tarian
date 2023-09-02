@@ -6,7 +6,10 @@ export TARIAN_SERVER_ADDRESS=localhost:31051
 export PATH=$PATH:./bin
 
 # run db migration and seed data
-kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dgraph apply-schema
+kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dgraph apply-schema || true || sleep 10
+# retry 
+kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dgraph apply-schema 
+
 tarianctl add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx 
 tarianctl add constraint --name nginx-files --namespace default --match-labels run=nginx --allowed-file-sha256sums=/usr/share/nginx/html/index.html=38ffd4972ae513a0c79a8be4573403edcd709f0f572105362b08ff50cf6de521
 tarianctl get constraints
@@ -63,7 +66,7 @@ kubectl exec -ti nginx2 -c nginx -- pwd
 kubectl exec -ti nginx2 -c nginx -- ls /
 
 # give time for tarian-cluser-agent to process data from node agents
-sleep 5
+sleep 15
 
 tarianctl get constraints
 
