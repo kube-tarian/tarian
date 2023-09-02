@@ -12,14 +12,7 @@ import (
 
 	"github.com/intelops/tarian-detector/pkg/detector"
 	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf"
-	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_close"
 	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_open"
-	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_openat"
-	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_openat2"
-	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_read"
-	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_readv"
-	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_write"
-	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/file_writev"
 	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/network_accept"
 	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/network_bind"
 	"github.com/intelops/tarian-detector/pkg/eBPF/c/bpf/network_connect"
@@ -61,13 +54,13 @@ var BpfModules = []bpf.Module{
 	process_execve.NewProcessExecve(),
 	process_execveat.NewProcessExecveat(),
 	file_open.NewFileOpen(),
-	file_openat.NewFileOpenat(),
-	file_openat2.NewFileOpenat2(),
-	file_read.NewFileRead(),
-	file_readv.NewFileReadv(),
-	file_write.NewFileWrite(),
-	file_writev.NewFileWritev(),
-	file_close.NewFileClose(),
+	// file_openat.NewFileOpenat(),
+	// file_openat2.NewFileOpenat2(),
+	// file_read.NewFileRead(),
+	// file_readv.NewFileReadv(),
+	// file_write.NewFileWrite(),
+	// file_writev.NewFileWritev(),
+	// file_close.NewFileClose(),
 	network_socket.NewNetworkSocket(),
 	network_bind.NewNetworkBind(),
 	network_listen.NewNetworkListen(),
@@ -430,6 +423,7 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 	return ctx.Err()
 }
 
+/*
 func printEvent(data map[string]any) {
 	div := "======================"
 	msg := ""
@@ -439,6 +433,7 @@ func printEvent(data map[string]any) {
 
 	log.Printf("%s\n%s%s\n", div, msg, div)
 }
+*/
 
 func (n *NodeAgent) SendDetectionEventToClusterAgent(detectionDataType string, detectionData string) {
 	req := &tarianpb.IngestEventRequest{
