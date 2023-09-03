@@ -2,6 +2,7 @@ package nodeagent
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
@@ -410,12 +411,21 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 	// Loop read events
 	go func() {
 		for {
-			_, err := eventsDetector.ReadAsInterface()
+			eventData, err := eventsDetector.ReadAsInterface()
 			if err != nil {
 				fmt.Println(err)
 			}
 
-			// printEvent(e)
+			detectionDataType := "process_entry.EntryEventData"
+			dataJson, err := json.Marshal(eventData)
+			if err != nil {
+				logger.Errorw("tarian-detector: error while marshaling json", "err", err, "detectionDataType", detectionDataType)
+				continue
+			}
+
+			n.SendDetectionEventToClusterAgent(detectionDataType, string(dataJson))
+
+			printEvent(eventData)
 		}
 	}()
 
@@ -423,7 +433,6 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 	return ctx.Err()
 }
 
-/*
 func printEvent(data map[string]any) {
 	div := "======================"
 	msg := ""
@@ -433,7 +442,6 @@ func printEvent(data map[string]any) {
 
 	log.Printf("%s\n%s%s\n", div, msg, div)
 }
-*/
 
 func (n *NodeAgent) SendDetectionEventToClusterAgent(detectionDataType string, detectionData string) {
 	req := &tarianpb.IngestEventRequest{
