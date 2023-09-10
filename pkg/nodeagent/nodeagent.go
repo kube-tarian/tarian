@@ -416,7 +416,13 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 				fmt.Println(err)
 			}
 
-			detectionDataType := "process_entry.EntryEventData"
+			detectionDataType := "unknown"
+			if _, ok := eventData["tarian_detector"]; ok {
+				if str, ok := eventData["tarian_detector"].(string); ok {
+					detectionDataType = str
+				}
+			}
+
 			dataJson, err := json.Marshal(eventData)
 			if err != nil {
 				logger.Errorw("tarian-detector: error while marshaling json", "err", err, "detectionDataType", detectionDataType)
@@ -425,22 +431,13 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 
 			n.SendDetectionEventToClusterAgent(detectionDataType, string(dataJson))
 
-			printEvent(eventData)
+			fmt.Println(detectionDataType)
+			fmt.Println(string(dataJson))
 		}
 	}()
 
 	<-ctx.Done()
 	return ctx.Err()
-}
-
-func printEvent(data map[string]any) {
-	div := "======================"
-	msg := ""
-	for ky, val := range data {
-		msg += fmt.Sprintf("%s: %v\n", ky, val)
-	}
-
-	log.Printf("%s\n%s%s\n", div, msg, div)
 }
 
 func (n *NodeAgent) SendDetectionEventToClusterAgent(detectionDataType string, detectionData string) {
