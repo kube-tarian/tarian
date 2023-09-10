@@ -423,16 +423,13 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 				}
 			}
 
-			dataJson, err := json.Marshal(eventData)
+			dataJSON, err := json.Marshal(eventData)
 			if err != nil {
 				logger.Errorw("tarian-detector: error while marshaling json", "err", err, "detectionDataType", detectionDataType)
 				continue
 			}
 
-			n.SendDetectionEventToClusterAgent(detectionDataType, string(dataJson))
-
-			fmt.Println(detectionDataType)
-			fmt.Println(string(dataJson))
+			n.SendDetectionEventToClusterAgent(detectionDataType, string(dataJSON))
 		}
 	}()
 
