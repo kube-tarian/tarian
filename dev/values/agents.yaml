@@ -1,0 +1,20 @@
+# This values can be used for development purpose
+clusterAgent:
+  log:
+    level: info
+  image:
+    name: localhost:5000/tarian-cluster-agent
+    tag: latest
+  enableAddConstraint: true
+nodeAgent:
+  log:
+    level: info
+  image:
+    name: localhost:5000/tarian-node-agent
+    tag: latest
+  hostProcDir: /host/proc # for kind cluster
+  # hostProcDir: /proc # for minikube cluster
+webhook:
+  podAgentContainerImage:
+    name: localhost:5000/tarian-pod-agent
+    tag: latest

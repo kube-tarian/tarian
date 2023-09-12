@@ -95,8 +95,41 @@ kubectl wait --for=condition=ready pod --all -n tarian-system
 ```bash
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dgraph apply-schema
 ```
+### Install tarian using tarianctl cli
+Download tarianctl bin from github release page.
 
+Run:
+```
+tarianctl install
+```
 
+You can use following flags to customize your installation.
+
+```
+Install Tarian on Kubernetes.
+
+Usage:
+  tarianctl install [flags]
+
+Flags:
+      --agents-values strings   Path to the helm values file for Tarian Cluster Agent and Node agent .
+      --charts string           Path to the tarian helm charts directory.
+      --dgraph-values strings   Path to the helm values file for DGraph.
+  -h, --help                    help for install
+  -n, --namespace string        Namespace to install Tarian. (default "tarian-system")
+      --nats-values strings     Path to the helm values file for Nats.
+      --server-values strings   Path to the helm values file for Tarian Server.
+
+Global Flags:
+  -k, --kubeconfig string                 path to the kubeconfig file to use
+  -e, --log-formatter string              valid log formatters: json, text(default) (default "text")
+  -l, --log-level string                  valid log levels: debug, info(default), warn/warning, error, fatal (default "info")
+  -s, --server-address string             tarian server address to communicate with (default "localhost:50051")
+  -c, --server-tls-ca-file string         ca file that server uses for TLS connection
+  -t, --server-tls-enabled                if enabled, it will communicate with the server using TLS
+  -i, --server-tls-insecure-skip-verify   if set to true, it will skip server's certificate chain and hostname verification (default true)
+
+```
 ## Configuration
 
 See helm chart values for

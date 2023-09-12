@@ -93,7 +93,10 @@ require (
 
 require github.com/mattn/go-runewidth v0.0.9 // indirect
 
-require github.com/inconshreveable/mousetrap v1.1.0 // indirect
+require (
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/moby/spdystream v0.2.0 // indirect
+)
 
 require (
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
@@ -107,6 +110,7 @@ require (
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/sync v0.3.0
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 )

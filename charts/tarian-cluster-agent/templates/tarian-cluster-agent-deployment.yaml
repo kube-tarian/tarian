@@ -1,7 +1,10 @@
+{{- $name := printf "%s-%s" .Release.Name "cluster-agent" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}
+  name: {{ $name }}
+  labels:
+    app: {{ .Release.Name }}
 spec:
   selector:
     matchLabels:
@@ -28,4 +31,4 @@ spec:
           name: grpc
         - containerPort: 8088
           name: falco
-      serviceAccountName: {{ .Release.Name }}
+      serviceAccountName: {{ $name }}

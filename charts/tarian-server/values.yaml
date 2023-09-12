@@ -12,8 +12,8 @@ server:
   dgraph:
     address: dgraph-public:9080
   service:
-    type: ClusterIP
-    nodeport:
+    type: NodePort
+    nodePort: 31051
   replicas: 1
   tlsSecretName:
 

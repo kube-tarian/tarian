@@ -102,6 +102,5 @@ var schema = `
 func ApplySchema(ctx context.Context, dg *dgo.Dgraph) error {
 	op := &api.Operation{}
 	op.Schema = schema
-
 	return dg.Alter(ctx, op)
 }

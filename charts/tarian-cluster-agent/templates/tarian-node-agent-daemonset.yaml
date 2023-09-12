@@ -3,6 +3,8 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: {{ $name }}
+  labels:
+    app: {{ .Release.Name }}
 spec:
   selector:
     matchLabels:
@@ -19,7 +21,7 @@ spec:
         - "--log-formatter={{ .Values.nodeAgent.log.encoding }}"
         - "--log-level={{ .Values.nodeAgent.log.level }}"
         - run
-        - --cluster-agent-host={{ .Release.Name }}.{{ .Release.Namespace }}.svc
+        - --cluster-agent-host={{ .Release.Name }}-cluster-agent.{{ .Release.Namespace }}.svc
         - --cluster-agent-port=80
         - --node-name=$(NODE_NAME)
 {{- if .Values.clusterAgent.enableAddConstraint }}

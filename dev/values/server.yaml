@@ -1,0 +1,7 @@
+# This values can be used for development purpose
+server:
+  log:
+    level: debug
+  image:
+    name: localhost:5000/tarian-server
+    tag: latest

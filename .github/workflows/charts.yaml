@@ -112,47 +112,11 @@ jobs:
           make push-local-images
           cp dist/tarianctl_linux_amd64/tarianctl ./bin/
 
-      - name: Create namespace
+      - name: Install Tarian
         run: |
           set -x
-          kubectl create namespace tarian-system
-
-      - name: Install NATS
-        run: |
-          set -x
-          helm repo add nats https://nats-io.github.io/k8s/helm/charts/
-          helm upgrade -i nats nats/nats -n tarian-system -f ./dev/nats-helm-values.yaml --version 0.19.16
-
-      - name: Install dgraph
-        run: |
-          set -x
-          kubectl apply -f ./dev/config/tarian-server/dgraph-single.yaml -n tarian-system
-
-      - name: Install Tarian server
-        run: |
-          set -x
-          helm install tarian-server ./charts/tarian-server \
-            -n tarian-system \
-            --set server.image.name=localhost:5000/tarian-server \
-            --set server.image.tag=latest \
-            --set server.service.type=NodePort \
-            --set server.service.nodePort=31051
-
-      - name: Install Tarian cluster agent
-        run: |
-          set -x
-          helm install tarian-cluster-agent ./charts/tarian-cluster-agent/ \
-            -n tarian-system \
-            --set clusterAgent.image.name=localhost:5000/tarian-cluster-agent \
-            --set clusterAgent.image.tag=latest \
-            --set clusterAgent.service.type=NodePort \
-            --set clusterAgent.service.nodePort=31052 \
-            --set clusterAgent.enableAddConstraint=true \
-            --set nodeAgent.image.name=localhost:5000/tarian-node-agent \
-            --set nodeAgent.image.tag=latest \
-            --set nodeAgent.hostProcDir=/host/proc \
-            --set webhook.podAgentContainerImage.name=localhost:5000/tarian-pod-agent \
-            --set webhook.podAgentContainerImage.tag=latest
+          ./bin/tarianctl install --charts ./charts -l debug --agents-values ./dev/values/agents.yaml --server-values ./dev/values/server.yaml
+        continue-on-error: true
 
       - name: Wait for pods to be ready
         id: wait-until-tarian-is-ready
@@ -181,7 +145,7 @@ jobs:
           echo "======================================================================================================================"
           kubectl logs -n tarian-system deploy/tarian-cluster-agent
           echo "======================================================================================================================"
-          kubectl logs -n tarian-system deploy/tarian-cluster-agent-controller-manager
+          kubectl logs -n tarian-system deploy/tarian-controller-manager
           echo "======================================================================================================================"
           kubectl logs -n tarian-system daemonsets/tarian-node-agent
           echo "======================================================================================================================"
