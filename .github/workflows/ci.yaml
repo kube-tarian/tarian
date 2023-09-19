@@ -4,9 +4,12 @@ on:
   release:
     types: [created]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
     branches:
       - main
     paths:
+      - "charts/**"
+      - ".github/workflows/ci.yaml"
       - "**.go"
 
 permissions: read-all
@@ -23,14 +26,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Set up Go
         uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #4.1.0
         with:
           go-version: "1.21"
           cache: false
-      
+
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
@@ -45,7 +48,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Set up Go
         uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #4.1.0
@@ -68,11 +71,11 @@ jobs:
           set -x
           # Create a Kind registry
           ./dev/run-kind-registry.sh
-      
+
       - name: Kind Cluster
-        uses: dda0770415bac9fc20092cacbc54aa298604d140 #v1.8.0
+        uses: helm/kind-action@dda0770415bac9fc20092cacbc54aa298604d140 #v1.8.0
         with:
-          config: 'dev/cluster-config.yaml'
+          config: "dev/cluster-config.yaml"
           cluster_name: tarian-testing
 
       - name: Testing Kind cluster setup
@@ -145,7 +148,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Set up Go
         uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #4.1.0
