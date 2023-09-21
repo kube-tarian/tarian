@@ -41,7 +41,7 @@ func newRemoveActionsCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return actionsCmd
 }
 
-func (c *removeActionsCmd) run(cmd *cobra.Command, args []string) error {
+func (c *removeActionsCmd) run(_ *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		err := errors.New("please specify the name of the action to be removed")
 		return fmt.Errorf("remove action: %w", err)

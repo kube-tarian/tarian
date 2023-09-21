@@ -18,6 +18,7 @@ import (
 	"github.com/sethvargo/go-retry"
 )
 
+// Server represents the Tarian server, which includes gRPC server, event server, ingestion worker, config server, and alert dispatcher.
 type Server struct {
 	GrpcServer      *grpc.Server
 	EventServer     *EventServer
@@ -32,7 +33,21 @@ type Server struct {
 	logger     *logrus.Logger
 }
 
-func NewServer(logger *logrus.Logger, storeSet store.StoreSet, certFile string, privateKeyFile string, natsURL string, natsOptions []nats.Option, natsStreamConfig nats.StreamConfig) (*Server, error) {
+// NewServer creates a new Tarian server instance.
+//
+// Parameters:
+// - logger: The logger to use for logging.
+// - storeSet: A set of stores including constraint, action, and event stores.
+// - certFile: The path to the server certificate file.
+// - privateKeyFile: The path to the server private key file.
+// - natsURL: The NATS server URL.
+// - natsOptions: Options for configuring the NATS connection.
+// - natsStreamConfig: Configuration for the NATS JetStream stream.
+//
+// Returns:
+// - *Server: A new instance of the Tarian server.
+// - error: An error if any occurs during server creation.
+func NewServer(logger *logrus.Logger, storeSet store.Set, certFile string, privateKeyFile string, natsURL string, natsOptions []nats.Option, natsStreamConfig nats.StreamConfig) (*Server, error) {
 	opts := []grpc.ServerOption{}
 	if certFile != "" && privateKeyFile != "" {
 		creds, _ := credentials.NewServerTLSFromFile(certFile, privateKeyFile)
@@ -127,6 +142,13 @@ func NewServer(logger *logrus.Logger, storeSet store.StoreSet, certFile string, 
 	return server, nil
 }
 
+// Start starts the Tarian server to listen on the given gRPC server address.
+//
+// Parameters:
+// - grpcListenAddress: The gRPC server address to listen on.
+//
+// Returns:
+// - error: An error if any occurs during server startup.
 func (s *Server) Start(grpcListenAddress string) error {
 	listener, err := net.Listen("tcp", grpcListenAddress)
 	if err != nil {
@@ -144,16 +166,26 @@ func (s *Server) Start(grpcListenAddress string) error {
 	return nil
 }
 
+// WithAlertDispatcher sets up the alert dispatcher for the Tarian server.
+//
+// Parameters:
+// - alertManagerAddress: The URL of the Alertmanager.
+// - alertEvaluationInterval: The interval for evaluating and sending alerts.
+//
+// Returns:
+// - *Server: The server with the alert dispatcher configured.
 func (s *Server) WithAlertDispatcher(alertManagerAddress *url.URL, alertEvaluationInterval time.Duration) *Server {
 	s.AlertDispatcher = NewAlertDispatcher(s.logger, alertManagerAddress, alertEvaluationInterval)
 
 	return s
 }
 
+// StartAlertDispatcher starts the alert dispatcher for the Tarian server.
 func (s *Server) StartAlertDispatcher() {
 	go s.AlertDispatcher.LoopSendAlerts(s.cancelCtx, s.eventStore)
 }
 
+// Stop stops the Tarian server gracefully.
 func (s *Server) Stop() {
 	s.GrpcServer.GracefulStop()
 	s.cancelFunc()

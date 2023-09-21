@@ -14,17 +14,33 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// DgraphEventStore is a store for managing Events using Dgraph as the backend.
 type DgraphEventStore struct {
 	dgraphClient *dgo.Dgraph
 }
 
+// NewDgraphEventStore creates a new DgraphEventStore with the provided Dgraph client.
+//
+// Parameters:
+// - dgraphClient: A Dgraph client for database interaction.
+//
+// Returns:
+// - A new instance of DgraphEventStore.
 func NewDgraphEventStore(dgraphClient *dgo.Dgraph) *DgraphEventStore {
 	d := &DgraphEventStore{dgraphClient: dgraphClient}
-
 	return d
 }
 
+// GetAll retrieves all events from the Dgraph store.
+//
+// Parameters:
+// - limit: The maximum number of events to retrieve.
+//
+// Returns:
+// - An array of protobuf Event messages representing the retrieved events.
+// - An error if there was an issue with the database query.
 func (d *DgraphEventStore) GetAll(limit uint) ([]*tarianpb.Event, error) {
+	// Dgraph query to retrieve all events.
 	q := fmt.Sprintf(`
 		{
 			events(func: type(Event)) {
@@ -33,11 +49,10 @@ func (d *DgraphEventStore) GetAll(limit uint) ([]*tarianpb.Event, error) {
 		}
 	`, eventFields)
 
-	tx := d.dgraphClient.NewReadOnlyTxn()
-
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
+	tx := d.dgraphClient.NewReadOnlyTxn()
 	resp, err := tx.Query(ctx, q)
 	if err != nil {
 		return nil, err
@@ -53,10 +68,15 @@ func (d *DgraphEventStore) GetAll(limit uint) ([]*tarianpb.Event, error) {
 	return events, nil
 }
 
+// dgraphEventList is a helper struct to unmarshal Dgraph query results.
 type dgraphEventList struct {
 	Events []Event
 }
 
+// toPbEvents converts Dgraph Event entities to protobuf Event messages.
+//
+// Returns:
+// - An array of protobuf Event messages.
 func (d *dgraphEventList) toPbEvents() []*tarianpb.Event {
 	logger := log.GetLogger()
 	events := []*tarianpb.Event{}
@@ -123,6 +143,7 @@ func (d *dgraphEventList) toPbEvents() []*tarianpb.Event {
 	return events
 }
 
+// Constants for the fields needed in Dgraph query.
 const eventFields = `
 	uid
 	dgraph.type
@@ -148,10 +169,26 @@ const eventFields = `
 	}
 `
 
+// FindByNamespace retrieves events from the Dgraph store by namespace and returns them as protobuf Events.
+//
+// Parameters:
+// - namespace: The namespace to filter events by.
+// - limit: The maximum number of events to retrieve.
+//
+// Returns:
+// - An array of protobuf Event messages representing matching events.
+// - An error if this function is unimplemented.
 func (d *DgraphEventStore) FindByNamespace(namespace string, limit uint) ([]*tarianpb.Event, error) {
 	return nil, errors.New("Unimplemented")
 }
 
+// Add adds a new event to the Dgraph store.
+//
+// Parameters:
+// - evt: The protobuf Event message to add to the store.
+//
+// Returns:
+// - An error if there was an issue storing the event in the database.
 func (d *DgraphEventStore) Add(evt *tarianpb.Event) error {
 	dgraphEvent, err := dgraphEventFromPb(evt)
 	if err != nil {
@@ -195,6 +232,14 @@ func (d *DgraphEventStore) Add(evt *tarianpb.Event) error {
 	return nil
 }
 
+// dgraphEventFromPb converts a protobuf Event to a Dgraph Event.
+//
+// Parameters:
+// - pbEvent: The protobuf Event message to convert.
+//
+// Returns:
+// - A pointer to the Dgraph Event.
+// - An error if there was an issue with the conversion.
 func dgraphEventFromPb(pbEvent *tarianpb.Event) (*Event, error) {
 	dgraphEvent := &Event{
 		UID:   "_:event",
@@ -273,6 +318,11 @@ func dgraphEventFromPb(pbEvent *tarianpb.Event) (*Event, error) {
 	return dgraphEvent, nil
 }
 
+// FindWhereAlertNotSent retrieves events from the Dgraph store where the alert has not been sent yet.
+//
+// Returns:
+// - An array of protobuf Event messages representing matching events.
+// - An error if there was an issue with the database query.
 func (d *DgraphEventStore) FindWhereAlertNotSent() ([]*tarianpb.Event, error) {
 	q := fmt.Sprintf(`
 	    {
@@ -302,6 +352,13 @@ func (d *DgraphEventStore) FindWhereAlertNotSent() ([]*tarianpb.Event, error) {
 	return events, nil
 }
 
+// UpdateAlertSent updates the alert sent timestamp for a specific event.
+//
+// Parameters:
+// - uid: The UID of the event to update.
+//
+// Returns:
+// - An error if there was an issue updating the event in the database.
 func (d *DgraphEventStore) UpdateAlertSent(uid string) error {
 	query := `
 		query q($event_uid: string) {
@@ -338,6 +395,14 @@ func (d *DgraphEventStore) UpdateAlertSent(uid string) error {
 	return err
 }
 
+// UpsertPod upserts a Pod in the Dgraph store.
+//
+// Parameters:
+// - dgraphPod: The Pod entity to upsert.
+//
+// Returns:
+// - The upserted Pod entity.
+// - An error if there was an issue with the database query.
 func (d *DgraphEventStore) UpsertPod(dgraphPod Pod) (Pod, error) {
 	query := `
 		query q($pod_uid: string) {

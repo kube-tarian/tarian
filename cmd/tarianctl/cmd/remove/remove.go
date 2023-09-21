@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// removeCmd represents the remove command
+// NewRemoveCommand creates a new `remove` command
 func NewRemoveCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	removeCmd := &cobra.Command{
 		Use:     "remove",

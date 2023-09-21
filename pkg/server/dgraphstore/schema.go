@@ -7,7 +7,9 @@ import (
 	"github.com/dgraph-io/dgo/v210/protos/api"
 )
 
+// schema defines the schema for various Dgraph types such as Constraint, Action, Pod, Event, and Target.
 var schema = `
+	# Constraint type schema definition
 	constraint_namespace: string @index(exact) .
 	constraint_name: string @index(exact) .
 	constraint_selector: string .
@@ -22,6 +24,7 @@ var schema = `
 		constraint_allowed_files
 	}
 
+	# Action type schema definition
 	action_namespace: string @index(exact) .
 	action_name: string @index(exact) .
 	action_selector: string .
@@ -30,6 +33,7 @@ var schema = `
 	action_on_falco_alert: bool .
 	action_falco_alert_priority: int .
 	action_action: string .
+
 	type Action {
 		action_namespace
 		action_name
@@ -41,6 +45,7 @@ var schema = `
 		action_action
 	}
 
+	# Pod type schema definition
 	pod_name: string @index(exact) .
 	pod_namespace: string @index(exact) .
 	pod_uid: string @index(exact) @upsert .
@@ -54,6 +59,7 @@ var schema = `
 		pod_labels
 	}
 
+	# Event type schema definition
 	event_uid: string @index(exact) @upsert .
 	event_type: string @index(exact) .
 	event_client_timestamp: dateTime @index(hour) .
@@ -71,8 +77,9 @@ var schema = `
 		targets: [Target]
 	}
 
-	target_violated_processes: string . # json
-	target_violated_files: string . # json
+	# Target type schema definition
+	target_violated_processes: string . # JSON
+	target_violated_files: string . # JSON
 	target_falco_alert: string .
 
 	type Target {
@@ -84,6 +91,14 @@ var schema = `
 	}
 `
 
+// ApplySchema applies the specified schema to the Dgraph database using the provided Dgraph client.
+//
+// Parameters:
+// - ctx: The context for the operation.
+// - dg: The Dgraph client instance.
+//
+// Returns:
+// - An error if there was an issue applying the schema.
 func ApplySchema(ctx context.Context, dg *dgo.Dgraph) error {
 	op := &api.Operation{}
 	op.Schema = schema

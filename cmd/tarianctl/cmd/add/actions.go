@@ -57,7 +57,7 @@ func newAddActionCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return actionsCmd
 }
 
-func (c *actionCommand) run(cmd *cobra.Command, args []string) error {
+func (c *actionCommand) run(_ *cobra.Command, args []string) error {
 	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
 	if err != nil {
 		return fmt.Errorf("add action: %w", err)

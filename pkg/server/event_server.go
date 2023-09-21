@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+// EventServer handles gRPC calls related to event ingestion and retrieval.
 type EventServer struct {
 	tarianpb.UnimplementedEventServer
 	eventStore     store.EventStore
@@ -18,6 +19,15 @@ type EventServer struct {
 	logger         *logrus.Logger
 }
 
+// NewEventServer creates a new EventServer instance.
+//
+// Parameters:
+// - logger: The logger to use for logging.
+// - s: The EventStore to use for storing events.
+// - ingestionQueue: The queue publisher for event ingestion.
+//
+// Returns:
+// - *EventServer: A new instance of EventServer.
 func NewEventServer(logger *logrus.Logger, s store.EventStore, ingestionQueue protoqueue.QueuePublisher) *EventServer {
 	return &EventServer{
 		eventStore:     s,
@@ -26,6 +36,15 @@ func NewEventServer(logger *logrus.Logger, s store.EventStore, ingestionQueue pr
 	}
 }
 
+// IngestEvent ingests a new event into the system.
+//
+// Parameters:
+// - ctx: The context for the operation.
+// - request: The IngestEventRequest containing the event to ingest.
+//
+// Returns:
+// - *tarianpb.IngestEventResponse: The response indicating the success of the operation.
+// - error: An error, if any, during the operation.
 func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.IngestEventRequest) (*tarianpb.IngestEventResponse, error) {
 	es.logger.WithFields(logrus.Fields{
 		"request": request,
@@ -46,6 +65,15 @@ func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.Ingest
 	return &tarianpb.IngestEventResponse{Success: true}, nil
 }
 
+// GetEvents retrieves events based on the provided request.
+//
+// Parameters:
+// - ctxt: The context for the operation.
+// - request: The GetEventsRequest containing filter criteria.
+//
+// Returns:
+// - *tarianpb.GetEventsResponse: The response containing matched events.
+// - error: An error, if any, during the operation.
 func (es *EventServer) GetEvents(ctxt context.Context, request *tarianpb.GetEventsRequest) (*tarianpb.GetEventsResponse, error) {
 	var events []*tarianpb.Event
 	var err error

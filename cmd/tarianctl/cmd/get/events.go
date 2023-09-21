@@ -45,7 +45,7 @@ func newGetEventsCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return eventsCmd
 }
 
-func (c *eventsCommand) run(cmd *cobra.Command, args []string) error {
+func (c *eventsCommand) run(_ *cobra.Command, args []string) error {
 	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
 	if err != nil {
 		return fmt.Errorf("get events: %w", err)

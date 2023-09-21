@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// ActionHandler is an interface for handling Tarian actions.
 type ActionHandler interface {
 	QueueEvent(*tarianpb.Event)
 }
@@ -35,6 +36,9 @@ type actionHandler struct {
 	logger     *logrus.Logger
 }
 
+// newActionHandler creates a new actionHandler instance.
+// It establishes a connection to the Tarian server, initializes clients,
+// and prepares the actionHandler for event processing.
 func newActionHandler(logger *logrus.Logger, tarianServerAddress string, opts []grpc.DialOption, k8sClientset *kubernetes.Clientset) (*actionHandler, error) {
 	logger.WithField("address", tarianServerAddress).Info("connecting to the tarian server")
 	grpcConn, err := grpc.Dial(tarianServerAddress, opts...)
@@ -59,11 +63,15 @@ func newActionHandler(logger *logrus.Logger, tarianServerAddress string, opts []
 	}, nil
 }
 
+// QueueEvent queues a Tarian event for processing.
+// It logs the queued event and adds it to the events channel.
 func (ah *actionHandler) QueueEvent(event *tarianpb.Event) {
 	ah.logger.WithField("event", event).Debug("event queued")
 	ah.eventsChan <- event
 }
 
+// Run starts processing Tarian events and actions.
+// It launches a goroutine to synchronize actions and processes queued events.
 func (ah *actionHandler) Run() {
 	go func() {
 		_ = ah.LoopSyncActions()
@@ -74,6 +82,8 @@ func (ah *actionHandler) Run() {
 	}
 }
 
+// ProcessActions processes Tarian actions based on Tarian events.
+// It checks if actions should be executed for each event target and invokes the appropriate action.
 func (ah *actionHandler) ProcessActions(event *tarianpb.Event) {
 	ah.logger.WithField("event", event).Debug("event processed")
 	if event.GetTargets() == nil {
@@ -117,6 +127,8 @@ func (ah *actionHandler) ProcessActions(event *tarianpb.Event) {
 	}
 }
 
+// isEventTimestampRecent checks if the event timestamp is recent compared to the pod's creation timestamp.
+// It ensures that the same action is not executed multiple times on the same pod.
 func (ah *actionHandler) isEventTimestampRecent(t *timestamppb.Timestamp, podInfo *tarianpb.Pod) bool {
 	if ah.k8sClientset == nil {
 		ah.logger.WithFields(logrus.Fields{
@@ -142,6 +154,8 @@ func (ah *actionHandler) isEventTimestampRecent(t *timestamppb.Timestamp, podInf
 	return t.AsTime().After(pod.CreationTimestamp.Time)
 }
 
+// actionMatchesPod checks if a Tarian action matches a pod based on labels and namespace.
+// It compares labels from the action and the pod to determine if the action applies to the pod.
 func actionMatchesPod(action *tarianpb.Action, pod *tarianpb.Pod) bool {
 	if action.GetNamespace() != pod.GetNamespace() {
 		return false
@@ -164,6 +178,8 @@ func actionMatchesPod(action *tarianpb.Action, pod *tarianpb.Pod) bool {
 	return podLabels.IsSubset(actionLabels)
 }
 
+// runAction executes a Tarian action, such as deleting a pod.
+// It checks if the action is "delete-pod" and if the Kubernetes client is available.
 func (ah *actionHandler) runAction(action *tarianpb.Action, pod *tarianpb.Pod) {
 	// the only supported action now
 	if action.GetAction() != "delete-pod" {
@@ -211,6 +227,8 @@ func (ah *actionHandler) runAction(action *tarianpb.Action, pod *tarianpb.Pod) {
 	}
 }
 
+// ingestPodDeletedEvent sends an event to Tarian when a pod is deleted.
+// It creates and sends a pod-deleted event to the Tarian EventClient.
 func (ah *actionHandler) ingestPodDeletedEvent(pod *tarianpb.Pod) error {
 	event := &tarianpb.Event{
 		Type:            tarianpb.EventTypePodDeleted,
@@ -233,6 +251,8 @@ func (ah *actionHandler) ingestPodDeletedEvent(pod *tarianpb.Pod) error {
 	return fmt.Errorf("ingestPodDeletedEvent: %w", err)
 }
 
+// LoopSyncActions continuously synchronizes Tarian actions.
+// It periodically calls SyncActions to retrieve the latest actions from the server.
 func (ah *actionHandler) LoopSyncActions() error {
 	for {
 		ah.SyncActions()
@@ -245,6 +265,8 @@ func (ah *actionHandler) LoopSyncActions() error {
 	}
 }
 
+// SyncActions synchronizes Tarian actions with the server.
+// It fetches the latest actions from the server and updates the actions list.
 func (ah *actionHandler) SyncActions() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -259,6 +281,8 @@ func (ah *actionHandler) SyncActions() {
 	ah.SetActions(r.GetActions())
 }
 
+// SetActions sets the list of Tarian actions.
+// It updates the actions list while holding a lock to ensure thread safety.
 func (ah *actionHandler) SetActions(actions []*tarianpb.Action) {
 	ah.actionsLock.Lock()
 	defer ah.actionsLock.Unlock()
@@ -266,6 +290,7 @@ func (ah *actionHandler) SetActions(actions []*tarianpb.Action) {
 	ah.actions = actions
 }
 
+// Close stops the action handler by canceling its context.
 func (ah *actionHandler) Close() {
 	ah.cancelFunc()
 }

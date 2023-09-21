@@ -49,7 +49,7 @@ tctl get a -o yaml
 	return actionsCmd
 }
 
-func (c *actionCommand) run(cmd *cobra.Command, args []string) error {
+func (c *actionCommand) run(_ *cobra.Command, args []string) error {
 	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
 	if err != nil {
 		return fmt.Errorf("get actions: %w", err)

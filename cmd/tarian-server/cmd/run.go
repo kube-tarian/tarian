@@ -88,13 +88,13 @@ func (o *runCommand) addFlags(cmd *cobra.Command) {
 	cmd.Flags().DurationVar(&o.natsStreamConfigDuplicates, "nats-stream-config-duplicates", 1*time.Minute, "")
 }
 
-func (o *runCommand) run(cmd *cobra.Command, args []string) error {
+func (o *runCommand) run(_ *cobra.Command, args []string) error {
 	// Create server
 	host := o.host
 	port := o.port
 
 	dgraphAddress := os.Getenv("DGRAPH_ADDRESS")
-	storeSet := store.StoreSet{}
+	storeSet := store.Set{}
 	cfg := dgraphstore.DgraphConfig{Address: dgraphAddress}
 
 	err := envconfig.Process("Dgraph", &cfg)

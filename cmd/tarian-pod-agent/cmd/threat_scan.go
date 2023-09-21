@@ -57,7 +57,7 @@ func newThreatScanCommand(globalFlag *flags.GlobalFlags) *cobra.Command {
 	return threatScanCmd
 }
 
-func (c *threatScanCommand) run(cmd *cobra.Command, args []string) error {
+func (c *threatScanCommand) run(_ *cobra.Command, args []string) error {
 	c.logger.Info("tarian-pod-agent is running in threat-scan mode")
 	addr := c.host + ":" + c.port
 	agent := podagent.NewPodAgent(c.logger, addr)

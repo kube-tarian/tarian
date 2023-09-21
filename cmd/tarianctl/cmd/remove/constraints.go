@@ -41,7 +41,7 @@ func newRemoveConstraintsCommand(globalFlags *flags.GlobalFlags) *cobra.Command 
 	return constraintsCmd
 }
 
-func (c *removeConstraintsCmd) run(cmd *cobra.Command, args []string) error {
+func (c *removeConstraintsCmd) run(_ *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		err := errors.New("please specify the names of the constraint to be removed")
 		return fmt.Errorf("remove constraint: %w", err)

@@ -44,7 +44,7 @@ func newApplySchemaCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return applySchemaCmd
 }
 
-func (o *applySchemaCommand) run(cmd *cobra.Command, args []string) error {
+func (o *applySchemaCommand) run(_ *cobra.Command, args []string) error {
 	var cfg dgraphstore.DgraphConfig
 	err := envconfig.Process("Dgraph", &cfg)
 	if err != nil {
@@ -69,13 +69,13 @@ func (o *applySchemaCommand) run(cmd *cobra.Command, args []string) error {
 
 	if err != nil {
 		return fmt.Errorf("apply-schema: failed to apply schema: %w", err)
-	} else {
-		o.logger.Info("successfully applied schema")
 	}
 
+	o.logger.Info("successfully applied schema")
 	return nil
 }
 
+// BuildDgraphDialOpts builds the dial options for Dgraph client
 func BuildDgraphDialOpts(dgraphCfg dgraphstore.DgraphConfig, logger *logrus.Logger) ([]grpc.DialOption, error) {
 	dialOpts := []grpc.DialOption{}
 	if dgraphCfg.TLSCertFile == "" {

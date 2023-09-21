@@ -29,15 +29,17 @@ const (
 	e2eClusterAgentPort = "60052"
 )
 
+// TestHelper is a helper struct for setting up and managing testing components.
 type TestHelper struct {
-	server       *grpc.Server
-	clusterAgent *clusteragent.ClusterAgent
-	podAgent     *podagent.PodAgent
-	t            *testing.T
-	dgraphConfig dgraphstore.DgraphConfig
-	dg           *dgo.Dgraph
+	server       *grpc.Server               // The gRPC server used for testing.
+	clusterAgent *clusteragent.ClusterAgent // The ClusterAgent for cluster management.
+	podAgent     *podagent.PodAgent         // The PodAgent for managing pods.
+	t            *testing.T                 // The testing.T instance for reporting test failures.
+	dgraphConfig dgraphstore.DgraphConfig   // Configuration for Dgraph database.
+	dg           *dgo.Dgraph                // Dgraph client used for testing.
 }
 
+// NewE2eHelper creates a new TestHelper instance for e2e tests.
 func NewE2eHelper(t *testing.T) *TestHelper {
 	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcClient, err := dgraphstore.NewGrpcClient(cfg.Address, dialOpts)
@@ -48,7 +50,7 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 
 	dg := dgraphstore.NewDgraphClient(grpcClient)
 
-	storeSet := store.StoreSet{}
+	storeSet := store.Set{}
 	storeSet.EventStore = dgraphstore.NewDgraphEventStore(dg)
 	storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
 	storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
@@ -57,7 +59,7 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	grpcServer := srv.GrpcServer
 	require.Nil(t, err)
 
-	clusterAgentConfig := &clusteragent.ClusterAgentConfig{
+	clusterAgentConfig := &clusteragent.Config{
 		ServerAddress:         "localhost:" + e2eServerPort,
 		ServerGrpcDialOptions: []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())},
 	}
@@ -69,6 +71,7 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	return &TestHelper{t: t, dgraphConfig: cfg, dg: dg, server: grpcServer, clusterAgent: clusterAgent, podAgent: podAgent}
 }
 
+// RunServer runs the Tarian server.
 func (th *TestHelper) RunServer() {
 	listener, err := net.Listen("tcp", ":"+e2eServerPort)
 	require.Nil(th.t, err)
@@ -78,6 +81,7 @@ func (th *TestHelper) RunServer() {
 	require.Nil(th.t, err)
 }
 
+// RunClusterAgent runs the Tarian cluster agent.
 func (th *TestHelper) RunClusterAgent() {
 	caListener, err := net.Listen("tcp", ":"+e2eClusterAgentPort)
 	require.Nil(th.t, err)
@@ -87,12 +91,14 @@ func (th *TestHelper) RunClusterAgent() {
 	require.Nil(th.t, err)
 }
 
+// Stop stops the Tarian server and cluster agent.
 func (th *TestHelper) Stop() {
 	th.server.GracefulStop()
 	th.clusterAgent.GetGrpcServer().GracefulStop()
 	th.podAgent.GracefulStop()
 }
 
+// Run runs the Tarian server and cluster agent.
 func (th *TestHelper) Run() {
 	go th.RunServer()
 	go th.RunClusterAgent()
@@ -101,6 +107,7 @@ func (th *TestHelper) Run() {
 	th.podAgent.Dial()
 }
 
+// PrepareDatabase prepares the database for e2e tests.
 func (th *TestHelper) PrepareDatabase() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

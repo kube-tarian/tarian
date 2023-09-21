@@ -23,6 +23,7 @@ const (
 	defaultAmApiv2path = "/api/v2"
 )
 
+// AlertDispatcher is responsible for dispatching alerts to Alertmanager.
 type AlertDispatcher struct {
 	amClient                *client.Alertmanager
 	alertEvaluationInterval time.Duration
@@ -30,6 +31,15 @@ type AlertDispatcher struct {
 	logger *logrus.Logger
 }
 
+// NewAlertDispatcher creates a new AlertDispatcher instance.
+//
+// Parameters:
+// - logger: The logger to use for logging.
+// - amURL: The URL of the Alertmanager.
+// - alertEvaluationInterval: The interval for evaluating and sending alerts.
+//
+// Returns:
+// - *AlertDispatcher: A new instance of AlertDispatcher.
 func NewAlertDispatcher(logger *logrus.Logger, amURL *url.URL, alertEvaluationInterval time.Duration) *AlertDispatcher {
 	amClient := NewAlertmanagerClient(amURL)
 
@@ -40,6 +50,13 @@ func NewAlertDispatcher(logger *logrus.Logger, amURL *url.URL, alertEvaluationIn
 	}
 }
 
+// NewAlertmanagerClient creates a new Alertmanager client.
+//
+// Parameters:
+// - amURL: The URL of the Alertmanager.
+//
+// Returns:
+// - *client.Alertmanager: A new Alertmanager client.
 func NewAlertmanagerClient(amURL *url.URL) *client.Alertmanager {
 	cr := clientruntime.New(amURL.Host, path.Join(amURL.Path, defaultAmApiv2path), []string{amURL.Scheme})
 
@@ -51,6 +68,11 @@ func NewAlertmanagerClient(amURL *url.URL) *client.Alertmanager {
 	return client.New(cr, strfmt.Default)
 }
 
+// LoopSendAlerts continuously sends alerts to Alertmanager based on events from the EventStore.
+//
+// Parameters:
+// - ctx: The context for the operation.
+// - es: The EventStore to retrieve events from.
 func (a *AlertDispatcher) LoopSendAlerts(ctx context.Context, es store.EventStore) {
 	for {
 		events, err := es.FindWhereAlertNotSent()
@@ -80,6 +102,13 @@ func (a *AlertDispatcher) LoopSendAlerts(ctx context.Context, es store.EventStor
 	}
 }
 
+// SendAlert sends an alert to Alertmanager based on the provided event.
+//
+// Parameters:
+// - event: The event to generate an alert from.
+//
+// Returns:
+// - error: An error, if any, during the alert sending process.
 func (a *AlertDispatcher) SendAlert(event *tarianpb.Event) error {
 	for _, target := range event.GetTargets() {
 		if target.GetPod() == nil {
