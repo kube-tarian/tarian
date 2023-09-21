@@ -3,6 +3,7 @@ package stringutil
 
 import "unicode/utf8"
 
+// Truncate truncates a string to the specified length.
 func Truncate(str string, length int) string {
 	if length <= 0 {
 		return ""

@@ -17,11 +17,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const (
-	ThreatScanAnnotation = "pod-agent.k8s.tarian.dev/threat-scan"
-	RegisterAnnotation   = "pod-agent.k8s.tarian.dev/register"
-)
+// ThreatScanAnnotation is the annotation key used to enable threat scans on pods.
+const ThreatScanAnnotation = "pod-agent.k8s.tarian.dev/threat-scan"
 
+// RegisterAnnotation is the annotation key used to register pods with the cluster agent.
+const RegisterAnnotation = "pod-agent.k8s.tarian.dev/register"
+
+// NodeAgent represents the node agent responsible for managing constraints and validating processes on a node.
 type NodeAgent struct {
 	clusterAgentAddress string
 	grpcConn            *grpc.ClientConn
@@ -40,6 +42,14 @@ type NodeAgent struct {
 	nodeName            string
 }
 
+// NewNodeAgent creates a new instance of the NodeAgent.
+//
+// Parameters:
+//   - logger: The logger instance for logging.
+//   - clusterAgentAddress: The address of the cluster agent to connect to.
+//
+// Returns:
+//   - *NodeAgent: A new NodeAgent instance.
 func NewNodeAgent(logger *logrus.Logger, clusterAgentAddress string) *NodeAgent {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -52,14 +62,23 @@ func NewNodeAgent(logger *logrus.Logger, clusterAgentAddress string) *NodeAgent 
 	}
 }
 
+// EnableAddConstraint sets whether the NodeAgent should enable adding new constraints.
+//
+// Parameters:
+//   - enabled: A boolean value indicating whether to enable adding constraints.
 func (n *NodeAgent) EnableAddConstraint(enabled bool) {
 	n.enableAddConstraint = enabled
 }
 
+// SetNodeName sets the name of the node.
+//
+// Parameters:
+//   - name: The name of the node.
 func (n *NodeAgent) SetNodeName(name string) {
 	n.nodeName = name
 }
 
+// Dial establishes a gRPC connection to the cluster agent.
 func (n *NodeAgent) Dial() {
 	var err error
 	n.grpcConn, err = grpc.Dial(n.clusterAgentAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -71,10 +90,12 @@ func (n *NodeAgent) Dial() {
 	}
 }
 
+// GracefulStop stops the NodeAgent gracefully.
 func (n *NodeAgent) GracefulStop() {
 	n.cancelFunc()
 }
 
+// Run starts the NodeAgent and runs its main loops.
 func (n *NodeAgent) Run() {
 	n.Dial()
 	defer n.grpcConn.Close()
@@ -95,6 +116,10 @@ func (n *NodeAgent) Run() {
 	wg.Wait()
 }
 
+// SetConstraints sets the constraints for the NodeAgent.
+//
+// Parameters:
+//   - constraints: A slice of constraints to set.
 func (n *NodeAgent) SetConstraints(constraints []*tarianpb.Constraint) {
 	n.constraintsLock.Lock()
 	defer n.constraintsLock.Unlock()
@@ -102,10 +127,21 @@ func (n *NodeAgent) SetConstraints(constraints []*tarianpb.Constraint) {
 	n.constraints = constraints
 }
 
+// GetConstraints returns the current constraints of the NodeAgent.
+//
+// Returns:
+//   - []*tarianpb.Constraint: A slice of constraints.
 func (n *NodeAgent) GetConstraints() []*tarianpb.Constraint {
 	return n.constraints
 }
 
+// loopSyncConstraints continuously synchronizes constraints with the cluster agent.
+//
+// Parameters:
+//   - ctx: The context for the loop.
+//
+// Returns:
+//   - error: An error, if any, encountered during the loop.
 func (n *NodeAgent) loopSyncConstraints(ctx context.Context) error {
 	for {
 		n.SyncConstraints()
@@ -118,6 +154,7 @@ func (n *NodeAgent) loopSyncConstraints(ctx context.Context) error {
 	}
 }
 
+// SyncConstraints retrieves constraints from the cluster agent and updates the NodeAgent's constraints.
 func (n *NodeAgent) SyncConstraints() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -135,6 +172,13 @@ func (n *NodeAgent) SyncConstraints() {
 	n.constraintsInitialized = true
 }
 
+// loopValidateProcesses continuously validates processes against constraints.
+//
+// Parameters:
+//   - ctx: The context for the loop.
+//
+// Returns:
+//   - error: An error, if any, encountered during the loop.
 func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
 	captureExec, err := NewCaptureExec(n.logger)
 	if err != nil {
@@ -162,7 +206,7 @@ func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
 				continue
 			}
 
-			// Pod has register annotation but the cluster disable registration
+			// Pod has a register annotation but the cluster disables registration
 			if registerAnnotationPresent && !n.enableAddConstraint {
 				continue
 			}
@@ -192,8 +236,15 @@ func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
 	}
 }
 
+// ValidateProcess validates a process event against constraints.
+//
+// Parameters:
+//   - evt: The ExecEvent to validate.
+//
+// Returns:
+//   - *ProcessViolation: A ProcessViolation if the process violates constraints, or nil if it is allowed.
 func (n *NodeAgent) ValidateProcess(evt *ExecEvent) *ProcessViolation {
-	// Ignore empty pod
+	// Ignore empty pods
 	// It usually means a host process
 	if evt.K8sNamespace == "" || evt.K8sPodName == "" {
 		return nil
@@ -225,9 +276,9 @@ out:
 				continue
 			}
 
-			n.logger.WithField("expr", rgx.String()).Debug("validating process againts regex")
+			n.logger.WithField("expr", rgx.String()).Debug("validating process against regex")
 
-			if rgx.MatchString(evt.Comm) {
+			if rgx.MatchString(evt.Command) {
 				violated = false
 				break out
 			}
@@ -243,6 +294,14 @@ out:
 	return nil
 }
 
+// constraintMatchesPod checks if a constraint matches a pod based on namespace and labels.
+//
+// Parameters:
+//   - constraint: The constraint to check.
+//   - evt: The ExecEvent representing the pod event.
+//
+// Returns:
+//   - bool: True if the constraint matches the pod, otherwise false.
 func constraintMatchesPod(constraint *tarianpb.Constraint, evt *ExecEvent) bool {
 	if constraint.GetNamespace() != evt.K8sNamespace {
 		return false
@@ -265,14 +324,19 @@ func constraintMatchesPod(constraint *tarianpb.Constraint, evt *ExecEvent) bool 
 	return podLabels.IsSubset(constraintLabels)
 }
 
+// ProcessViolation represents a process that violates constraints.
 type ProcessViolation struct {
 	ExecEvent
 }
 
+// ReportViolationsToClusterAgent reports process violations to the cluster agent.
+//
+// Parameters:
+//   - violation: The ProcessViolation to report.
 func (n *NodeAgent) ReportViolationsToClusterAgent(violation *ProcessViolation) {
 	violatedProcesses := make([]*tarianpb.Process, 1)
 
-	processName := violation.Comm
+	processName := violation.Command
 	violatedProcesses[0] = &tarianpb.Process{Pid: int32(violation.Pid), Name: processName}
 
 	pbPodLabels := make([]*tarianpb.Label, len(violation.K8sPodLabels))
@@ -306,11 +370,15 @@ func (n *NodeAgent) ReportViolationsToClusterAgent(violation *ProcessViolation) 
 	}
 }
 
+// RegisterViolationsAsNewConstraint registers process violations as new constraints with the cluster agent.
+//
+// Parameters:
+//   - violation: The ProcessViolation to register.
 func (n *NodeAgent) RegisterViolationsAsNewConstraint(violation *ProcessViolation) {
 	k8sPodName := violation.K8sPodName
 	k8sNsName := violation.K8sNamespace
 
-	procName := violation.Comm
+	procName := violation.Command
 	allowedProcessRules := []*tarianpb.AllowedProcessRule{{Regex: &procName}}
 
 	podLabels := violation.K8sPodLabels
@@ -336,6 +404,13 @@ func (n *NodeAgent) RegisterViolationsAsNewConstraint(violation *ProcessViolatio
 	}
 }
 
+// matchLabelsFromPodLabels converts a map of labels to a slice of MatchLabel protobufs.
+//
+// Parameters:
+//   - labels: The map of labels to convert.
+//
+// Returns:
+//   - []*tarianpb.MatchLabel: A slice of MatchLabel protobufs.
 func matchLabelsFromPodLabels(labels map[string]string) []*tarianpb.MatchLabel {
 	matchLabels := make([]*tarianpb.MatchLabel, len(labels))
 

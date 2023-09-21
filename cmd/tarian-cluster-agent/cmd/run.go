@@ -70,7 +70,7 @@ func newRunCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return runCmd
 }
 
-func (c *runCommand) run(cmd *cobra.Command, args []string) error {
+func (c *runCommand) run(_ *cobra.Command, args []string) error {
 	addr := c.host + ":" + c.port
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -112,7 +112,7 @@ func (c *runCommand) run(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (c *runCommand) newClusterAgentConfigFromCliContext() (*clusteragent.ClusterAgentConfig, error) {
+func (c *runCommand) newClusterAgentConfigFromCliContext() (*clusteragent.Config, error) {
 	dialOpts := []grpc.DialOption{}
 
 	if c.serverTLSEnabled {
@@ -143,7 +143,7 @@ func (c *runCommand) newClusterAgentConfigFromCliContext() (*clusteragent.Cluste
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	config := &clusteragent.ClusterAgentConfig{
+	config := &clusteragent.Config{
 		ServerAddress:         c.serverAddress,
 		ServerGrpcDialOptions: dialOpts,
 		EnableAddConstraint:   c.enableAddConstraint,

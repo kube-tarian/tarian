@@ -22,7 +22,7 @@ type importCommand struct {
 	logger      *logrus.Logger
 }
 
-// importCmd represents the import command
+// NewImportCommand creates a new `import` command
 func NewImportCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	cmd := &importCommand{
 		globalFlags: globalFlags,
@@ -39,7 +39,7 @@ func NewImportCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return importCmd
 }
 
-func (c *importCommand) run(cmd *cobra.Command, args []string) error {
+func (c *importCommand) run(_ *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		err := errors.New("specify file paths to import")
 		return fmt.Errorf("import: %w", err)

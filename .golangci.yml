@@ -4,8 +4,6 @@ run:
   skip-files:
   - pkg/nodeagent/ebpf/exec.go
 
-concurrency: 4
-
 linters:
   disable-all: true
   enable:
@@ -18,15 +16,45 @@ linters:
     - misspell
     - dupl
     - stylecheck
+    - revive
 
 linters-settings:
   gofmt:
     simplify: true
   dupl:
     threshold: 400
+  revive:
+    ignoreGeneratedHeader: false
+    severity: "warning"
+    confidence: 0.8
+    errorCode: 1
+    warningCode: 1
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: exported
 
 issues:
   # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
   max-issues-per-linter: 0
   # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
   max-same-issues: 0
+  include:
+    - EXC0012  # EXC0012 revive: issue about not having a comment.
+    - EXC0014  # EXC0014 revive: issue about not having a comment.

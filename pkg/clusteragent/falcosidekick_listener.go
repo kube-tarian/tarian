@@ -26,6 +26,7 @@ import (
 
 const tarianRuleSpawnedProcess = "falco.tarian.dev/v1 detect spawned_process"
 
+// FalcoSidekickListener handles incoming Falco alerts, processes them, and takes actions accordingly.
 type FalcoSidekickListener struct {
 	server *http.Server
 
@@ -41,6 +42,20 @@ type FalcoSidekickListener struct {
 	logger *logrus.Logger
 }
 
+// NewFalcoSidekickListener creates a new FalcoSidekickListener instance, setting up an HTTP server for handling Falco alerts.
+// It takes a logger, listener address, Tarian server address, gRPC dial options, informers, a config cache, and an actionHandler as input.
+// Parameters:
+//   - logger: A logger instance for logging.
+//   - addr: The address to bind the HTTP server.
+//   - tarianServerAddress: The address of the Tarian server to connect to.
+//   - opts: gRPC dial options for configuring the connection.
+//   - informers: Shared informers for Kubernetes resource tracking.
+//   - configCache: A cache for Tarian configurations.
+//   - actionHandler: An instance of actionHandler for handling queued events.
+//
+// Returns:
+//   - *FalcoSidekickListener: A new instance of FalcoSidekickListener.
+//   - error: An error if connection or initialization fails.
 func NewFalcoSidekickListener(
 	logger *logrus.Logger,
 	addr string,
@@ -105,7 +120,7 @@ func (f *FalcoSidekickListener) handleFalcoAlert(w http.ResponseWriter, r *http.
 	}
 }
 
-// sanitizeK8sResourceName sanitizes input from falco for additional security and satisfies codeql analysis:
+// sanitizeK8sResourceName sanitizes input from Falco for additional security and satisfies codeql analysis:
 // "This log write receives unsanitized user input from"
 func sanitizeK8sResourceName(str string) string {
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names

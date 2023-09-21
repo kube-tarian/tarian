@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// PodAgent represents the Tarian pod agent.
 type PodAgent struct {
 	clusterAgentAddress string
 	grpcConn            *grpc.ClientConn
@@ -45,6 +46,14 @@ type PodAgent struct {
 	registerFileIgnorePaths []string
 }
 
+// NewPodAgent creates a new instance of the PodAgent.
+//
+// Parameters:
+//   - logger: The logger instance.
+//   - clusterAgentAddress: The address of the cluster agent.
+//
+// Returns:
+//   - *PodAgent: A new instance of the PodAgent.
 func NewPodAgent(logger *logrus.Logger, clusterAgentAddress string) *PodAgent {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -57,38 +66,68 @@ func NewPodAgent(logger *logrus.Logger, clusterAgentAddress string) *PodAgent {
 	}
 }
 
+// SetPodLabels sets the labels for the pod.
+//
+// Parameters:
+//   - labels: The labels to set for the pod.
 func (p *PodAgent) SetPodLabels(labels []*tarianpb.Label) {
 	p.podLabels = labels
 }
 
+// SetPodName sets the name of the pod.
+//
+// Parameters:
+//   - name: The name of the pod.
 func (p *PodAgent) SetPodName(name string) {
 	p.podName = name
 }
 
+// SetpodUID sets the UID of the pod.
+//
+// Parameters:
+//   - uid: The UID of the pod.
 func (p *PodAgent) SetpodUID(uid string) {
 	p.podUID = uid
 }
 
+// SetNamespace sets the namespace of the pod.
+//
+// Parameters:
+//   - namespace: The namespace of the pod.
 func (p *PodAgent) SetNamespace(namespace string) {
 	p.namespace = namespace
 }
 
+// SetFileValidationInterval sets the interval for file validation.
+//
+// Parameters:
+//   - t: The duration for file validation interval.
 func (p *PodAgent) SetFileValidationInterval(t time.Duration) {
 	p.fileValidationInterval = t
 }
 
+// EnableRegisterFiles enables file registration.
 func (p *PodAgent) EnableRegisterFiles() {
 	p.enableRegisterFiles = true
 }
 
+// SetRegisterFilePaths sets the file paths to register.
+//
+// Parameters:
+//   - paths: The file paths to register.
 func (p *PodAgent) SetRegisterFilePaths(paths []string) {
 	p.registerFilePaths = paths
 }
 
+// SetRegisterFileIgnorePaths sets the file paths to ignore during registration.
+//
+// Parameters:
+//   - paths: The file paths to ignore during registration.
 func (p *PodAgent) SetRegisterFileIgnorePaths(paths []string) {
 	p.registerFileIgnorePaths = paths
 }
 
+// Dial establishes a connection to the cluster agent.
 func (p *PodAgent) Dial() {
 	var err error
 	p.grpcConn, err = grpc.Dial(p.clusterAgentAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -100,6 +139,7 @@ func (p *PodAgent) Dial() {
 	}
 }
 
+// GracefulStop stops the PodAgent gracefully.
 func (p *PodAgent) GracefulStop() {
 	p.cancelFunc()
 
@@ -108,6 +148,7 @@ func (p *PodAgent) GracefulStop() {
 	}
 }
 
+// RunThreatScan starts the threat scan loop.
 func (p *PodAgent) RunThreatScan() {
 	p.Dial()
 	defer p.grpcConn.Close()
@@ -128,6 +169,7 @@ func (p *PodAgent) RunThreatScan() {
 	wg.Wait()
 }
 
+// RunRegister starts the registration loop.
 func (p *PodAgent) RunRegister() {
 	p.Dial()
 	defer p.grpcConn.Close()
@@ -151,6 +193,10 @@ func (p *PodAgent) RunRegister() {
 	wg.Wait()
 }
 
+// SetConstraints sets the constraints for the pod.
+//
+// Parameters:
+//   - constraints: The constraints to set for the pod.
 func (p *PodAgent) SetConstraints(constraints []*tarianpb.Constraint) {
 	p.constraintsLock.Lock()
 	defer p.constraintsLock.Unlock()
@@ -158,6 +204,10 @@ func (p *PodAgent) SetConstraints(constraints []*tarianpb.Constraint) {
 	p.constraints = constraints
 }
 
+// GetConstraints retrieves the constraints for the pod.
+//
+// Returns:
+//   - []*tarianpb.Constraint: The constraints for the pod.
 func (p *PodAgent) GetConstraints() []*tarianpb.Constraint {
 	return p.constraints
 }
@@ -174,6 +224,7 @@ func (p *PodAgent) loopSyncConstraints(ctx context.Context) error {
 	}
 }
 
+// SyncConstraints retrieves and synchronizes constraints from the cluster agent.
 func (p *PodAgent) SyncConstraints() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
@@ -191,6 +242,7 @@ func (p *PodAgent) SyncConstraints() {
 	p.constraintsInitialized = true
 }
 
+// loopValidateFileChecksums periodically validates file checksums against constraints.
 func (p *PodAgent) loopValidateFileChecksums(ctx context.Context) error {
 	for {
 		select {
@@ -219,12 +271,17 @@ func (p *PodAgent) loopValidateFileChecksums(ctx context.Context) error {
 	}
 }
 
+// violatedFile represents a file that violates checksum.
 type violatedFile struct {
 	name              string
 	expectedSha256Sum string
 	actualSha256Sum   string
 }
 
+// validateFileChecksums validates file checksums against constraints.
+//
+// Returns:
+//   - map[string]*violatedFile: A map of violated files.
 func (p *PodAgent) validateFileChecksums() map[string]*violatedFile {
 	p.constraintsLock.RLock()
 
@@ -292,6 +349,10 @@ func (p *PodAgent) validateFileChecksums() map[string]*violatedFile {
 	return violatedFiles
 }
 
+// ReportViolatedFilesToClusterAgent reports violated files to the cluster agent.
+//
+// Parameters:
+//   - violatedFiles: A map of violated files.
 func (p *PodAgent) ReportViolatedFilesToClusterAgent(violatedFiles map[string]*violatedFile) {
 	vf := make([]*tarianpb.ViolatedFile, len(violatedFiles))
 
@@ -328,6 +389,13 @@ func (p *PodAgent) ReportViolatedFilesToClusterAgent(violatedFiles map[string]*v
 	}
 }
 
+// matchLabelsFromLabels converts labels to match labels.
+//
+// Parameters:
+//   - labels: The labels to convert.
+//
+// Returns:
+//   - []*tarianpb.MatchLabel: The match labels.
 func matchLabelsFromLabels(labels []*tarianpb.Label) []*tarianpb.MatchLabel {
 	matchLabels := make([]*tarianpb.MatchLabel, len(labels))
 
@@ -340,6 +408,7 @@ func matchLabelsFromLabels(labels []*tarianpb.Label) []*tarianpb.MatchLabel {
 	return matchLabels
 }
 
+// loopRegisterFileChecksums periodically registers file checksums.
 func (p *PodAgent) loopRegisterFileChecksums(ctx context.Context) error {
 	for {
 		_ = p.registerFileChecksums(ctx)
@@ -352,6 +421,7 @@ func (p *PodAgent) loopRegisterFileChecksums(ctx context.Context) error {
 	}
 }
 
+// registerFileChecksums registers file checksums.
 func (p *PodAgent) registerFileChecksums(ctx context.Context) error {
 	registeredSha256Sums := make(map[string]string)
 
@@ -463,6 +533,16 @@ func (p *PodAgent) registerFileChecksums(ctx context.Context) error {
 	return nil
 }
 
+// createConstraintWithFileRule creates a constraint with a file rule.
+//
+// Parameters:
+//   - constraintName: The name of the constraint.
+//   - path: The file path for the rule.
+//   - sha256Sum: The SHA256 checksum for the rule.
+//
+// Returns:
+//   - *tarianpb.AddConstraintResponse: The response from adding the constraint.
+//   - error: An error if there is an issue adding the constraint.
 func (p *PodAgent) createConstraintWithFileRule(constraintName, path, sha256Sum string) (*tarianpb.AddConstraintResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -484,6 +564,13 @@ func (p *PodAgent) createConstraintWithFileRule(constraintName, path, sha256Sum 
 	return response, err
 }
 
+// deleteConstraintByNamePrefix deletes constraints by name prefix.
+//
+// Parameters:
+//   - prefix: The prefix of the constraint names to delete.
+//
+// Returns:
+//   - error: An error if there is an issue deleting constraints.
 func (p *PodAgent) deleteConstraintByNamePrefix(prefix string) error {
 	for _, c := range p.constraints {
 		if strings.HasPrefix(c.GetName(), prefix) {

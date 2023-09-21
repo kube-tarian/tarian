@@ -61,7 +61,7 @@ func newWebhookServerCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return runWebhookServerCmd
 }
 
-func (c *runWebhookServerCommand) run(cmd *cobra.Command, args []string) error {
+func (c *runWebhookServerCommand) run(_ *cobra.Command, args []string) error {
 	podAgentContainerConfig := webhookserver.PodAgentContainerConfig{
 		Name:        c.podAgentContainerName,
 		Image:       c.podAgentContainerImage,

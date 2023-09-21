@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// addCmd represents the add command
+// NewAddCommand creates a new `add` command
 func NewAddCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:     "add",

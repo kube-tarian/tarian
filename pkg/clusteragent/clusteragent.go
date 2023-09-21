@@ -17,12 +17,14 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-type ClusterAgentConfig struct {
-	ServerAddress         string
-	ServerGrpcDialOptions []grpc.DialOption
-	EnableAddConstraint   bool
+// Config represents the configuration options for the ClusterAgent.
+type Config struct {
+	ServerAddress         string            // Address of the Tarian server.
+	ServerGrpcDialOptions []grpc.DialOption // gRPC dial options for connecting to the Tarian server.
+	EnableAddConstraint   bool              // Flag to enable adding constraints.
 }
 
+// ClusterAgent represents the main component of the Tarian Cluster Agent.
 type ClusterAgent struct {
 	grpcServer            *grpc.Server
 	configServer          *ConfigServer
@@ -37,7 +39,13 @@ type ClusterAgent struct {
 	logger       *logrus.Logger
 }
 
-func NewClusterAgent(logger *logrus.Logger, config *ClusterAgentConfig) (*ClusterAgent, error) {
+// NewClusterAgent creates a new ClusterAgent instance.
+// It initializes various components including gRPC servers, configuration, and event handlers.
+// Parameters:
+// - logger: Logger for logging messages.
+// - config: Configuration for connecting to the Tarian server and enabling/disabling constraints.
+// Returns a new ClusterAgent instance or an error if initialization fails.
+func NewClusterAgent(logger *logrus.Logger, config *Config) (*ClusterAgent, error) {
 	grpcServer := grpc.NewServer()
 
 	configServer, err := NewConfigServer(logger, config.ServerAddress, config.ServerGrpcDialOptions)
@@ -123,6 +131,8 @@ func NewClusterAgent(logger *logrus.Logger, config *ClusterAgentConfig) (*Cluste
 	return ca, nil
 }
 
+// Close stops and cleans up resources held by the ClusterAgent.
+// It closes gRPC servers and cancels background goroutines.
 func (ca *ClusterAgent) Close() {
 	ca.configServer.Close()
 	ca.eventServer.Close()
@@ -130,10 +140,15 @@ func (ca *ClusterAgent) Close() {
 	ca.cancelFunc()
 }
 
+// GetGrpcServer returns the gRPC server instance used by the ClusterAgent.
+// It allows external components to interact with the gRPC server.
+// Returns the gRPC server instance.
 func (ca *ClusterAgent) GetGrpcServer() *grpc.Server {
 	return ca.grpcServer
 }
 
+// Run starts the ClusterAgent and its associated components.
+// It initiates the configuration cache, action handler, Kubernetes informers, and Falco Sidekick listener.
 func (ca *ClusterAgent) Run() {
 	go ca.configCache.Run()
 	go ca.actionHandler.Run()

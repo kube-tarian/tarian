@@ -14,6 +14,7 @@ import (
 
 // +kubebuilder:webhook:path=/inject-pod-agent,mutating=true,sideEffects=none,failurePolicy=ignore,groups="",resources=pods,verbs=create,versions=v1,admissionReviewVersions=v1,name=pod-agent.k8s.tarian.dev
 
+// PodAgentInjector represents an admission webhook injector for pod agents.
 type PodAgentInjector struct {
 	Client  client.Client
 	decoder *admission.Decoder
@@ -21,6 +22,7 @@ type PodAgentInjector struct {
 	logger  *logrus.Logger
 }
 
+// PodAgentContainerConfig defines the configuration for a pod agent container.
 type PodAgentContainerConfig struct {
 	Name        string
 	Image       string
@@ -30,13 +32,29 @@ type PodAgentContainerConfig struct {
 }
 
 const (
-	ThreatScanAnnotation              = "pod-agent.k8s.tarian.dev/threat-scan"
-	RegisterAnnotation                = "pod-agent.k8s.tarian.dev/register"
-	FileValidationIntervalAnnotation  = "pod-agent.k8s.tarian.dev/file-validation-interval"
+	// ThreatScanAnnotation is the annotation used to enable threat scanning for a pod.
+	ThreatScanAnnotation = "pod-agent.k8s.tarian.dev/threat-scan"
+
+	// RegisterAnnotation is the annotation used to mark a pod for agent registration.
+	RegisterAnnotation = "pod-agent.k8s.tarian.dev/register"
+
+	// FileValidationIntervalAnnotation is the annotation used to specify file validation interval for a pod.
+	FileValidationIntervalAnnotation = "pod-agent.k8s.tarian.dev/file-validation-interval"
+
+	// RegisterFileIgnorePathsAnnotation is the annotation used to specify paths to ignore during agent registration.
 	RegisterFileIgnorePathsAnnotation = "pod-agent.k8s.tarian.dev/register-file-ignore-paths"
 )
 
-// podAnnotator adds an annotation to every incoming pods.
+// Handle processes a webhook request, adding a sidecar container to a Pod based on annotations.
+// It decodes the incoming request, checks for relevant annotations, and adds the sidecar container accordingly.
+// If no annotations are found or if the specified sidecar container already exists, it allows the request.
+// The added sidecar container is responsible for threat scanning or registration, depending on the annotations.
+// Parameters:
+//   - ctx: The context for the request.
+//   - req: The admission request containing the Pod to be modified.
+//
+// Returns:
+//   - admission.Response: The response indicating the result of the webhook request.
 func (p *PodAgentInjector) Handle(ctx context.Context, req admission.Request) admission.Response {
 	p.logger.Debug("handling a webhook request")
 

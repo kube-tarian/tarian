@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewGetCommand creates a new `get` command
 func NewGetCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get",

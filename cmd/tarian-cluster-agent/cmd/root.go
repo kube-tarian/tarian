@@ -56,6 +56,7 @@ func buildRootCommand(logger *logrus.Logger) *cobra.Command {
 	return rootCmd
 }
 
+// Execute executes the root command.
 func Execute() {
 	logger := log.GetLogger()
 	rootCmd := buildRootCommand(logger)

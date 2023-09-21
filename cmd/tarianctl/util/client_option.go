@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// ClientOptionsFromCliContext returns grpc dial options from cli context
 func ClientOptionsFromCliContext(logger *logrus.Logger, globalFlags *flags.GlobalFlags) ([]grpc.DialOption, error) {
 	o := []grpc.DialOption{}
 

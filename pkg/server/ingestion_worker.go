@@ -8,12 +8,22 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// IngestionWorker handles the ingestion of events from a message queue.
 type IngestionWorker struct {
 	eventStore     store.EventStore
 	IngestionQueue protoqueue.QueueSubscriber
 	logger         *logrus.Logger
 }
 
+// NewIngestionWorker creates a new IngestionWorker instance.
+//
+// Parameters:
+// - logger: The logger to use for logging.
+// - eventStore: The EventStore to use for storing events.
+// - queueSubscriber: The queue subscriber for event ingestion.
+//
+// Returns:
+// - *IngestionWorker: A new instance of IngestionWorker.
 func NewIngestionWorker(logger *logrus.Logger, eventStore store.EventStore, queueSubscriber protoqueue.QueueSubscriber) *IngestionWorker {
 	return &IngestionWorker{
 		eventStore:     eventStore,
@@ -22,6 +32,13 @@ func NewIngestionWorker(logger *logrus.Logger, eventStore store.EventStore, queu
 	}
 }
 
+// Start starts the IngestionWorker, continuously processing messages from the ingestion queue.
+//
+// Working:
+// - The IngestionWorker continuously fetches messages from the ingestion queue.
+// - It checks if the message is a valid event.
+// - If it is a valid event, it updates the server timestamp and stores the event in the event store.
+// - If there are errors during processing, they are logged.
 func (iw *IngestionWorker) Start() {
 	for {
 		msg, err := iw.IngestionQueue.NextMessage(&tarianpb.Event{})

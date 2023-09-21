@@ -85,6 +85,7 @@ func (globalFlags *GlobalFlags) ValidateGlobalFlags() error {
 	return nil
 }
 
+// GetFlagValuesFromEnvVar reads the environment variables for the global flags.
 func (globalFlags *GlobalFlags) GetFlagValuesFromEnvVar() {
 	// Read environment variable for "server-address" flag
 	if serverAddressEnv := os.Getenv("TARIAN_SERVER_ADDRESS"); serverAddressEnv != "" {

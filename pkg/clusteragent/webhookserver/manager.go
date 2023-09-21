@@ -32,6 +32,16 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
+// NewManager creates a new controller manager for managing webhooks and controllers.
+// Parameters:
+//   - logger: The logger instance for logging.
+//   - port: The port to bind the manager's webhook server.
+//   - healthProbeBindAddress: The address for health probes.
+//   - leaderElection: A flag indicating whether leader election should be enabled.
+//
+// Returns:
+//   - manager.Manager: The created controller manager.
+//   - error: An error, if any, encountered during manager creation.
 func NewManager(logger *logrus.Logger, port int, healthProbeBindAddress string, leaderElection bool) (manager.Manager, error) {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -61,6 +71,11 @@ func NewManager(logger *logrus.Logger, port int, healthProbeBindAddress string, 
 
 }
 
+// RegisterControllers registers controllers for webhook operations.
+// Parameters:
+//   - logger: The logger instance for logging.
+//   - mgr: The controller manager.
+//   - cfg: Configuration for the PodAgent container.
 func RegisterControllers(logger *logrus.Logger, mgr manager.Manager, cfg PodAgentContainerConfig) {
 	mgr.GetWebhookServer().Register(
 		"/inject-pod-agent",
@@ -74,6 +89,17 @@ func RegisterControllers(logger *logrus.Logger, mgr manager.Manager, cfg PodAgen
 	)
 }
 
+// RegisterCertRotator registers the certificate rotator for managing certificates used in webhooks.
+// Parameters:
+//   - logger: The logger instance for logging.
+//   - mgr: The controller manager.
+//   - isReady: A channel indicating readiness.
+//   - namespace: The Kubernetes namespace.
+//   - mutatingWebhookConfigurationName: The name of the mutating webhook configuration.
+//   - secretName: The name of the Kubernetes secret containing certificates.
+//
+// Returns:
+//   - error: An error, if any, encountered during cert rotator registration.
 func RegisterCertRotator(logger *logrus.Logger, mgr manager.Manager, isReady chan struct{},
 	namespace string, mutatingWebhookConfigurationName string, secretName string) error {
 	dnsName := "*." + namespace + ".svc"

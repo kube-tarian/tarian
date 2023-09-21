@@ -10,21 +10,34 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// JetStreamConnection represents a connection to NATS JetStream.
 type JetStreamConnection struct {
-	NATSConn  *nats.Conn
-	JSContext nats.JetStreamContext
+	NATSConn  *nats.Conn            // The NATS connection.
+	JSContext nats.JetStreamContext // The JetStream context.
 }
 
+// JetStream represents a message queue using NATS JetStream.
 type JetStream struct {
-	URL          string
-	Options      []nats.Option
-	StreamName   string
-	Conn         JetStreamConnection
-	Subscription *nats.Subscription
-	channel      chan any
-	logger       *logrus.Logger
+	URL          string              // The NATS server URL.
+	Options      []nats.Option       // NATS options.
+	StreamName   string              // The name of the JetStream stream.
+	Conn         JetStreamConnection // The JetStream connection.
+	Subscription *nats.Subscription  // NATS subscription for consuming messages.
+	channel      chan any            // A channel for enqueuing messages.
+	logger       *logrus.Logger      // A logger for logging messages and errors.
 }
 
+// NewJetstream creates and returns a new JetStream instance.
+//
+// Parameters:
+//   - logger: A logger for logging messages and errors.
+//   - url: The NATS server URL.
+//   - options: NATS options for connecting to the server.
+//   - streamName: The name of the JetStream stream.
+//
+// Returns:
+//   - *JetStream: The new JetStream instance.
+//   - error: An error if there is any issue creating the JetStream instance.
 func NewJetstream(logger *logrus.Logger, url string, options []nats.Option, streamName string) (*JetStream, error) {
 	channel := make(chan any, 1000)
 	return &JetStream{
@@ -36,6 +49,10 @@ func NewJetstream(logger *logrus.Logger, url string, options []nats.Option, stre
 	}, nil
 }
 
+// Connect establishes a connection to NATS JetStream.
+//
+// Returns:
+//   - error: An error if there is any issue connecting to NATS JetStream.
 func (j *JetStream) Connect() error {
 	nc, err := nats.Connect(j.URL, j.Options...)
 	if err != nil {
@@ -47,15 +64,22 @@ func (j *JetStream) Connect() error {
 
 	jetStreamContext, err := nc.JetStream()
 	if err != nil {
-		j.logger.WithError(err).Error("failed to get jetstream context")
-		return fmt.Errorf("nats: jetstream connect: failed to get jetstream context: %w", err)
+		j.logger.WithError(err).Error("failed to get JetStream context")
+		return fmt.Errorf("nats: jetstream connect: failed to get JetStream context: %w", err)
 	}
 
-	j.logger.Info("successfully got jetstream context")
+	j.logger.Info("successfully got JetStream context")
 	j.Conn = JetStreamConnection{NATSConn: nc, JSContext: jetStreamContext}
 	return nil
 }
 
+// Init initializes the JetStream queue and consumer.
+//
+// Parameters:
+//   - streamConfig: Configuration for creating the JetStream stream.
+//
+// Returns:
+//   - error: An error if there is any issue initializing the JetStream queue and consumer.
 func (j *JetStream) Init(streamConfig nats.StreamConfig) error {
 	if err := j.CreateStreamIfNotExist(streamConfig); err != nil {
 		return fmt.Errorf("nats: jetstream init: failed to create stream: %w", err)
@@ -68,9 +92,16 @@ func (j *JetStream) Init(streamConfig nats.StreamConfig) error {
 	return j.CreateSubscription()
 }
 
+// CreateStreamIfNotExist creates a JetStream stream if it doesn't already exist.
+//
+// Parameters:
+//   - streamConfig: Configuration for creating the JetStream stream.
+//
+// Returns:
+//   - error: An error if there is any issue creating the stream or if the stream already exists.
 func (j *JetStream) CreateStreamIfNotExist(streamConfig nats.StreamConfig) error {
 	if j.Conn.JSContext == nil {
-		err := errors.New("can not create stream due to nil connection")
+		err := errors.New("cannot create stream due to nil connection")
 		return fmt.Errorf("nats: jetstream CreateStreamIfNotExist: %w", err)
 	}
 
@@ -86,8 +117,7 @@ func (j *JetStream) CreateStreamIfNotExist(streamConfig nats.StreamConfig) error
 		j.logger.WithFields(logrus.Fields{
 			"stream": j.StreamName,
 			"error":  err,
-		}).Warn("error calling jetstream StreamInfo")
-
+		}).Warn("error calling JetStream StreamInfo")
 	}
 
 	j.logger.WithFields(logrus.Fields{
@@ -105,6 +135,11 @@ func (j *JetStream) CreateStreamIfNotExist(streamConfig nats.StreamConfig) error
 	return nil
 }
 
+// CreateConsumer creates a JetStream consumer for the stream.
+//
+// Returns:
+//   - *nats.ConsumerInfo: Information about the created JetStream consumer.
+//   - error: An error if there is any issue creating the consumer.
 func (j *JetStream) CreateConsumer() (*nats.ConsumerInfo, error) {
 	return j.Conn.JSContext.AddConsumer(j.StreamName, &nats.ConsumerConfig{
 		Durable:        j.StreamName + "-TODO",
@@ -114,6 +149,10 @@ func (j *JetStream) CreateConsumer() (*nats.ConsumerInfo, error) {
 	})
 }
 
+// CreateSubscription creates a NATS subscription for consuming messages from JetStream.
+//
+// Returns:
+//   - error: An error if there is any issue creating the subscription.
 func (j *JetStream) CreateSubscription() error {
 	subscription, err := j.Conn.NATSConn.QueueSubscribeSync(j.StreamName+"-DeliverSubject", j.StreamName+"-TODO")
 	if err != nil {
@@ -123,6 +162,13 @@ func (j *JetStream) CreateSubscription() error {
 	return nil
 }
 
+// Publish publishes a protobuf message to the JetStream stream.
+//
+// Parameters:
+//   - queuedMessage: The protobuf message to be published.
+//
+// Returns:
+//   - error: An error if there is any issue publishing the message.
 func (j *JetStream) Publish(queuedMessage proto.Message) error {
 	data, err := proto.Marshal(queuedMessage)
 	if err != nil {
@@ -137,10 +183,18 @@ func (j *JetStream) Publish(queuedMessage proto.Message) error {
 	return nil
 }
 
+// NextMessage retrieves the next message from the JetStream queue and unmarshals it into the provided protobuf message.
+//
+// Parameters:
+//   - message: A protobuf message where the retrieved message will be unmarshaled.
+//
+// Returns:
+//   - proto.Message: The unmarshaled protobuf message.
+//   - error: An error if there is any issue retrieving or unmarshaling the message.
 func (j *JetStream) NextMessage(message proto.Message) (proto.Message, error) {
 	msg, err := j.Subscription.NextMsg(1 * time.Hour)
 	if errors.Is(err, nats.ErrTimeout) {
-		return nil, fmt.Errorf("nats: jetstream NextMessage: no message in the queue until timeout is reached: %w", err)
+		return nil, fmt.Errorf("nats: jetstream NextMessage: no message in the queue until the timeout is reached: %w", err)
 	}
 	if err != nil {
 		return nil, err

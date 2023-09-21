@@ -43,7 +43,7 @@ func newRunCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	return runCmd
 }
 
-func (c *runCommand) run(cmd *cobra.Command, args []string) error {
+func (c *runCommand) run(_ *cobra.Command, args []string) error {
 	if !isDebugFsMounted() {
 		c.logger.Info("debugfs is not mounted, will try to mount")
 

@@ -12,6 +12,7 @@ import (
 	"github.com/scylladb/go-set/strset"
 )
 
+// ConfigServer handles gRPC calls for configuring constraints and actions.
 type ConfigServer struct {
 	tarianpb.UnimplementedConfigServer
 	constraintStore store.ConstraintStore
@@ -19,6 +20,15 @@ type ConfigServer struct {
 	logger          *logrus.Logger
 }
 
+// NewConfigServer creates a new ConfigServer instance.
+//
+// Parameters:
+// - logger: The logger to use for logging.
+// - constraintStore: The ConstraintStore to use.
+// - actionStore: The ActionStore to use.
+//
+// Returns:
+// - *ConfigServer: A new instance of ConfigServer.
 func NewConfigServer(logger *logrus.Logger, constraintStore store.ConstraintStore, actionStore store.ActionStore) *ConfigServer {
 	return &ConfigServer{
 		constraintStore: constraintStore,
@@ -27,6 +37,15 @@ func NewConfigServer(logger *logrus.Logger, constraintStore store.ConstraintStor
 	}
 }
 
+// GetConstraints retrieves constraints based on the provided request.
+//
+// Parameters:
+// - ctx: The context for the operation.
+// - request: The GetConstraintsRequest containing filter criteria.
+//
+// Returns:
+// - *tarianpb.GetConstraintsResponse: The response containing matched constraints.
+// - error: An error, if any, during the operation.
 func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
 	cs.logger.WithFields(logrus.Fields{
 		"namespace": request.GetNamespace(),
@@ -79,6 +98,15 @@ func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.Ge
 	}, nil
 }
 
+// AddConstraint adds a new constraint.
+//
+// Parameters:
+// - ctx: The context for the operation.
+// - request: The AddConstraintRequest containing the constraint to add.
+//
+// Returns:
+// - *tarianpb.AddConstraintResponse: The response indicating the success of the operation.
+// - error: An error, if any, during the operation.
 func (cs *ConfigServer) AddConstraint(ctx context.Context, request *tarianpb.AddConstraintRequest) (*tarianpb.AddConstraintResponse, error) {
 	if request.GetConstraint() == nil {
 		return nil, status.Error(codes.InvalidArgument, "required constraint is empty")
@@ -111,6 +139,15 @@ func (cs *ConfigServer) AddConstraint(ctx context.Context, request *tarianpb.Add
 	return &tarianpb.AddConstraintResponse{Success: true}, nil
 }
 
+// RemoveConstraint removes a constraint by its namespace and name.
+//
+// Parameters:
+// - ctx: The context for the operation.
+// - request: The RemoveConstraintRequest containing the namespace and name of the constraint to remove.
+//
+// Returns:
+// - *tarianpb.RemoveConstraintResponse: The response indicating the success of the operation.
+// - error: An error, if any, during the operation.
 func (cs *ConfigServer) RemoveConstraint(ctx context.Context, request *tarianpb.RemoveConstraintRequest) (*tarianpb.RemoveConstraintResponse, error) {
 	if request.GetNamespace() == "" || request.GetName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "required namespace or name is empty")
@@ -135,6 +172,15 @@ func (cs *ConfigServer) RemoveConstraint(ctx context.Context, request *tarianpb.
 	return &tarianpb.RemoveConstraintResponse{Success: true}, nil
 }
 
+// AddAction adds a new action.
+//
+// Parameters:
+// - ctx: The context for the operation.
+// - request: The AddActionRequest containing the action to add.
+//
+// Returns:
+// - *tarianpb.AddActionResponse: The response indicating the success of the operation.
+// - error: An error, if any, during the operation.
 func (cs *ConfigServer) AddAction(ctx context.Context, request *tarianpb.AddActionRequest) (*tarianpb.AddActionResponse, error) {
 	if request.GetAction() == nil {
 		return nil, status.Error(codes.InvalidArgument, "required action is empty")
@@ -169,6 +215,15 @@ func (cs *ConfigServer) AddAction(ctx context.Context, request *tarianpb.AddActi
 	return &tarianpb.AddActionResponse{Success: true}, nil
 }
 
+// GetActions retrieves actions based on the provided request.
+//
+// Parameters:
+// - ctx: The context for the operation.
+// - request: The GetActionsRequest containing filter criteria.
+//
+// Returns:
+// - *tarianpb.GetActionsResponse: The response containing matched actions.
+// - error: An error, if any, during the operation.
 func (cs *ConfigServer) GetActions(ctx context.Context, request *tarianpb.GetActionsRequest) (*tarianpb.GetActionsResponse, error) {
 	cs.logger.WithFields(logrus.Fields{
 		"namespace": request.GetNamespace(),
@@ -221,6 +276,15 @@ func (cs *ConfigServer) GetActions(ctx context.Context, request *tarianpb.GetAct
 	}, nil
 }
 
+// RemoveAction removes an action by its namespace and name.
+//
+// Parameters:
+// - ctx: The context for the operation.
+// - request: The RemoveActionRequest containing the namespace and name of the action to remove.
+//
+// Returns:
+// - *tarianpb.RemoveActionResponse: The response indicating the success of the operation.
+// - error: An error, if any, during the operation.
 func (cs *ConfigServer) RemoveAction(ctx context.Context, request *tarianpb.RemoveActionRequest) (*tarianpb.RemoveActionResponse, error) {
 	if request.GetNamespace() == "" || request.GetName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "required namespace or name is empty")

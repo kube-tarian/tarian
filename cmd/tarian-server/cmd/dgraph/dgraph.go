@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewDgraphCommand creates a new `dgraph` command
 func NewDgraphCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 	dgraphCmd := &cobra.Command{
 		Use:   "dgraph",
