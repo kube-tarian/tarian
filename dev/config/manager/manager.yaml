@@ -2,25 +2,25 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    control-plane: tarian-cluster-agent-controller-manager
+    control-plane: tarian-controller-manager
   name: system
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tarian-cluster-agent-controller-manager
+  name: tarian-controller-manager
   namespace: system
   labels:
-    control-plane: tarian-cluster-agent-controller-manager
+    control-plane: tarian-controller-manager
 spec:
   selector:
     matchLabels:
-      control-plane: tarian-cluster-agent-controller-manager
+      control-plane: tarian-controller-manager
   replicas: 1
   template:
     metadata:
       labels:
-        control-plane: tarian-cluster-agent-controller-manager
+        control-plane: tarian-controller-manager
     spec:
       securityContext:
         runAsNonRoot: true
@@ -52,5 +52,5 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
-      serviceAccountName: tarian-cluster-agent-controller-manager
+      serviceAccountName: tarian-controller-manager
       terminationGracePeriodSeconds: 10

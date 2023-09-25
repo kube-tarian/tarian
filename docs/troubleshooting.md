@@ -24,7 +24,7 @@ webhooks:
   - v1
   clientConfig:
     service:
-      name: tarian-cluster-agent-controller-manager
+      name: tarian-controller-manager
       namespace: tarian-system
       path: /inject-pod-agent
       port: 443
@@ -40,7 +40,7 @@ webhooks:
     scope: '*'
 ```
 
-This means, on every pod created, the webhook controller will send a webhook request to `tarian-cluster-agent-controller-manager.tarian-system.svc`, which is served by pods from `tarian-cluster-agent-controller-manager` deployment. These pods will modify the pod's spec to include a sidecar container (pod-agent).
+This means, on every pod created, the webhook controller will send a webhook request to `tarian-controller-manager.tarian-system.svc`, which is served by pods from `tarian-controller-manager` deployment. These pods will modify the pod's spec to include a sidecar container (pod-agent).
 
 ### When sidecar silently fails to be injected (no error messages)
 
@@ -50,10 +50,10 @@ Enable log-level=debug to see more verbose logs.
 helm upgrade tarian-cluster-agent tarian/tarian-cluster-agent --devel -n tarian-system --set clusterAgent.log.level=debug
 ```
 
-After the rollout is completed, you should see more logs in tarian-cluster-agent-controller-manager:
+After the rollout is completed, you should see more logs in tarian-controller-manager:
 
 ```bash
-kubectl logs deploy/tarian-cluster-agent-controller-manager -n tarian-system -f
+kubectl logs deploy/tarian-controller-manager -n tarian-system -f
 ```
 
 Now when a webhook request comes, a log `handling a webhook request` should show up there. If there is no such log, that means the webhook is not coming to the pod.
@@ -97,7 +97,7 @@ webhooks:
 Now when a pod is created while the webhook failed, an error will be returned as follows:
 
 ```
-Error from server (InternalError): error when creating "dev/config/monitored-pod/register.yaml": Internal error occurred: failed calling webhook "tarian-cluster-agent.k8s.tarian.dev": Post "https://tarian-cluster-agent-controller-manager.tarian-system.svc:443/inject-pod-agent?timeout=10s": dial tcp 10.128.245.250:443: connect: connection refused
+Error from server (InternalError): error when creating "dev/config/monitored-pod/register.yaml": Internal error occurred: failed calling webhook "tarian-cluster-agent.k8s.tarian.dev": Post "https://tarian-controller-manager.tarian-system.svc:443/inject-pod-agent?timeout=10s": dial tcp 10.128.245.250:443: connect: connection refused
 ```
 
 When that happens, look for why the connection is refused. Is the pod ready? Is there any network policy? Is there any firewall?
@@ -107,9 +107,9 @@ When that happens, look for why the connection is refused. Is the pod ready? Is 
 
 
 ```
-Error from server (InternalError): error when creating "dev/config/monitored-pod/register.yaml": Internal error occurred: failed calling webhook "tarian-cluster-agent.k8s.tarian.dev": Post "https://tarian-cluster-agent-controller-manager.tarian-system.svc:443/inject-pod-agent?timeout=10s": x509: certificate signed by unknown authority
+Error from server (InternalError): error when creating "dev/config/monitored-pod/register.yaml": Internal error occurred: failed calling webhook "tarian-cluster-agent.k8s.tarian.dev": Post "https://tarian-controller-manager.tarian-system.svc:443/inject-pod-agent?timeout=10s": x509: certificate signed by unknown authority
 ```
 
-Tarian webhook server (deployment name: `tarian-cluster-agent-controller-manager`) by default manages the certificate needed by the webhook admission controller. It's configured in the tarian-cluster-agent `MutatingWebhookConfiguration`, in `caBundle`. In some rare conditions, the `caBundle` field might not be updated yet so that the CA doesn't match with the one used by the webhook server.
+Tarian webhook server (deployment name: `tarian-controller-manager`) by default manages the certificate needed by the webhook admission controller. It's configured in the tarian-cluster-agent `MutatingWebhookConfiguration`, in `caBundle`. In some rare conditions, the `caBundle` field might not be updated yet so that the CA doesn't match with the one used by the webhook server.
 
-If that's the case, you can try to delete the pod in tarian-cluster-agent-controller-manager deployment. A new pod will then be created again and it will try to update the caBundle.
+If that's the case, you can try to delete the pod in tarian-controller-manager deployment. A new pod will then be created again and it will try to update the caBundle.
