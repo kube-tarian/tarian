@@ -8,18 +8,21 @@ import (
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
+	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
 	"github.com/kube-tarian/tarian/pkg/log"
-	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
 )
 
 type actionCommand struct {
 	globalFlags *flags.GlobalFlags
 	logger      *logrus.Logger
+
+	grpcClient ugrpc.Client
 
 	namespace string
 	output    string
@@ -55,10 +58,14 @@ func (c *actionCommand) run(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("get actions: %w", err)
 	}
 
-	client, err := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
+	grpcConn, err := grpc.Dial(c.globalFlags.ServerAddr, opts...)
 	if err != nil {
-		return fmt.Errorf("get actions: %w", err)
+		return fmt.Errorf("get actions: failed to connect to server: %w", err)
 	}
+	defer grpcConn.Close()
+
+	c.grpcClient = ugrpc.NewGRPCClient(grpcConn)
+	client := c.grpcClient.NewConfigClient()
 
 	request := &tarianpb.GetActionsRequest{}
 	ns := c.namespace

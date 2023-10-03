@@ -8,9 +8,10 @@ import (
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
+	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
 	"github.com/kube-tarian/tarian/pkg/log"
-	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/olekukonko/tablewriter"
@@ -21,6 +22,8 @@ import (
 type constraintsCommand struct {
 	globalFlags *flags.GlobalFlags
 	logger      *logrus.Logger
+
+	grpcClient ugrpc.Client
 
 	output string
 }
@@ -54,10 +57,14 @@ func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get constraints: %w", err)
 	}
 
-	client, err := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
+	grpcConn, err := grpc.Dial(c.globalFlags.ServerAddr, opts...)
 	if err != nil {
-		return fmt.Errorf("get constraints: %w", err)
+		return fmt.Errorf("get constraints: failed to connect to server: %w", err)
 	}
+	defer grpcConn.Close()
+
+	c.grpcClient = ugrpc.NewGRPCClient(grpcConn)
+	client := c.grpcClient.NewConfigClient()
 
 	response, err := client.GetConstraints(context.Background(), &tarianpb.GetConstraintsRequest{})
 	if err != nil {
@@ -94,27 +101,6 @@ func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) error {
 		}
 	}
 	return nil
-}
-
-func matchLabelsToString(labels []*tarianpb.MatchLabel) string {
-	if len(labels) == 0 {
-		return ""
-	}
-
-	str := strings.Builder{}
-	str.WriteString("matchLabels:")
-
-	for i, l := range labels {
-		str.WriteString(l.GetKey())
-		str.WriteString("=")
-		str.WriteString(l.GetValue())
-
-		if i < len(labels)-1 {
-			str.WriteString(",")
-		}
-	}
-
-	return str.String()
 }
 
 func allowedProcessesToString(rules []*tarianpb.AllowedProcessRule) string {

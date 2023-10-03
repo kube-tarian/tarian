@@ -8,16 +8,19 @@ import (
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
+	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
 	"github.com/kube-tarian/tarian/pkg/log"
-	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 )
 
 type removeConstraintsCmd struct {
 	globalFlags *flags.GlobalFlags
 	logger      *logrus.Logger
+
+	grpcClient ugrpc.Client
 
 	namespace string
 }
@@ -51,10 +54,14 @@ func (c *removeConstraintsCmd) run(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("remove constraint: %w", err)
 	}
 
-	client, err := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
+	grpcConn, err := grpc.Dial(c.globalFlags.ServerAddr, opts...)
 	if err != nil {
-		return fmt.Errorf("remove constraint: %w", err)
+		return fmt.Errorf("remove constraint: failed to connect to server: %w", err)
 	}
+	defer grpcConn.Close()
+
+	c.grpcClient = ugrpc.NewGRPCClient(grpcConn)
+	client := c.grpcClient.NewConfigClient()
 
 	for _, name := range args {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

@@ -10,8 +10,10 @@ import (
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
+	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
+	"google.golang.org/grpc"
+
 	"github.com/kube-tarian/tarian/pkg/log"
-	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
@@ -21,6 +23,8 @@ import (
 type eventsCommand struct {
 	globalFlags *flags.GlobalFlags
 	logger      *logrus.Logger
+
+	grpcClient ugrpc.Client
 
 	limit uint
 }
@@ -51,10 +55,14 @@ func (c *eventsCommand) run(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("get events: %w", err)
 	}
 
-	client, err := client.NewEventClient(c.globalFlags.ServerAddr, opts...)
+	grpcConn, err := grpc.Dial(c.globalFlags.ServerAddr, opts...)
 	if err != nil {
-		return fmt.Errorf("get events: %w", err)
+		return fmt.Errorf("get events: failed to connect to server: %w", err)
 	}
+	defer grpcConn.Close()
+
+	c.grpcClient = ugrpc.NewGRPCClient(grpcConn)
+	client := c.grpcClient.NewEventClient()
 
 	response, err := client.GetEvents(context.Background(), &tarianpb.GetEventsRequest{Limit: uint32(c.limit)})
 	if err != nil {

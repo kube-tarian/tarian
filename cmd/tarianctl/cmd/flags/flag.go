@@ -96,9 +96,8 @@ func (globalFlags *GlobalFlags) GetFlagValuesFromEnvVar(logger *logrus.Logger) {
 	}
 
 	// Read environment variable for "server-tls-enabled" flag
-	if !globalFlags.ServerTLSEnabled {
-		if serverTLSEnabledEnv := os.Getenv("TARIAN_TLS_ENABLED"); serverTLSEnabledEnv != "" {
-			logger.Debugf("Setting server TLS enabled from environment variable, TARIAN_TLS_ENABLED=%s", serverTLSEnabledEnv)
+	if serverTLSEnabledEnv := os.Getenv("TARIAN_TLS_ENABLED"); serverTLSEnabledEnv != "" {
+		if serverTLSEnabledEnv == "true" {
 			globalFlags.ServerTLSEnabled = true
 		}
 	}
@@ -112,9 +111,8 @@ func (globalFlags *GlobalFlags) GetFlagValuesFromEnvVar(logger *logrus.Logger) {
 	}
 
 	// Read environment variable for "server-tls-insecure-skip-verify" flag
-	if globalFlags.ServerTLSInsecureSkipVerify {
-		if serverTLSInsecureSkipVerifyEnv := os.Getenv("TARIAN_TLS_INSECURE_SKIP_VERIFY"); serverTLSInsecureSkipVerifyEnv != "" {
-			logger.Debugf("Setting server TLS insecure skip verify from environment variable, TARIAN_TLS_INSECURE_SKIP_VERIFY=%s", serverTLSInsecureSkipVerifyEnv)
+	if serverTLSInsecureSkipVerifyEnv := os.Getenv("TARIAN_TLS_INSECURE_SKIP_VERIFY"); serverTLSInsecureSkipVerifyEnv != "" {
+		if serverTLSInsecureSkipVerifyEnv == "false" {
 			globalFlags.ServerTLSInsecureSkipVerify = false
 		}
 	}

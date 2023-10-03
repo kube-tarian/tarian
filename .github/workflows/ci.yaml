@@ -39,6 +39,54 @@ jobs:
         with:
           args: -v --config=.golangci.yml
 
+  unit-test:
+    runs-on: ubuntu-latest
+    env:
+      GOPATH: ${{ github.workspace }}/../go
+      HOME: ${{ github.workspace }}/..
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
+        with:
+          submodules: "recursive"
+
+      - name: Set up Go
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #4.1.0
+        with:
+          go-version: "1.21"
+          cache: false
+
+      - name: Install dependencies
+        run: |
+          set -x
+          # Install required dependencies and tools
+          sudo apt update && sudo apt install -y pkg-config libelf-dev clang
+          go install github.com/mgechev/revive@latest
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
+
+      - name: Build
+        run: |
+          set -x
+          sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
+          make bin/protoc bin/goreleaser
+          bash ./dev/run-kind-registry.sh
+          make ebpf generate
+          ./bin/goreleaser release --snapshot --rm-dist
+
+      - name: Run unit tests
+        run: make unit-test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          verbose: true # optional (default = false)
+
   test-k8s:
     runs-on: ubuntu-latest
     env:

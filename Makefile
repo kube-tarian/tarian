@@ -142,7 +142,7 @@ push-local-images:
 	docker push localhost:5000/tarian-node-agent
 
 unit-test:
-	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) go test -v -race -count=1 ./pkg/...
+	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) go test -v -race -coverprofile=coverage.xml -covermode=atomic ./pkg/... ./cmd/...
 
 e2e-test:
 	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) go test -v -race -count=1 ./test/e2e/...
@@ -150,6 +150,9 @@ e2e-test:
 k8s-test:
 	./test/k8s/test.sh
 
+coverage: unit-test
+	go tool cover -html=coverage.xml
+	
 manifests: bin/controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) webhook paths="./pkg/clusteragent/..." output:webhook:artifacts:config=dev/config/webhook
 
