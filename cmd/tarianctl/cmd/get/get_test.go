@@ -1,4 +1,4 @@
-package add
+package get
 
 import (
 	"testing"
@@ -8,37 +8,37 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewAddCommand(t *testing.T) {
+func TestNewGetCommand(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        []string
 		expectedErr string
 	}{
 		{
-			name:        "No subcommand provided",
+			name:        "No resource specified",
 			args:        []string{},
-			expectedErr: `tarianctl needs exactly one argument, use "tarianctl add --help" for command usage`,
+			expectedErr: "no resource specified, use `tarianctl get --help` for command usage",
 		},
 		{
-			name:        "Valid subcommand provided constraint",
-			args:        []string{"constraint"},
+			name:        "Valid subcommand provided constraints",
+			args:        []string{"constraints"},
 			expectedErr: "failed to connect to server",
 		},
 		{
-			name:        "Valid subcommand provided action",
-			args:        []string{"action"},
-			expectedErr: `required flag(s) "action" not set`,
+			name:        "Valid subcommand provided actions",
+			args:        []string{"actions"},
+			expectedErr: "failed to build resolver",
 		},
 		{
-			name:        "Invalid subcommand provided",
-			args:        []string{"invalid-subcommand"},
-			expectedErr: `unknown command "invalid-subcommand" for "add"`,
+			name:        "Valid subcommand provided events",
+			args:        []string{"events"},
+			expectedErr: "failed to build resolver",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := NewAddCommand(&flags.GlobalFlags{})
+			cmd := NewGetCommand(&flags.GlobalFlags{})
 
 			assert.IsType(t, &cobra.Command{}, cmd)
 

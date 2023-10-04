@@ -18,11 +18,7 @@ func ConfigureLogger(logLevel string) {
 
 	logger = logrus.New()
 	logger.SetLevel(level)
-	logger.SetFormatter(&logrus.TextFormatter{
-		ForceColors:   true,
-		DisableColors: false,
-		FullTimestamp: true,
-	})
+	DefaultFormat()
 	logger.SetOutput(os.Stdout)
 }
 
@@ -33,4 +29,21 @@ func GetLogger() *logrus.Logger {
 		ConfigureLogger("info")
 	}
 	return logger
+}
+
+// NoTimestampFormatter is a logrus formatter that does not print the timestamp
+type NoTimestampFormatter struct{}
+
+// Format formats the log entry without the timestamp
+func (f *NoTimestampFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	return []byte(entry.Message), nil
+}
+
+// DefaultFormat sets the default log format
+func DefaultFormat() {
+	logger.SetFormatter(&logrus.TextFormatter{
+		ForceColors:   true,
+		DisableColors: false,
+		FullTimestamp: true,
+	})
 }

@@ -14,7 +14,7 @@ import (
 )
 
 func TestActionCommand_Run(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 	tests := []struct {
 		name        string
 		expectedErr string
@@ -192,22 +192,17 @@ func cleanLog(logLine string) string {
 }
 
 func TestNewAddActionCommand(t *testing.T) {
-	// Create a mock globalFlags instance
 	mockGlobalFlags := &flags.GlobalFlags{
 		ServerAddr: "mock-server-address",
-		// Add other fields as needed
 	}
 
-	// Call the function to be tested
 	cmd := newAddActionCommand(mockGlobalFlags)
 
-	// Check if the returned value is of type *cobra.Command
 	assert.IsType(t, &cobra.Command{}, cmd)
 
-	// Check if specific flags are correctly added
 	namespaceFlag := cmd.Flags().Lookup("namespace")
 	assert.NotNil(t, namespaceFlag)
-	assert.Equal(t, "default", namespaceFlag.DefValue) // Check default value
+	assert.Equal(t, "default", namespaceFlag.DefValue)
 
 	nameFlag := cmd.Flags().Lookup("name")
 	assert.NotNil(t, nameFlag)

@@ -15,8 +15,28 @@ func NewFakeConfigClient() ConfigClient {
 
 // GetConstraints returns the constraints for the specified namespace.
 func (f *fakeConfigClient) GetConstraints(ctx context.Context, in *GetConstraintsRequest, opts ...grpc.CallOption) (*GetConstraintsResponse, error) {
-
-	return nil, nil
+	var regex = "regex-1"
+	var hash = "hash-1"
+	return &GetConstraintsResponse{
+		Constraints: []*Constraint{
+			{
+				Kind:      "FakeKind",
+				Namespace: "test-ns1",
+				Name:      "constraint-1",
+				Selector: &Selector{
+					MatchLabels: []*MatchLabel{
+						{Key: "key1", Value: "value1"},
+					},
+				},
+				AllowedProcesses: []*AllowedProcessRule{
+					{Regex: &regex},
+				},
+				AllowedFiles: []*AllowedFileRule{
+					{Name: "file-1", Sha256Sum: &hash},
+				},
+			},
+		},
+	}, nil
 }
 
 // AddConstraint adds a constraint to the specified namespace.
@@ -42,7 +62,24 @@ func (f *fakeConfigClient) AddAction(ctx context.Context, in *AddActionRequest, 
 
 // GetActions returns the actions for the specified namespace.
 func (f *fakeConfigClient) GetActions(ctx context.Context, in *GetActionsRequest, opts ...grpc.CallOption) (*GetActionsResponse, error) {
-	return nil, nil
+	return &GetActionsResponse{
+		Actions: []*Action{
+			{
+				Kind:      "FakeKind",
+				Namespace: "default",
+				Name:      "action1",
+				Selector: &Selector{
+					MatchLabels: []*MatchLabel{
+						{Key: "key1", Value: "value1"},
+					},
+				},
+				OnViolatedProcess: true,
+				OnViolatedFile:    false,
+				OnFalcoAlert:      false,
+				Action:            "delete-pod",
+			},
+		},
+	}, nil
 }
 
 // RemoveAction removes an action from the specified namespace.
@@ -64,5 +101,37 @@ func (f *fakeEventClient) IngestEvent(ctx context.Context, in *IngestEventReques
 
 // GetEvents returns the events from the Tarian Server.
 func (f *fakeEventClient) GetEvents(ctx context.Context, in *GetEventsRequest, opts ...grpc.CallOption) (*GetEventsResponse, error) {
-	return nil, nil
+	return &GetEventsResponse{
+		Events: []*Event{
+			{
+				Kind: "FakeKind",
+				Type: "FakeType",
+				Uid:  "FakeUid",
+				Targets: []*Target{
+					{
+						Pod: &Pod{
+							Namespace: "default",
+							Name:      "nginx-1",
+							Labels: []*Label{
+								{Key: "app", Value: "nginx"},
+							},
+						},
+						ViolatedProcesses: []*Process{
+							{
+								Pid:  123,
+								Name: "Unknown",
+							},
+						},
+						ViolatedFiles: []*ViolatedFile{
+							{
+								Name:              "/etc/unknownFile",
+								ActualSha256Sum:   "1234567890",
+								ExpectedSha256Sum: "0987654321",
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil
 }

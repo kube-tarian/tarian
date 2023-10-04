@@ -3,7 +3,7 @@ package get
 import (
 	"context"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
@@ -53,24 +53,25 @@ tctl get a -o yaml
 }
 
 func (c *actionCommand) run(_ *cobra.Command, args []string) error {
-	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
-	if err != nil {
-		return fmt.Errorf("get actions: %w", err)
-	}
+	if c.grpcClient == nil {
+		opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
+		if err != nil {
+			return fmt.Errorf("add constraints: %w", err)
+		}
 
-	grpcConn, err := grpc.Dial(c.globalFlags.ServerAddr, opts...)
-	if err != nil {
-		return fmt.Errorf("get actions: failed to connect to server: %w", err)
+		grpcConn, err := grpc.Dial(c.globalFlags.ServerAddr, opts...)
+		if err != nil {
+			return fmt.Errorf("add constraints: failed to connect to server: %w", err)
+		}
+		defer grpcConn.Close()
+		c.grpcClient = ugrpc.NewGRPCClient(grpcConn)
 	}
-	defer grpcConn.Close()
-
-	c.grpcClient = ugrpc.NewGRPCClient(grpcConn)
 	client := c.grpcClient.NewConfigClient()
 
 	request := &tarianpb.GetActionsRequest{}
-	ns := c.namespace
-	if ns != "" {
-		request.Namespace = ns
+
+	if c.namespace != "" {
+		request.Namespace = c.namespace
 	}
 
 	response, err := client.GetActions(context.Background(), request)
@@ -80,28 +81,16 @@ func (c *actionCommand) run(_ *cobra.Command, args []string) error {
 
 	outputFormat := c.output
 	if outputFormat == "" {
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Namespace", "Action Name", "Selector", "Trigger", "Action"})
-		table.SetColumnSeparator(" ")
-		table.SetCenterSeparator("-")
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-
-		for _, a := range response.GetActions() {
-			table.Append([]string{a.GetNamespace(), a.GetName(), matchLabelsToString(a.GetSelector().GetMatchLabels()), formatActionTrigger(a), a.GetAction()})
-		}
-
-		table.Render()
+		actionsTableOutput(response.GetActions(), c.logger.Out)
 	} else if outputFormat == "yaml" {
-		for _, action := range response.GetActions() {
-			d, err := yaml.Marshal(action)
-			if err != nil {
-				return fmt.Errorf("get actions: %w", err)
-			}
-
-			fmt.Print(string(d))
-			fmt.Println("---")
+		err = actionsYamlOutput(response.GetActions(), c.logger)
+		if err != nil {
+			return fmt.Errorf("get actions: %w", err)
 		}
+	} else {
+		return fmt.Errorf("get actions: invalid output format: %s", outputFormat)
 	}
+
 	return nil
 }
 
@@ -131,4 +120,34 @@ func formatActionTrigger(action *tarianpb.Action) string {
 	}
 
 	return str.String()
+}
+
+func actionsTableOutput(actions []*tarianpb.Action, out io.Writer) {
+	table := tablewriter.NewWriter(out)
+	table.SetHeader([]string{"Namespace", "Action Name", "Selector", "Trigger", "Action"})
+	table.SetColumnSeparator(" ")
+	table.SetCenterSeparator("-")
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+
+	for _, a := range actions {
+		table.Append([]string{a.GetNamespace(), a.GetName(), matchLabelsToString(a.GetSelector().GetMatchLabels()), formatActionTrigger(a), a.GetAction()})
+	}
+
+	table.Render()
+}
+
+func actionsYamlOutput(actions []*tarianpb.Action, logger *logrus.Logger) error {
+	logger.SetFormatter(&log.NoTimestampFormatter{})
+	for _, action := range actions {
+		d, err := yaml.Marshal(action)
+		if err != nil {
+			log.DefaultFormat()
+			return err
+		}
+
+		logger.Info(string(d))
+		logger.Info("---\n")
+	}
+	log.DefaultFormat()
+	return nil
 }

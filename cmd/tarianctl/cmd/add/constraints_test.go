@@ -12,7 +12,6 @@ import (
 )
 
 func TestConstraintCommand_Run(t *testing.T) {
-	// t.Parallel()
 	tests := []struct {
 		name        string
 		expectedErr string
