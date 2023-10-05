@@ -1,19 +1,18 @@
 package add
 
 import (
-	"net"
-	"strings"
 	"testing"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
+	utesting "github.com/kube-tarian/tarian/cmd/tarianctl/util/testing"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/spf13/cobra"
+
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
 )
 
-func TestActionCommand_Run(t *testing.T) {
+func TestAddActionCommandRun(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name        string
@@ -118,7 +117,7 @@ action: delete-pod
 	}
 
 	serverAddr := "localhost:50051"
-	go startFakeServer(t, serverAddr)
+	go utesting.StartFakeServer(t, serverAddr)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -141,7 +140,8 @@ action: delete-pod
 
 			// Capture log output
 			logOutput := []byte{}
-			cmd.logger.Out = &logOutputWriter{&logOutput}
+			cmd.logger.Out = &utesting.LogOutputWriter{Output: &logOutput}
+			log.MiniLogFormat()
 
 			// Call the run function
 			err := cmd.run(nil, nil)
@@ -157,38 +157,11 @@ action: delete-pod
 
 			// Assert expected log output
 			if tt.expectedLog != "" {
-				assert.Equal(t, strings.TrimSpace(cleanLog(string(logOutput))), strings.TrimSpace(tt.expectedLog))
+				assert.Equal(t, utesting.CleanLog(tt.expectedLog), utesting.CleanLog(string(logOutput)))
+				// assert.Equal(t, strings.TrimSpace(utesting.CleanLog(string(logOutput))), strings.TrimSpace(tt.expectedLog))
 			}
 		})
 	}
-}
-
-// Helper struct to capture log output
-type logOutputWriter struct {
-	output *[]byte
-}
-
-func (w *logOutputWriter) Write(p []byte) (n int, err error) {
-	*w.output = append(*w.output, p...)
-	return len(p), nil
-}
-
-func startFakeServer(t *testing.T, serverAddr string) {
-	lis, err := net.Listen("tcp", serverAddr)
-	if err != nil {
-		assert.NoError(t, err)
-	}
-
-	srv := grpc.NewServer()
-
-	if err := srv.Serve(lis); err != nil {
-		assert.NoError(t, err)
-	}
-}
-
-func cleanLog(logLine string) string {
-	index := strings.Index(logLine, "]")
-	return logLine[index+2:]
 }
 
 func TestNewAddActionCommand(t *testing.T) {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
+	utesting "github.com/kube-tarian/tarian/cmd/tarianctl/util/testing"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/sirupsen/logrus"
@@ -14,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConstraintCommand_Run(t *testing.T) {
+func TestGetConstraintCommandRun(t *testing.T) {
 	// t.Parallel()
 	textOut := `---------------------------------------------------------------------------------------------
   NAMESPACE   CONSTRAINT NAME          SELECTOR           ALLOWED PROCESSES   ALLOWED FILES  
@@ -50,13 +51,13 @@ allowedfiles:
 			name:        "Successful execution with default values",
 			grpcClient:  grpc.NewFakeGrpcClient(),
 			output:      "",
-			expectedLog: cleanLog(textOut),
+			expectedLog: textOut,
 		},
 		{
 			name:        "Successful execution with output flag set to 'yaml'",
 			grpcClient:  grpc.NewFakeGrpcClient(),
 			output:      "yaml",
-			expectedLog: cleanLog(yamlOut),
+			expectedLog: yamlOut,
 		},
 		{
 			name:        "Use real gRPC client",
@@ -65,7 +66,7 @@ allowedfiles:
 	}
 
 	serverAddr := "localhost:50054"
-	go startFakeServer(t, serverAddr)
+	go utesting.StartFakeServer(t, serverAddr)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -79,7 +80,8 @@ allowedfiles:
 			}
 
 			logOutput := []byte{}
-			cmd.logger.Out = &logOutputWriter{&logOutput}
+			cmd.logger.Out = &utesting.LogOutputWriter{Output: &logOutput}
+			log.MiniLogFormat()
 
 			err := cmd.run(nil, nil)
 
@@ -92,7 +94,8 @@ allowedfiles:
 			}
 
 			if tt.expectedLog != "" {
-				assert.Equal(t, cleanLog(string(logOutput)), tt.expectedLog)
+				assert.Equal(t, utesting.CleanLog(tt.expectedLog), utesting.CleanLog(string(logOutput)))
+
 			}
 		})
 	}
@@ -142,7 +145,7 @@ func TestConstraintsTableOutput(t *testing.T) {
   test-ns2    constraint-2      matchLabels:key2=value2                                                              
 ---------------------------------------------------------------------------------------------------------------------
 `
-	assert.Equal(t, cleanLog(expectedOutput), cleanLog(buf.String()))
+	assert.Equal(t, utesting.CleanLog(expectedOutput), utesting.CleanLog(buf.String()))
 }
 
 func TestConstraintsYAMLOutput(t *testing.T) {

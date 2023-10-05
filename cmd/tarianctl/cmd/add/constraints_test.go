@@ -1,17 +1,17 @@
 package add
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
+	utesting "github.com/kube-tarian/tarian/cmd/tarianctl/util/testing"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConstraintCommand_Run(t *testing.T) {
+func TestAddConstraintCommandRun(t *testing.T) {
 	tests := []struct {
 		name        string
 		expectedErr string
@@ -102,7 +102,7 @@ allowedfiles:
 
 	}
 	serverAddr := "localhost:50052"
-	go startFakeServer(t, serverAddr)
+	go utesting.StartFakeServer(t, serverAddr)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := &constraintsCommand{
@@ -122,7 +122,8 @@ allowedfiles:
 
 			// Capture log output
 			logOutput := []byte{}
-			cmd.logger.Out = &logOutputWriter{&logOutput}
+			cmd.logger.Out = &utesting.LogOutputWriter{Output: &logOutput}
+			log.MiniLogFormat()
 
 			// Call the run function
 			err := cmd.run(nil, nil)
@@ -138,7 +139,8 @@ allowedfiles:
 
 			// Assert expected log output
 			if tt.expectedLog != "" {
-				assert.Equal(t, strings.TrimSpace(cleanLog(string(logOutput))), strings.TrimSpace(tt.expectedLog))
+				assert.Equal(t, utesting.CleanLog(tt.expectedLog), utesting.CleanLog(string(logOutput)))
+				// assert.Equal(t, strings.TrimSpace(utesting.CleanLog(string(logOutput))), strings.TrimSpace(tt.expectedLog))
 			}
 		})
 	}

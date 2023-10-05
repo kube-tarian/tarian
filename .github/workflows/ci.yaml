@@ -56,7 +56,7 @@ jobs:
           go-version: "1.21"
           cache: false
 
-      - name: EBPF pre-requisites
+      - name: EBPF prerequisites
         run: |
           set -x
           sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang

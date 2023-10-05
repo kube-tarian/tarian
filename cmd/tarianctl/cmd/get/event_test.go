@@ -6,6 +6,7 @@ import (
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
+	utesting "github.com/kube-tarian/tarian/cmd/tarianctl/util/testing"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/sirupsen/logrus"
@@ -26,7 +27,7 @@ const expectedOutput = `--------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------
 `
 
-func TestEventsCommand_Run(t *testing.T) {
+func TesGetEventsCommandRun(t *testing.T) {
 	tests := []struct {
 		name        string
 		expectedErr string
@@ -39,7 +40,7 @@ func TestEventsCommand_Run(t *testing.T) {
 			name:        "Successful execution with default values",
 			grpcClient:  grpc.NewFakeGrpcClient(),
 			limit:       200,
-			expectedLog: cleanLog(expectedOutput),
+			expectedLog: expectedOutput,
 		},
 		{
 			name:        "Use real gRPC client",
@@ -48,7 +49,7 @@ func TestEventsCommand_Run(t *testing.T) {
 	}
 
 	serverAddr := "localhost:50055"
-	go startFakeServer(t, serverAddr)
+	go utesting.StartFakeServer(t, serverAddr)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -62,7 +63,8 @@ func TestEventsCommand_Run(t *testing.T) {
 			}
 
 			logOutput := []byte{}
-			cmd.logger.Out = &logOutputWriter{&logOutput}
+			cmd.logger.Out = &utesting.LogOutputWriter{Output: &logOutput}
+			log.MiniLogFormat()
 
 			err := cmd.run(nil, nil)
 
@@ -75,7 +77,7 @@ func TestEventsCommand_Run(t *testing.T) {
 			}
 
 			if tt.expectedLog != "" {
-				assert.Equal(t, cleanLog(string(logOutput)), tt.expectedLog)
+				assert.Equal(t, utesting.CleanLog(tt.expectedLog), utesting.CleanLog(string(logOutput)))
 			}
 		})
 	}
@@ -133,7 +135,7 @@ func TestEventsTableOutput(t *testing.T) {
 
 	eventsTableOutput(events, logger)
 
-	assert.Equal(t, cleanLog(expectedOutput), cleanLog(buf.String()))
+	assert.Equal(t, utesting.CleanLog(expectedOutput), utesting.CleanLog(buf.String()))
 }
 
 func TestViolatedProcessesToString(t *testing.T) {

@@ -5,12 +5,13 @@ import (
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
+	utesting "github.com/kube-tarian/tarian/cmd/tarianctl/util/testing"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRemoveConstraintsCommand_Run(t *testing.T) {
+func TestRemoveConstraintsCommandRun(t *testing.T) {
 	tests := []struct {
 		name        string
 		expectedErr string
@@ -38,7 +39,7 @@ func TestRemoveConstraintsCommand_Run(t *testing.T) {
 	}
 
 	serverAddr := "localhost:50058"
-	go startFakeServer(t, serverAddr)
+	go utesting.StartFakeServer(t, serverAddr)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -51,7 +52,8 @@ func TestRemoveConstraintsCommand_Run(t *testing.T) {
 			}
 
 			logOutput := []byte{}
-			cmd.logger.Out = &logOutputWriter{&logOutput}
+			cmd.logger.Out = &utesting.LogOutputWriter{Output: &logOutput}
+			log.MiniLogFormat()
 
 			err := cmd.run(nil, tt.args)
 
@@ -64,7 +66,7 @@ func TestRemoveConstraintsCommand_Run(t *testing.T) {
 			}
 
 			if tt.expectedLog != "" {
-				assert.Equal(t, cleanLog(string(logOutput)), tt.expectedLog)
+				assert.Equal(t, utesting.CleanLog(tt.expectedLog), utesting.CleanLog(string(logOutput)))
 			}
 		})
 	}

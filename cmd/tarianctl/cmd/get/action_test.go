@@ -2,23 +2,21 @@ package get
 
 import (
 	"bytes"
-	"net"
-	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
+	utesting "github.com/kube-tarian/tarian/cmd/tarianctl/util/testing"
 	"github.com/kube-tarian/tarian/pkg/log"
+
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 )
 
-func TestActionCommandRun(t *testing.T) {
+func TestGetActionCommandRun(t *testing.T) {
 	t.Parallel()
 	textOut := `--------------------------------------------------------------------------------------
   NAMESPACE   ACTION NAME          SELECTOR                TRIGGER          ACTION    
@@ -53,7 +51,7 @@ action: delete-pod
 		{
 			name:        "Successful execution with default values",
 			expectedErr: "",
-			expectedLog: cleanLog(textOut),
+			expectedLog: textOut,
 			grpcClient:  ugrpc.NewFakeGrpcClient(),
 			namespace:   "",
 			output:      "",
@@ -61,7 +59,7 @@ action: delete-pod
 		{
 			name:        "Successful execution with output flag set to 'yaml'",
 			expectedErr: "",
-			expectedLog: cleanLog(yamlOut),
+			expectedLog: yamlOut,
 			grpcClient:  ugrpc.NewFakeGrpcClient(),
 			namespace:   "",
 			output:      "yaml",
@@ -72,7 +70,7 @@ action: delete-pod
 		},
 	}
 	serverAddr := "localhost:50053"
-	go startFakeServer(t, serverAddr)
+	go utesting.StartFakeServer(t, serverAddr)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -87,7 +85,8 @@ action: delete-pod
 			}
 
 			logOutput := []byte{}
-			cmd.logger.Out = &logOutputWriter{&logOutput}
+			cmd.logger.Out = &utesting.LogOutputWriter{Output: &logOutput}
+			log.MiniLogFormat()
 
 			err := cmd.run(nil, nil)
 
@@ -100,44 +99,10 @@ action: delete-pod
 			}
 
 			if tt.expectedLog != "" {
-				assert.Equal(t, cleanLog(string(logOutput)), tt.expectedLog)
+				assert.Equal(t, utesting.CleanLog(tt.expectedLog), utesting.CleanLog(string(logOutput)))
 			}
 		})
 	}
-}
-
-func startFakeServer(t *testing.T, serverAddr string) {
-	lis, err := net.Listen("tcp", serverAddr)
-	if err != nil {
-		assert.NoError(t, err)
-	}
-
-	srv := grpc.NewServer()
-
-	if err := srv.Serve(lis); err != nil {
-		assert.NoError(t, err)
-	}
-}
-
-type logOutputWriter struct {
-	output *[]byte
-}
-
-func (w *logOutputWriter) Write(p []byte) (n int, err error) {
-	*w.output = append(*w.output, p...)
-	return len(p), nil
-}
-
-func cleanLog(input string) string {
-	spaceRe := regexp.MustCompile(`\s+`)
-	input = spaceRe.ReplaceAllString(input, " ")
-
-	newlineRe := regexp.MustCompile(`\n+`)
-	input = newlineRe.ReplaceAllString(input, "\n")
-
-	input = strings.TrimSpace(input)
-
-	return input
 }
 
 func TestNewGetActionsCommand(t *testing.T) {
@@ -192,7 +157,7 @@ func TestTableOutput(t *testing.T) {
                                                       onViolatedFile                                  
   test-ns2    action-2      matchLabels:key2=value2                                    test-action-2  
 ------------------------------------------------------------------------------------------------------`
-	assert.Equal(t, cleanLog(expectedOutput), cleanLog(buf.String()))
+	assert.Equal(t, utesting.CleanLog(expectedOutput), utesting.CleanLog(buf.String()))
 }
 
 func TestYAMLOutput(t *testing.T) {

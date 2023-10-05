@@ -1,20 +1,17 @@
 package remove
 
 import (
-	"net"
-	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
+	utesting "github.com/kube-tarian/tarian/cmd/tarianctl/util/testing"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
 )
 
-func TestRemoveActionsCommand_Run(t *testing.T) {
+func TestRemoveActionsCommandRun(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name        string
@@ -43,7 +40,7 @@ func TestRemoveActionsCommand_Run(t *testing.T) {
 	}
 
 	serverAddr := "localhost:50057"
-	go startFakeServer(t, serverAddr)
+	go utesting.StartFakeServer(t, serverAddr)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -56,7 +53,8 @@ func TestRemoveActionsCommand_Run(t *testing.T) {
 			}
 
 			logOutput := []byte{}
-			cmd.logger.Out = &logOutputWriter{&logOutput}
+			cmd.logger.Out = &utesting.LogOutputWriter{Output: &logOutput}
+			log.MiniLogFormat()
 
 			err := cmd.run(nil, tt.args)
 
@@ -69,47 +67,10 @@ func TestRemoveActionsCommand_Run(t *testing.T) {
 			}
 
 			if tt.expectedLog != "" {
-				assert.Equal(t, cleanLog(string(logOutput)), tt.expectedLog)
+				assert.Equal(t, utesting.CleanLog(tt.expectedLog), utesting.CleanLog(string(logOutput)))
 			}
 		})
 	}
-}
-
-func startFakeServer(t *testing.T, serverAddr string) {
-	lis, err := net.Listen("tcp", serverAddr)
-	if err != nil {
-		assert.NoError(t, err)
-	}
-
-	srv := grpc.NewServer()
-
-	if err := srv.Serve(lis); err != nil {
-		assert.NoError(t, err)
-	}
-}
-
-type logOutputWriter struct {
-	output *[]byte
-}
-
-func (w *logOutputWriter) Write(p []byte) (n int, err error) {
-	*w.output = append(*w.output, p...)
-	return len(p), nil
-}
-
-func cleanLog(input string) string {
-	index := strings.Index(input, "]")
-	input = input[index+2:]
-
-	spaceRe := regexp.MustCompile(`\s+`)
-	input = spaceRe.ReplaceAllString(input, " ")
-
-	newlineRe := regexp.MustCompile(`\n+`)
-	input = newlineRe.ReplaceAllString(input, "\n")
-
-	input = strings.TrimSpace(input)
-
-	return input
 }
 
 func TestNewRemoveActionsCommand(t *testing.T) {

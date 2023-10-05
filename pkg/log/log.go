@@ -47,3 +47,13 @@ func DefaultFormat() {
 		FullTimestamp: true,
 	})
 }
+
+// MiniLogFormat sets the minimal log format mostly used for testing purpose
+func MiniLogFormat() {
+	logger.SetFormatter(&logrus.TextFormatter{
+		DisableColors:          true,
+		DisableQuote:           true,
+		DisableTimestamp:       true,
+		DisableLevelTruncation: true,
+	})
+}

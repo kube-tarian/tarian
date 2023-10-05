@@ -1,18 +1,15 @@
 package importcommand
 
 import (
-	"net"
 	"os"
-	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
+	utesting "github.com/kube-tarian/tarian/cmd/tarianctl/util/testing"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
 )
 
 // YAML content to write to the temporary file
@@ -53,7 +50,7 @@ func generateTempFile(directory, content string) string {
 	}
 	return tempFile.Name()
 }
-func TestImportCommand_Run(t *testing.T) {
+func TestImportCommandRun(t *testing.T) {
 	t.Parallel()
 	tempDir, err := os.MkdirTemp("", "import-dir-*")
 	assert.NoError(t, err)
@@ -103,7 +100,7 @@ func TestImportCommand_Run(t *testing.T) {
 	}
 
 	serverAddr := "localhost:50056"
-	go startFakeServer(t, serverAddr)
+	go utesting.StartFakeServer(t, serverAddr)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := &importCommand{
@@ -115,7 +112,8 @@ func TestImportCommand_Run(t *testing.T) {
 			}
 
 			logOutput := []byte{}
-			cmd.logger.Out = &logOutputWriter{&logOutput}
+			cmd.logger.Out = &utesting.LogOutputWriter{Output: &logOutput}
+			log.MiniLogFormat()
 
 			err = cmd.run(nil, tt.args)
 
@@ -128,47 +126,10 @@ func TestImportCommand_Run(t *testing.T) {
 			}
 
 			if tt.expectedLog != "" {
-				assert.Equal(t, cleanLog(string(logOutput)), tt.expectedLog)
+				assert.Equal(t, utesting.CleanLog(tt.expectedLog), utesting.CleanLog(string(logOutput)))
 			}
 		})
 	}
-}
-
-func startFakeServer(t *testing.T, serverAddr string) {
-	lis, err := net.Listen("tcp", serverAddr)
-	if err != nil {
-		assert.NoError(t, err)
-	}
-
-	srv := grpc.NewServer()
-
-	if err := srv.Serve(lis); err != nil {
-		assert.NoError(t, err)
-	}
-}
-
-type logOutputWriter struct {
-	output *[]byte
-}
-
-func (w *logOutputWriter) Write(p []byte) (n int, err error) {
-	*w.output = append(*w.output, p...)
-	return len(p), nil
-}
-
-func cleanLog(input string) string {
-	index := strings.Index(input, "]")
-	input = input[index+2:]
-
-	spaceRe := regexp.MustCompile(`\s+`)
-	input = spaceRe.ReplaceAllString(input, " ")
-
-	newlineRe := regexp.MustCompile(`\n+`)
-	input = newlineRe.ReplaceAllString(input, "\n")
-
-	input = strings.TrimSpace(input)
-
-	return input
 }
 
 func TestNewImportCommand(t *testing.T) {
