@@ -46,23 +46,26 @@ func newRemoveConstraintsCommand(globalFlags *flags.GlobalFlags) *cobra.Command 
 
 func (c *removeConstraintsCmd) run(_ *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		err := errors.New("please specify the names of the constraint to be removed")
-		return fmt.Errorf("remove constraint: %w", err)
-	}
-	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
-	if err != nil {
+		err := errors.New("please specify the name(s) of the constraint to be removed")
 		return fmt.Errorf("remove constraint: %w", err)
 	}
 
-	grpcConn, err := grpc.Dial(c.globalFlags.ServerAddr, opts...)
-	if err != nil {
-		return fmt.Errorf("remove constraint: failed to connect to server: %w", err)
-	}
-	defer grpcConn.Close()
+	if c.grpcClient == nil {
+		opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
+		if err != nil {
+			return fmt.Errorf("import: %w", err)
+		}
 
-	c.grpcClient = ugrpc.NewGRPCClient(grpcConn)
+		grpcConn, err := grpc.Dial(c.globalFlags.ServerAddr, opts...)
+		if err != nil {
+			return fmt.Errorf("import: failed to connect to server: %w", err)
+		}
+		defer grpcConn.Close()
+		c.grpcClient = ugrpc.NewGRPCClient(grpcConn)
+	}
+
 	client := c.grpcClient.NewConfigClient()
-
+	deletedConstraints := []string{}
 	for _, name := range args {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		response, err := client.RemoveConstraint(ctx, &tarianpb.RemoveConstraintRequest{Namespace: c.namespace, Name: name})
@@ -72,10 +75,16 @@ func (c *removeConstraintsCmd) run(_ *cobra.Command, args []string) error {
 		}
 
 		if response.GetSuccess() {
-			c.logger.Infof("Constraint %s is deleted successfully\n", name)
+			deletedConstraints = append(deletedConstraints, name)
+			c.logger.Debugf("Constraint '%s' removed\n", name)
 		} else {
-			c.logger.Warnf("Constraint %s is not deleted\n", name)
+			c.logger.Warnf("Constraint '%s' is not removed\n", name)
 		}
+	}
+	if len(deletedConstraints) > 0 {
+		c.logger.Infof("Successfully removed constraints: %v\n", deletedConstraints)
+	} else {
+		c.logger.Warnf("No Constraints removed\n")
 	}
 	return nil
 }

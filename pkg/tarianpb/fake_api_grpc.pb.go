@@ -49,7 +49,9 @@ func (f *fakeConfigClient) AddConstraint(ctx context.Context, in *AddConstraintR
 
 // RemoveConstraint removes a constraint from the specified namespace.
 func (f *fakeConfigClient) RemoveConstraint(ctx context.Context, in *RemoveConstraintRequest, opts ...grpc.CallOption) (*RemoveConstraintResponse, error) {
-	return nil, nil
+	return &RemoveConstraintResponse{
+		Success: true,
+	}, nil
 }
 
 // AddAction adds an action to the specified namespace.
@@ -84,7 +86,9 @@ func (f *fakeConfigClient) GetActions(ctx context.Context, in *GetActionsRequest
 
 // RemoveAction removes an action from the specified namespace.
 func (f *fakeConfigClient) RemoveAction(ctx context.Context, in *RemoveActionRequest, opts ...grpc.CallOption) (*RemoveActionResponse, error) {
-	return nil, nil
+	return &RemoveActionResponse{
+		Success: true,
+	}, nil
 }
 
 type fakeEventClient struct{}
