@@ -18,8 +18,8 @@ import (
 	"github.com/sethvargo/go-retry"
 )
 
-// Server represents the Tarian server, which includes gRPC server, event server, ingestion worker, config server, and alert dispatcher.
-type Server struct {
+// TarianServer represents the Tarian server, which includes gRPC server, event server, ingestion worker, config server, and alert dispatcher.
+type TarianServer struct {
 	GrpcServer      *grpc.Server
 	EventServer     *EventServer
 	IngestionWorker *IngestionWorker
@@ -45,9 +45,9 @@ type Server struct {
 // - natsStreamConfig: Configuration for the NATS JetStream stream.
 //
 // Returns:
-// - *Server: A new instance of the Tarian server.
+// - *TarianServer: A new instance of the Tarian server.
 // - error: An error if any occurs during server creation.
-func NewServer(logger *logrus.Logger, storeSet store.Set, certFile string, privateKeyFile string, natsURL string, natsOptions []nats.Option, natsStreamConfig nats.StreamConfig) (*Server, error) {
+func NewServer(logger *logrus.Logger, storeSet store.Set, certFile string, privateKeyFile string, natsURL string, natsOptions []nats.Option, natsStreamConfig nats.StreamConfig) (Server, error) {
 	opts := []grpc.ServerOption{}
 	if certFile != "" && privateKeyFile != "" {
 		creds, _ := credentials.NewServerTLSFromFile(certFile, privateKeyFile)
@@ -128,7 +128,7 @@ func NewServer(logger *logrus.Logger, storeSet store.Set, certFile string, priva
 
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
-	server := &Server{
+	server := &TarianServer{
 		GrpcServer:      grpcServer,
 		EventServer:     eventServer,
 		IngestionWorker: ingestionWorker,
@@ -149,10 +149,10 @@ func NewServer(logger *logrus.Logger, storeSet store.Set, certFile string, priva
 //
 // Returns:
 // - error: An error if any occurs during server startup.
-func (s *Server) Start(grpcListenAddress string) error {
+func (s *TarianServer) Start(grpcListenAddress string) error {
 	listener, err := net.Listen("tcp", grpcListenAddress)
 	if err != nil {
-		return fmt.Errorf("server start: failed to listen: %w", err)
+		return fmt.Errorf("failed to listen: %w", err)
 	}
 
 	s.logger.WithField("address", listener.Addr()).Info("tarian-server is listening")
@@ -160,7 +160,7 @@ func (s *Server) Start(grpcListenAddress string) error {
 	go s.IngestionWorker.Start()
 
 	if err := s.GrpcServer.Serve(listener); err != nil {
-		return fmt.Errorf("server start: failed to serve: %w", err)
+		return fmt.Errorf("failed to serve: %w", err)
 	}
 
 	return nil
@@ -173,20 +173,25 @@ func (s *Server) Start(grpcListenAddress string) error {
 // - alertEvaluationInterval: The interval for evaluating and sending alerts.
 //
 // Returns:
-// - *Server: The server with the alert dispatcher configured.
-func (s *Server) WithAlertDispatcher(alertManagerAddress *url.URL, alertEvaluationInterval time.Duration) *Server {
+// - *TarianServer: The server with the alert dispatcher configured.
+func (s *TarianServer) WithAlertDispatcher(alertManagerAddress *url.URL, alertEvaluationInterval time.Duration) Server {
 	s.AlertDispatcher = NewAlertDispatcher(s.logger, alertManagerAddress, alertEvaluationInterval)
 
 	return s
 }
 
 // StartAlertDispatcher starts the alert dispatcher for the Tarian server.
-func (s *Server) StartAlertDispatcher() {
+func (s *TarianServer) StartAlertDispatcher() {
 	go s.AlertDispatcher.LoopSendAlerts(s.cancelCtx, s.eventStore)
 }
 
 // Stop stops the Tarian server gracefully.
-func (s *Server) Stop() {
+func (s *TarianServer) Stop() {
 	s.GrpcServer.GracefulStop()
 	s.cancelFunc()
+}
+
+// GetGrpcServer returns the gRPC server instance.
+func (s *TarianServer) GetGrpcServer() *grpc.Server {
+	return s.GrpcServer
 }

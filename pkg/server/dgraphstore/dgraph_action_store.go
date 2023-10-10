@@ -6,25 +6,18 @@ import (
 
 	"github.com/dgraph-io/dgo/v210"
 	"github.com/dgraph-io/dgo/v210/protos/api"
+	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"golang.org/x/net/context"
 )
 
 // DgraphActionStore is a store for managing Actions using Dgraph as the backend.
-type DgraphActionStore struct {
+type dgraphActionStore struct {
 	dgraphClient *dgo.Dgraph
 }
 
-// NewDgraphActionStore creates a new DgraphActionStore with the provided Dgraph client.
-//
-// Parameters:
-// - dgraphClient: A Dgraph client for database interaction.
-//
-// Returns:
-// - A new instance of DgraphActionStore.
-func NewDgraphActionStore(dgraphClient *dgo.Dgraph) *DgraphActionStore {
-	d := &DgraphActionStore{dgraphClient: dgraphClient}
-	return d
+func newDgraphActionStore(dgraphClient *dgo.Dgraph) store.ActionStore {
+	return &dgraphActionStore{dgraphClient: dgraphClient}
 }
 
 // GetAll retrieves all actions from the Dgraph store and returns them as protobuf Actions.
@@ -32,7 +25,7 @@ func NewDgraphActionStore(dgraphClient *dgo.Dgraph) *DgraphActionStore {
 // Returns:
 // - An array of protobuf Action messages representing all actions in the store.
 // - An error if there was an issue with the database query.
-func (d *DgraphActionStore) GetAll() ([]*tarianpb.Action, error) {
+func (d *dgraphActionStore) GetAll() ([]*tarianpb.Action, error) {
 	// Dgraph query to retrieve all actions.
 	q := fmt.Sprintf(`
 		{
@@ -111,7 +104,7 @@ func (da *dgraphActionList) toPbActions() []*tarianpb.Action {
 // Returns:
 // - An array of protobuf Action messages representing matching actions.
 // - An error if there was an issue with the database query.
-func (d *DgraphActionStore) FindByNamespace(namespace string) ([]*tarianpb.Action, error) {
+func (d *dgraphActionStore) FindByNamespace(namespace string) ([]*tarianpb.Action, error) {
 	// Dgraph query to retrieve actions by namespace.
 	q := fmt.Sprintf(`
 		query actionQuery($namespace: string) {
@@ -151,7 +144,7 @@ func (d *DgraphActionStore) FindByNamespace(namespace string) ([]*tarianpb.Actio
 // Returns:
 // - A boolean indicating whether the action exists.
 // - An error if there was an issue with the database query.
-func (d *DgraphActionStore) NamespaceAndNameExist(namespace, name string) (bool, error) {
+func (d *dgraphActionStore) NamespaceAndNameExist(namespace, name string) (bool, error) {
 	uid, err := d.findActionUIDByNamespaceAndName(namespace, name)
 
 	if err != nil {
@@ -169,7 +162,7 @@ func (d *DgraphActionStore) NamespaceAndNameExist(namespace, name string) (bool,
 //
 // Returns:
 // - An error if there was an issue storing the action in the database.
-func (d *DgraphActionStore) Add(action *tarianpb.Action) error {
+func (d *dgraphActionStore) Add(action *tarianpb.Action) error {
 	dgraphAction, err := dgraphActionFromPb(action)
 	if err != nil {
 		return err
@@ -234,7 +227,7 @@ func dgraphActionFromPb(pbAction *tarianpb.Action) (*Action, error) {
 //
 // Returns:
 // - An error if there was an issue removing the action from the database.
-func (d *DgraphActionStore) RemoveByNamespaceAndName(namespace, name string) error {
+func (d *dgraphActionStore) RemoveByNamespaceAndName(namespace, name string) error {
 	uid, err := d.findActionUIDByNamespaceAndName(namespace, name)
 
 	if err != nil {
@@ -272,7 +265,7 @@ func (d *DgraphActionStore) RemoveByNamespaceAndName(namespace, name string) err
 // Returns:
 // - The UID of the action, or an empty string if not found.
 // - An error if there was an issue with the database query.
-func (d *DgraphActionStore) findActionUIDByNamespaceAndName(namespace, name string) (string, error) {
+func (d *dgraphActionStore) findActionUIDByNamespaceAndName(namespace, name string) (string, error) {
 	const q = `
 		query actionQuery($namespace: string, $name: string) {
 			actions(func: type(Action), first: 1) @filter(eq(action_namespace, $namespace) AND eq(action_name, $name)) {

@@ -39,8 +39,14 @@ func (w *LogOutputWriter) Write(p []byte) (n int, err error) {
 // CleanLog cleans the log output.
 func CleanLog(input string) string {
 	splitLog := strings.Split(input, "msg=")
-
-	input = splitLog[len(splitLog)-1]
+	if len(splitLog) > 2 {
+		re := regexp.MustCompile(`level=.*?msg=`)
+		input = re.ReplaceAllString(input, "")
+		// re = regexp.MustCompile(`msg=`)
+		// input = re.ReplaceAllString(input, "")
+	} else {
+		input = splitLog[len(splitLog)-1]
+	}
 	spaceRe := regexp.MustCompile(`\s+`)
 	input = spaceRe.ReplaceAllString(input, " ")
 

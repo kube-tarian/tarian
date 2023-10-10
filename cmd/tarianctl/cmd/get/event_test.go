@@ -6,9 +6,9 @@ import (
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
-	utesting "github.com/kube-tarian/tarian/cmd/tarianctl/util/testing"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	utesting "github.com/kube-tarian/tarian/pkg/testing"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"

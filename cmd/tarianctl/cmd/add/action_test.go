@@ -5,8 +5,8 @@ import (
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
-	utesting "github.com/kube-tarian/tarian/cmd/tarianctl/util/testing"
 	"github.com/kube-tarian/tarian/pkg/log"
+	utesting "github.com/kube-tarian/tarian/pkg/testing"
 	"github.com/spf13/cobra"
 
 	"github.com/stretchr/testify/assert"
@@ -158,7 +158,6 @@ action: delete-pod
 			// Assert expected log output
 			if tt.expectedLog != "" {
 				assert.Equal(t, utesting.CleanLog(tt.expectedLog), utesting.CleanLog(string(logOutput)))
-				// assert.Equal(t, strings.TrimSpace(utesting.CleanLog(string(logOutput))), strings.TrimSpace(tt.expectedLog))
 			}
 		})
 	}

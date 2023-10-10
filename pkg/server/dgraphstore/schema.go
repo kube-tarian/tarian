@@ -3,7 +3,6 @@ package dgraphstore
 import (
 	"context"
 
-	"github.com/dgraph-io/dgo/v210"
 	"github.com/dgraph-io/dgo/v210/protos/api"
 )
 
@@ -99,8 +98,9 @@ var schema = `
 //
 // Returns:
 // - An error if there was an issue applying the schema.
-func ApplySchema(ctx context.Context, dg *dgo.Dgraph) error {
+func (c *client) ApplySchema(ctx context.Context) error {
 	op := &api.Operation{}
 	op.Schema = schema
-	return dg.Alter(ctx, op)
+
+	return c.dg.Alter(ctx, op)
 }
