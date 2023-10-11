@@ -103,6 +103,7 @@ allowedfiles:
 	}
 	serverAddr := "localhost:50052"
 	go utesting.StartFakeServer(t, serverAddr)
+	defer utesting.CloseFakeServer()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := &constraintsCommand{

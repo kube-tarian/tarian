@@ -10,6 +10,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+var grpcSrv *grpc.Server
+
 // StartFakeServer starts a fake gRPC server.
 func StartFakeServer(t *testing.T, serverAddr string) {
 	lis, err := net.Listen("tcp", serverAddr)
@@ -17,11 +19,16 @@ func StartFakeServer(t *testing.T, serverAddr string) {
 		assert.NoError(t, err)
 	}
 
-	srv := grpc.NewServer()
+	grpcSrv = grpc.NewServer()
 
-	if err := srv.Serve(lis); err != nil {
+	if err = grpcSrv.Serve(lis); err != nil {
 		assert.NoError(t, err)
 	}
+}
+
+// CloseFakeServer closes a fake gRPC server.
+func CloseFakeServer() {
+	grpcSrv.Stop()
 }
 
 // LogOutputWriter is a writer for log output.

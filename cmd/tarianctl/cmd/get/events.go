@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
-	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
 	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
+	"github.com/kube-tarian/tarian/pkg/util"
 	"google.golang.org/grpc"
 
 	"github.com/kube-tarian/tarian/pkg/log"
@@ -50,7 +50,7 @@ func newGetEventsCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 
 func (c *eventsCommand) run(_ *cobra.Command, args []string) error {
 	if c.grpcClient == nil {
-		opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
+		opts, err := util.GetDialOptions(c.logger, c.globalFlags.ServerTLSEnabled, c.globalFlags.ServerTLSInsecureSkipVerify, c.globalFlags.ServerTLSCAFile)
 		if err != nil {
 			return fmt.Errorf("add constraints: %w", err)
 		}

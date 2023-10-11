@@ -30,12 +30,12 @@ const (
 
 // TestHelper is a helper struct for setting up and managing testing components.
 type TestHelper struct {
-	server       *grpc.Server               // The gRPC server used for testing.
-	clusterAgent *clusteragent.ClusterAgent // The ClusterAgent for cluster management.
-	podAgent     *podagent.PodAgent         // The PodAgent for managing pods.
-	t            *testing.T                 // The testing.T instance for reporting test failures.
-	dgraphConfig dgraphstore.DgraphConfig   // Configuration for Dgraph database.
-	dg           dgraphstore.Client         // The Dgraph client.
+	server       *grpc.Server             // The gRPC server used for testing.
+	clusterAgent clusteragent.Agent       // The ClusterAgent for cluster management.
+	podAgent     *podagent.PodAgent       // The PodAgent for managing pods.
+	t            *testing.T               // The testing.T instance for reporting test failures.
+	dgraphConfig dgraphstore.DgraphConfig // Configuration for Dgraph database.
+	dg           dgraphstore.Client       // The Dgraph client.
 }
 
 // NewE2eHelper creates a new TestHelper instance for e2e tests.
