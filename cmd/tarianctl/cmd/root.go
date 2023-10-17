@@ -8,6 +8,7 @@ import (
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/get"
 	importcommand "github.com/kube-tarian/tarian/cmd/tarianctl/cmd/import"
+	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/install"
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/remove"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -30,14 +31,14 @@ func newRootCommand(logger *logrus.Logger) *cobra.Command {
 				return err
 			}
 
-			globalFlags.GetFlagValuesFromEnvVar()
-
 			logLevel, _ := logrus.ParseLevel(globalFlags.LogLevel)
 			logger.SetLevel(logrus.Level(logLevel))
 
 			if globalFlags.LogFormatter == "json" {
 				logger.SetFormatter(&logrus.JSONFormatter{})
 			}
+
+			globalFlags.GetFlagValuesFromEnvVar(logger)
 			return nil
 		},
 		Long: `
@@ -67,6 +68,7 @@ func buildRootCommand(logger *logrus.Logger) *cobra.Command {
 	rootCmd.AddCommand(add.NewAddCommand(globalFlags))
 	rootCmd.AddCommand(remove.NewRemoveCommand(globalFlags))
 	rootCmd.AddCommand(importcommand.NewImportCommand(globalFlags))
+	rootCmd.AddCommand(install.NewInstallCommand(globalFlags))
 	return rootCmd
 }
 

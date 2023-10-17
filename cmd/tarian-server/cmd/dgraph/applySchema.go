@@ -66,7 +66,6 @@ func (o *applySchemaCommand) run(_ *cobra.Command, args []string) error {
 	defer cancel()
 
 	err = dgraphstore.ApplySchema(ctx, dg)
-
 	if err != nil {
 		return fmt.Errorf("apply-schema: failed to apply schema: %w", err)
 	}

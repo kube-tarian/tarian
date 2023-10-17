@@ -1,12 +1,15 @@
+{{- $name := printf "%s-%s" .Release.Name "cluster-agent" -}}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ .Release.Name }}
+  name: {{ $name }}
+  labels:
+    app: {{ .Release.Name }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ .Release.Name }}
+  name: {{ $name }}
 subjects:
 - kind: ServiceAccount
-  name: {{ .Release.Name }}
+  name: {{ $name }}
   namespace: {{ .Release.Namespace }}

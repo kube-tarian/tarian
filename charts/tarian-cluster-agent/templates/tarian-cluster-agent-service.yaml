@@ -1,7 +1,8 @@
+{{- $name := printf "%s-%s" .Release.Name "cluster-agent" -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}
+  name: {{ $name }}
   labels:
     app: {{ .Release.Name }}
 spec:

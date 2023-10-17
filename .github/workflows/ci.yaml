@@ -101,10 +101,11 @@ jobs:
           make push-local-images
           cp dist/tarianctl_linux_amd64/tarianctl ./bin/
 
-      - name: Deploy Tarian
+      - name: Install Tarian
         run: |
           set -x
-          make deploy
+          ./bin/tarianctl install --charts ./charts -l debug --agents-values ./dev/values/agents.yaml --server-values ./dev/values/server.yaml
+        continue-on-error: true
 
       - name: Wait for pods to be ready
         id: wait-until-tarian-is-ready
@@ -133,7 +134,7 @@ jobs:
           echo "======================================================================================================================"
           kubectl logs -n tarian-system deploy/tarian-cluster-agent
           echo "======================================================================================================================"
-          kubectl logs -n tarian-system deploy/tarian-cluster-agent-controller-manager
+          kubectl logs -n tarian-system deploy/tarian-controller-manager
           echo "======================================================================================================================"
           kubectl logs -n tarian-system daemonsets/tarian-node-agent
           echo "======================================================================================================================"

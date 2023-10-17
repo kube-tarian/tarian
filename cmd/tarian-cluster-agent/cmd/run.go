@@ -20,11 +20,9 @@ import (
 )
 
 const (
-	defaultPort = "50052"
-	defaultHost = ""
-
-	defaultServerAddress = "localhost:50051"
-
+	defaultPort                     = "50052"
+	defaultHost                     = ""
+	defaultServerAddress            = "localhost:50051"
 	defaultSidekickListenerHTTPPort = "8088"
 )
 

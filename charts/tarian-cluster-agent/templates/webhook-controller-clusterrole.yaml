@@ -3,6 +3,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: {{ $name }}-cert-rotator-clusterrole
+  labels:
+    app: {{ .Release.Name }}
 rules:
 - apiGroups:
   - "admissionregistration.k8s.io"

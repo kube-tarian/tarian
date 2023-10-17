@@ -12,7 +12,7 @@ tarianctl add constraint --name nginx-files --namespace default --match-labels r
 tarianctl get constraints
 kubectl get pods -n tarian-system
 
-kubectl logs deploy/tarian-cluster-agent-controller-manager -n tarian-system
+kubectl logs deploy/tarian-controller-manager -n tarian-system
 
 sleep 10s
 kubectl get MutatingWebhookConfiguration -o yaml

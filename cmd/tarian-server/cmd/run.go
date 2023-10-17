@@ -160,13 +160,12 @@ func (o *runCommand) run(_ *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("run: invalid url in alertmanager-address: %w", err)
 		}
-
 		serv.WithAlertDispatcher(url, o.alertEvaluationInterval).StartAlertDispatcher()
 	}
 
 	addr := host + ":" + port
 	// Run server
-	o.logger.Infof("tarian-server is listening at: %s", addr)
+	o.logger.Info("tarian-server is starting...")
 	if err := serv.Start(addr); err != nil {
 		return fmt.Errorf("run: failed to start server: %w", err)
 	}

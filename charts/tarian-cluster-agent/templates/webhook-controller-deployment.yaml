@@ -5,6 +5,7 @@ metadata:
   name: {{ $name }}
   labels:
     control-plane: {{ $name }}
+    app: {{ .Release.Name }}
 spec:
   selector:
     matchLabels:
