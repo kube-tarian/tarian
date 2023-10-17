@@ -8,6 +8,7 @@ We want to maintain this as an open-source project to fight against the attacks 
 
 [![Build status](https://img.shields.io/github/workflow/status/kube-tarian/tarian/CI?style=flat)](https://github.com/kube-tarian/tarian/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kube-tarian/tarian)](https://goreportcard.com/report/github.com/kube-tarian/tarian)
+[![codecov](https://codecov.io/gh/kube-tarian/tarian/graph/badge.svg?token=PH8E9ZOVR4)](https://codecov.io/gh/kube-tarian/tarian)
 
 ---
 

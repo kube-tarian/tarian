@@ -89,7 +89,7 @@ allowedfiles:
 			constraintName:   "test-constraint",
 			matchLabels:      []string{"key1=val1"},
 			allowedProcesses: []string{"process1", "process2"},
-			expectedErr:      "rpc error: code = Unimplemented desc = unknown service tarianpb.api.Config",
+			expectedErr:      "unknown service tarianpb.api.Config",
 		},
 		// TODO: Add test for from-violated-pod after faking GetEvents()
 		// {

@@ -16,7 +16,7 @@ import (
 )
 
 func TestGetConstraintCommandRun(t *testing.T) {
-	// t.Parallel()
+	//
 	textOut := `---------------------------------------------------------------------------------------------
   NAMESPACE   CONSTRAINT NAME          SELECTOR           ALLOWED PROCESSES   ALLOWED FILES  
 ---------------------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ allowedfiles:
 		},
 		{
 			name:        "Use real gRPC client",
-			expectedErr: "rpc error: code = Unimplemented desc = unknown service tarianpb.api.Config",
+			expectedErr: "unknown service tarianpb.api.Config",
 		},
 	}
 

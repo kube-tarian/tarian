@@ -67,34 +67,30 @@ func TestValidateGlobalFlags(t *testing.T) {
 
 func TestGetFlagValuesFromEnvVar(t *testing.T) {
 	// Set environment variables for testing
-	tarianServerEnvVar := "TARIAN_SERVER_ADDRESS"
 	tarianServerEnvVarValue := "test-server:1234"
-	if err := os.Setenv(tarianServerEnvVar, tarianServerEnvVarValue); !assert.NoError(t, err) {
+	if err := os.Setenv(tarianServerAddressEnv, tarianServerEnvVarValue); !assert.NoError(t, err) {
 		assert.FailNow(t, err.Error())
 	}
-	defer os.Unsetenv(tarianServerEnvVar)
+	defer os.Unsetenv(tarianServerAddressEnv)
 
 	// Set more environment variables for testing
-	TLSEnabledEnvVar := "TARIAN_TLS_ENABLED"
 	TLSEnabledEnvVarValue := "true"
-	if err := os.Setenv(TLSEnabledEnvVar, TLSEnabledEnvVarValue); !assert.NoError(t, err) {
+	if err := os.Setenv(tarianTLSEnabledEnv, TLSEnabledEnvVarValue); !assert.NoError(t, err) {
 		assert.FailNow(t, err.Error())
 	}
-	defer os.Unsetenv(TLSEnabledEnvVar)
+	defer os.Unsetenv(tarianTLSEnabledEnv)
 
-	TLSCAFilEnvVar := "TARIAN_TLS_CA_FILE"
 	TLSCAFilEnvVarValue := "/path/to/ca.pem"
-	if err := os.Setenv(TLSCAFilEnvVar, TLSCAFilEnvVarValue); !assert.NoError(t, err) {
+	if err := os.Setenv(tarianTLSCAFileEnv, TLSCAFilEnvVarValue); !assert.NoError(t, err) {
 		assert.FailNow(t, err.Error())
 	}
-	defer os.Unsetenv(TLSCAFilEnvVar)
+	defer os.Unsetenv(tarianTLSCAFileEnv)
 
-	TLSInsecureEnvVar := "TARIAN_TLS_INSECURE_SKIP_VERIFY"
 	TLSInsecureEnvVarValue := "false"
-	if err := os.Setenv(TLSInsecureEnvVar, TLSInsecureEnvVarValue); !assert.NoError(t, err) {
+	if err := os.Setenv(tarianTLSInsecureEnv, TLSInsecureEnvVarValue); !assert.NoError(t, err) {
 		assert.FailNow(t, err.Error())
 	}
-	defer os.Unsetenv(TLSInsecureEnvVar)
+	defer os.Unsetenv(tarianTLSInsecureEnv)
 
 	// Create global flags and load values from environment variables
 	globalFlags := &GlobalFlags{}

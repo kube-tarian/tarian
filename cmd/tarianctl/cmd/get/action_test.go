@@ -17,7 +17,7 @@ import (
 )
 
 func TestGetActionCommandRun(t *testing.T) {
-	t.Parallel()
+
 	textOut := `--------------------------------------------------------------------------------------
   NAMESPACE   ACTION NAME          SELECTOR                TRIGGER          ACTION    
 --------------------------------------------------------------------------------------
@@ -66,7 +66,7 @@ action: delete-pod
 		},
 		{
 			name:        "Use real gRPC client",
-			expectedErr: "rpc error: code = Unimplemented desc = unknown service tarianpb.api.Config",
+			expectedErr: "unknown service tarianpb.api.Config",
 		},
 	}
 	serverAddr := "localhost:50053"

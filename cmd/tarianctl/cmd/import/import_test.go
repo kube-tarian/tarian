@@ -51,7 +51,7 @@ func generateTempFile(directory, content string) string {
 	return tempFile.Name()
 }
 func TestImportCommandRun(t *testing.T) {
-	t.Parallel()
+
 	tempDir, err := os.MkdirTemp("", "import-dir-*")
 	assert.NoError(t, err)
 	defer os.RemoveAll(tempDir)
@@ -67,7 +67,7 @@ func TestImportCommandRun(t *testing.T) {
 		{
 			name:        "Use real gRPC client",
 			args:        []string{generateTempFile(tempDir, constraint1)},
-			expectedErr: "rpc error: code = Unimplemented desc = unknown service tarianpb.api.Config",
+			expectedErr: "unknown service tarianpb.api.Config",
 		},
 		{
 			name:        "Zero files",

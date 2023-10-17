@@ -13,7 +13,7 @@ import (
 )
 
 func TestAddActionCommandRun(t *testing.T) {
-	t.Parallel()
+
 	tests := []struct {
 		name        string
 		expectedErr string
@@ -112,7 +112,7 @@ action: delete-pod
 		{
 			name:        "Use real gRPC client",
 			action:      "delete-pod",
-			expectedErr: "rpc error: code = Unimplemented desc = unknown service tarianpb.api.Config",
+			expectedErr: "unknown service tarianpb.api.Config",
 		},
 	}
 

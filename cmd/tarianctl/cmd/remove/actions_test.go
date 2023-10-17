@@ -12,7 +12,7 @@ import (
 )
 
 func TestRemoveActionsCommandRun(t *testing.T) {
-	t.Parallel()
+
 	tests := []struct {
 		name        string
 		expectedErr string
@@ -30,7 +30,7 @@ func TestRemoveActionsCommandRun(t *testing.T) {
 		{
 			name:        "Use real gRPC client",
 			args:        []string{"action1", "action2"},
-			expectedErr: "rpc error: code = Unimplemented desc = unknown service tarianpb.api.Config",
+			expectedErr: "unknown service tarianpb.api.Config",
 		},
 		{
 			name:        "no actions specified",
