@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -32,6 +30,8 @@ type threatScanCommand struct {
 	podUID                 string
 	namespace              string
 	fileValidationInterval time.Duration
+
+	podAgent podagent.Agent
 }
 
 func newThreatScanCommand(globalFlag *flags.GlobalFlags) *cobra.Command {
@@ -60,12 +60,14 @@ func newThreatScanCommand(globalFlag *flags.GlobalFlags) *cobra.Command {
 func (c *threatScanCommand) run(_ *cobra.Command, args []string) error {
 	c.logger.Info("tarian-pod-agent is running in threat-scan mode")
 	addr := c.host + ":" + c.port
-	agent := podagent.NewPodAgent(c.logger, addr)
-	if c.podLabelsFile != "" {
-		podLabels, err := readLabelsFromFile(c.podLabelsFile)
+	if c.podAgent == nil {
+		c.podAgent = podagent.NewPodAgent(c.logger, addr)
+	}
 
+	if c.podLabelsFile != "" {
+		podLabels, err := readLabelsFromFile(c.logger, c.podLabelsFile)
 		if err != nil {
-			c.logger.WithError(err).Error("failed reading pod-labels-file")
+			return fmt.Errorf("failed reading pod-labels-file: %w", err)
 		}
 
 		// delete pod-template-hash
@@ -80,27 +82,27 @@ func (c *threatScanCommand) run(_ *cobra.Command, args []string) error {
 			}
 		}
 
-		agent.SetPodLabels(podLabels)
+		c.podAgent.SetPodLabels(podLabels)
 	}
 
 	if c.podName != "" {
-		agent.SetPodName(c.podName)
+		c.podAgent.SetPodName(c.podName)
 	} else {
 		hostname, err := os.Hostname()
 		if err == nil {
-			agent.SetPodName(hostname)
+			c.podAgent.SetPodName(hostname)
 		}
 	}
 
 	if c.podUID != "" {
-		agent.SetpodUID(c.podUID)
+		c.podAgent.SetPodUID(c.podUID)
 	}
 
 	if c.namespace != "" {
-		agent.SetNamespace(c.namespace)
+		c.podAgent.SetNamespace(c.namespace)
 	}
 
-	agent.SetFileValidationInterval(c.fileValidationInterval)
+	c.podAgent.SetFileValidationInterval(c.fileValidationInterval)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
@@ -108,39 +110,10 @@ func (c *threatScanCommand) run(_ *cobra.Command, args []string) error {
 	go func() {
 		sig := <-sigCh
 		c.logger.WithField("signal", sig).Info("got sigterm signal, attempting graceful shutdown")
-		agent.GracefulStop()
+		c.podAgent.GracefulStop()
 	}()
 
-	agent.RunThreatScan()
+	c.podAgent.RunThreatScan()
 	c.logger.Info("tarian-pod-agent shutdown gracefully")
 	return nil
-}
-
-func readLabelsFromFile(path string) ([]*tarianpb.Label, error) {
-	labels := []*tarianpb.Label{}
-
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open file: %w", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		idx := strings.Index(line, "=")
-
-		if idx < 0 {
-			continue
-		}
-
-		key := line[:idx]
-		value := strings.Trim(line[idx+1:], "\"")
-
-		labels = append(labels, &tarianpb.Label{Key: key, Value: value})
-	}
-
-	return labels, nil
 }

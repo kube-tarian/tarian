@@ -32,7 +32,7 @@ const (
 type TestHelper struct {
 	server       *grpc.Server             // The gRPC server used for testing.
 	clusterAgent clusteragent.Agent       // The ClusterAgent for cluster management.
-	podAgent     *podagent.PodAgent       // The PodAgent for managing pods.
+	podAgent     podagent.Agent           // The PodAgent for managing pods.
 	t            *testing.T               // The testing.T instance for reporting test failures.
 	dgraphConfig dgraphstore.DgraphConfig // Configuration for Dgraph database.
 	dg           dgraphstore.Client       // The Dgraph client.

@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
@@ -97,7 +98,7 @@ func TestGetFlagValuesFromEnvVar(t *testing.T) {
 
 	// Create global flags and load values from environment variables
 	globalFlags := &GlobalFlags{}
-	globalFlags.GetFlagValuesFromEnvVar()
+	globalFlags.GetFlagValuesFromEnvVar(log.GetLogger())
 
 	// Check if the value was correctly loaded from the environment variable
 	assert.Equal(t, tarianServerEnvVarValue, globalFlags.ServerAddr)

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -29,6 +30,8 @@ type registerCommand struct {
 	registerFilePaths       string
 	registerFileIgnorePaths string
 	fileValidationInterval  time.Duration
+
+	podAgent podagent.Agent
 }
 
 func newRegisterCommand(globalFlag *flags.GlobalFlags) *cobra.Command {
@@ -61,13 +64,14 @@ func newRegisterCommand(globalFlag *flags.GlobalFlags) *cobra.Command {
 func (c *registerCommand) runRegisterCommand(cmd *cobra.Command, args []string) error {
 	c.logger.Info("tarian-pod-agent is running in register mode")
 	addr := c.host + ":" + c.port
-	agent := podagent.NewPodAgent(c.logger, addr)
+	if c.podAgent == nil {
+		c.podAgent = podagent.NewPodAgent(c.logger, addr)
+	}
 
 	if c.podLabelsFile != "" {
-		podLabels, err := readLabelsFromFile(c.podLabelsFile)
-
+		podLabels, err := readLabelsFromFile(c.logger, c.podLabelsFile)
 		if err != nil {
-			c.logger.WithError(err).Error("failed reading pod-labels-file")
+			return fmt.Errorf("failed reading pod-labels-file: %w", err)
 		}
 
 		// delete pod-template-hash
@@ -82,24 +86,24 @@ func (c *registerCommand) runRegisterCommand(cmd *cobra.Command, args []string) 
 			}
 		}
 
-		agent.SetPodLabels(podLabels)
+		c.podAgent.SetPodLabels(podLabels)
 	}
 
 	if c.podName != "" {
-		agent.SetPodName(c.podName)
+		c.podAgent.SetPodName(c.podName)
 	} else {
 		hostname, err := os.Hostname()
 		if err == nil {
-			agent.SetPodName(hostname)
+			c.podAgent.SetPodName(hostname)
 		}
 	}
 
 	if c.podUID != "" {
-		agent.SetpodUID(c.podUID)
+		c.podAgent.SetPodUID(c.podUID)
 	}
 
 	if c.namespace != "" {
-		agent.SetNamespace(c.namespace)
+		c.podAgent.SetNamespace(c.namespace)
 	}
 
 	registerRules := strings.Split(c.registerRules, ",")
@@ -107,10 +111,10 @@ func (c *registerCommand) runRegisterCommand(cmd *cobra.Command, args []string) 
 		switch strings.TrimSpace(rule) {
 		case "files":
 			c.logger.Warn("enabled auto register for files")
-			agent.EnableRegisterFiles()
+			c.podAgent.EnableRegisterFiles()
 		case "all":
 			c.logger.Info("enabled auto register for all rules")
-			agent.EnableRegisterFiles()
+			c.podAgent.EnableRegisterFiles()
 		}
 	}
 
@@ -119,16 +123,16 @@ func (c *registerCommand) runRegisterCommand(cmd *cobra.Command, args []string) 
 	for _, path := range registerFilePathsArg {
 		registerFilePaths = append(registerFilePaths, strings.TrimSpace(path))
 	}
-	agent.SetRegisterFilePaths(registerFilePaths)
+	c.podAgent.SetRegisterFilePaths(registerFilePaths)
 
 	registerFileIgnorePathsArg := strings.Split(c.registerFileIgnorePaths, ",")
 	registerFileIgnorePaths := []string{}
 	for _, path := range registerFileIgnorePathsArg {
 		registerFileIgnorePaths = append(registerFileIgnorePaths, strings.TrimSpace(path))
 	}
-	agent.SetRegisterFileIgnorePaths(registerFileIgnorePaths)
+	c.podAgent.SetRegisterFileIgnorePaths(registerFileIgnorePaths)
 
-	agent.SetFileValidationInterval(c.fileValidationInterval)
+	c.podAgent.SetFileValidationInterval(c.fileValidationInterval)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
@@ -137,10 +141,10 @@ func (c *registerCommand) runRegisterCommand(cmd *cobra.Command, args []string) 
 		sig := <-sigCh
 		c.logger.WithField("signal", sig).Info("got sigterm signal, attempting graceful shutdown")
 
-		agent.GracefulStop()
+		c.podAgent.GracefulStop()
 	}()
 
-	agent.RunRegister()
+	c.podAgent.RunRegister()
 	c.logger.Info("tarian-pod-agent shutdown gracefully")
 	return nil
 }
