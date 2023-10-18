@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - ".github/workflows/codeql.yml"
+      - "**.go"
 
 permissions: read-all
 
@@ -19,13 +22,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'go' ]
+        language: ["go"]
 
     steps:
       - name: Checkout
         uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
 
       - name: Set up Go
         uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #4.1.0
@@ -33,7 +36,7 @@ jobs:
           go-version: "1.21"
           cache: false
 
-    # Initializes the CodeQL tools for scanning.
+      # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
