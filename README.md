@@ -1,4 +1,4 @@
-<p align="center"><img src="tarian-new-logo-1.png" width="175"></p>
+<p align="center"><img src="logo/tarian-new-logo-1.png" width="175"></p>
 
 # Tarian
 
