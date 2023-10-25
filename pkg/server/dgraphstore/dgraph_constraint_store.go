@@ -6,25 +6,18 @@ import (
 
 	"github.com/dgraph-io/dgo/v210"
 	"github.com/dgraph-io/dgo/v210/protos/api"
+	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"golang.org/x/net/context"
 )
 
 // DgraphConstraintStore is a store for managing Constraints using Dgraph as the backend.
-type DgraphConstraintStore struct {
+type dgraphConstraintStore struct {
 	dgraphClient *dgo.Dgraph
 }
 
-// NewDgraphConstraintStore creates a new DgraphConstraintStore with the provided Dgraph client.
-//
-// Parameters:
-// - dgraphClient: A Dgraph client for database interaction.
-//
-// Returns:
-// - A new instance of DgraphConstraintStore.
-func NewDgraphConstraintStore(dgraphClient *dgo.Dgraph) *DgraphConstraintStore {
-	d := &DgraphConstraintStore{dgraphClient: dgraphClient}
-	return d
+func newDgraphConstraintStore(dgraphClient *dgo.Dgraph) store.ConstraintStore {
+	return &dgraphConstraintStore{dgraphClient: dgraphClient}
 }
 
 // GetAll retrieves all constraints from the Dgraph store and returns them as protobuf Constraints.
@@ -32,7 +25,7 @@ func NewDgraphConstraintStore(dgraphClient *dgo.Dgraph) *DgraphConstraintStore {
 // Returns:
 // - An array of protobuf Constraint messages representing all constraints in the store.
 // - An error if there was an issue with the database query.
-func (d *DgraphConstraintStore) GetAll() ([]*tarianpb.Constraint, error) {
+func (d *dgraphConstraintStore) GetAll() ([]*tarianpb.Constraint, error) {
 	// Dgraph query to retrieve all constraints.
 	q := fmt.Sprintf(`
 		{
@@ -105,7 +98,7 @@ func (da *dgraphConstraintList) toPbConstraints() []*tarianpb.Constraint {
 // Returns:
 // - An array of protobuf Constraint messages representing matching constraints.
 // - An error if there was an issue with the database query.
-func (d *DgraphConstraintStore) FindByNamespace(namespace string) ([]*tarianpb.Constraint, error) {
+func (d *dgraphConstraintStore) FindByNamespace(namespace string) ([]*tarianpb.Constraint, error) {
 	// Dgraph query to retrieve constraints by namespace.
 	q := fmt.Sprintf(`
 		query constraintQuery($namespace: string) {
@@ -145,7 +138,7 @@ func (d *DgraphConstraintStore) FindByNamespace(namespace string) ([]*tarianpb.C
 // Returns:
 // - A boolean indicating whether the constraint exists.
 // - An error if there was an issue with the database query.
-func (d *DgraphConstraintStore) NamespaceAndNameExist(namespace, name string) (bool, error) {
+func (d *dgraphConstraintStore) NamespaceAndNameExist(namespace, name string) (bool, error) {
 	uid, err := d.findConstraintUIDByNamespaceAndName(namespace, name)
 
 	if err != nil {
@@ -163,7 +156,7 @@ func (d *DgraphConstraintStore) NamespaceAndNameExist(namespace, name string) (b
 //
 // Returns:
 // - An error if there was an issue storing the constraint in the database.
-func (d *DgraphConstraintStore) Add(constraint *tarianpb.Constraint) error {
+func (d *dgraphConstraintStore) Add(constraint *tarianpb.Constraint) error {
 	dgraphConstraint, err := dgraphConstraintFromPb(constraint)
 	if err != nil {
 		return err
@@ -236,7 +229,7 @@ func dgraphConstraintFromPb(pbConstraint *tarianpb.Constraint) (*Constraint, err
 //
 // Returns:
 // - An error if there was an issue removing the constraint from the database.
-func (d *DgraphConstraintStore) RemoveByNamespaceAndName(namespace, name string) error {
+func (d *dgraphConstraintStore) RemoveByNamespaceAndName(namespace, name string) error {
 	uid, err := d.findConstraintUIDByNamespaceAndName(namespace, name)
 
 	if err != nil {
@@ -274,7 +267,7 @@ func (d *DgraphConstraintStore) RemoveByNamespaceAndName(namespace, name string)
 // Returns:
 // - The UID of the constraint, or an empty string if not found.
 // - An error if there was an issue with the database query.
-func (d *DgraphConstraintStore) findConstraintUIDByNamespaceAndName(namespace, name string) (string, error) {
+func (d *dgraphConstraintStore) findConstraintUIDByNamespaceAndName(namespace, name string) (string, error) {
 	const q = `
 		query constraintQuery($namespace: string, $name: string) {
 			constraints(func: type(Constraint), first: 1) @filter(eq(constraint_namespace, $namespace) AND eq(constraint_name, $name)) {

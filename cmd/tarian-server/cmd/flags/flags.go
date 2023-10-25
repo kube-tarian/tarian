@@ -1,4 +1,3 @@
-// Package flags provides a way to manage global flags for the application.
 package flags
 
 import (

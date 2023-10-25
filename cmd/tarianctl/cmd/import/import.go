@@ -8,18 +8,22 @@ import (
 	"os"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
-	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
+	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
+	"github.com/kube-tarian/tarian/pkg/util"
+
 	"github.com/kube-tarian/tarian/pkg/log"
-	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 	"gopkg.in/yaml.v3"
 )
 
 type importCommand struct {
 	globalFlags *flags.GlobalFlags
 	logger      *logrus.Logger
+
+	grpcClient ugrpc.Client
 }
 
 // NewImportCommand creates a new `import` command
@@ -55,21 +59,30 @@ func (c *importCommand) run(_ *cobra.Command, args []string) error {
 		files = append(files, f)
 	}
 
-	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
-	if err != nil {
-		return fmt.Errorf("import: %w", err)
+	if c.grpcClient == nil {
+		opts, err := util.GetDialOptions(c.logger, c.globalFlags.ServerTLSEnabled, c.globalFlags.ServerTLSInsecureSkipVerify, c.globalFlags.ServerTLSCAFile)
+		if err != nil {
+			return fmt.Errorf("import: %w", err)
+		}
+
+		grpcConn, err := grpc.Dial(c.globalFlags.ServerAddr, opts...)
+		if err != nil {
+			return fmt.Errorf("import: failed to connect to server: %w", err)
+		}
+		defer grpcConn.Close()
+		c.grpcClient = ugrpc.NewGRPCClient(grpcConn)
 	}
 
-	client, err := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
-	if err != nil {
-		return fmt.Errorf("import: %w", err)
-	}
+	client := c.grpcClient.NewConfigClient()
 
 	for _, f := range files {
 		err := c.importFile(f, client)
-		c.logger.Warn(err)
+		if err != nil {
+			return fmt.Errorf("import: %w", err)
+		}
 		f.Close()
 	}
+
 	return nil
 }
 
@@ -85,13 +98,13 @@ func (c *importCommand) importFile(f *os.File, client tarianpb.ConfigClient) err
 		}
 
 		if err != nil {
-			return fmt.Errorf("import: failed to decode yaml: %w", err)
+			return fmt.Errorf("failed to decode yaml: %w", err)
 		}
 
 		req := &tarianpb.AddConstraintRequest{Constraint: &constraint}
 		response, err := client.AddConstraint(context.Background(), req)
 		if err != nil {
-			return fmt.Errorf("import: failed to add constraint: %w", err)
+			return fmt.Errorf("failed to add constraints: %w", err)
 		}
 
 		if response.GetSuccess() {
@@ -100,9 +113,9 @@ func (c *importCommand) importFile(f *os.File, client tarianpb.ConfigClient) err
 	}
 
 	if imported > 0 {
-		c.logger.Info("Imported constraint successfully")
+		c.logger.Infof("%d constraint(s) imported successfully", imported)
 	} else {
-		c.logger.Warn("No constraint was imported")
+		c.logger.Warn("No constraints imported")
 	}
 	return nil
 }

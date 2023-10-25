@@ -1,4 +1,3 @@
-// Package util provides helpers for tarianctl
 package util
 
 import (
@@ -7,24 +6,21 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// ClientOptionsFromCliContext returns grpc dial options from cli context
-func ClientOptionsFromCliContext(logger *logrus.Logger, globalFlags *flags.GlobalFlags) ([]grpc.DialOption, error) {
+// GetDialOptions returns grpc dial options
+func GetDialOptions(logger *logrus.Logger, serverTLSEnabled, serverTLSInsecureSkipVerify bool, serverCAFile string) ([]grpc.DialOption, error) {
 	o := []grpc.DialOption{}
 
-	if globalFlags.ServerTLSEnabled {
+	if serverTLSEnabled {
 		certPool, _ := x509.SystemCertPool()
 		if certPool == nil {
 			certPool = x509.NewCertPool()
 		}
-
-		serverCAFile := globalFlags.ServerTLSCAFile
 
 		if serverCAFile != "" {
 			serverCACert, err := os.ReadFile(serverCAFile)
@@ -38,7 +34,7 @@ func ClientOptionsFromCliContext(logger *logrus.Logger, globalFlags *flags.Globa
 		}
 		tlsConfig := &tls.Config{ServerName: "", RootCAs: certPool}
 
-		tlsConfig.InsecureSkipVerify = globalFlags.ServerTLSInsecureSkipVerify
+		tlsConfig.InsecureSkipVerify = serverTLSInsecureSkipVerify
 		o = append(o, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	} else {
 		o = append(o, grpc.WithTransportCredentials(insecure.NewCredentials()))

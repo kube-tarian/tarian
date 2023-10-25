@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"fmt"
-
 	version "github.com/kube-tarian/tarian/cmd"
+	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/spf13/cobra"
 )
 
@@ -12,6 +11,7 @@ var versionCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	Short: "Prints version of tarianctl",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("tarianctl version: %s\n", version.GetVersion())
+		logger := log.GetLogger()
+		logger.Infof("tarianctl version: %s\n", version.GetVersion())
 	},
 }

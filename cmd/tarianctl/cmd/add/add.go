@@ -16,8 +16,8 @@ func NewAddCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 		Short:   "Add resources to the Tarian Server.",
 		Long:    "Add resources to the Tarian Server.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				err := errors.New("no resource specified, use `tarianctl add --help` for command usage")
+			if len(args) != 1 {
+				err := errors.New(`tarianctl needs exactly one argument, use "tarianctl add --help" for command usage`)
 				return fmt.Errorf("add: %w", err)
 			}
 			return nil

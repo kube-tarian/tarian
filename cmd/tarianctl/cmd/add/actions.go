@@ -6,18 +6,22 @@ import (
 	"fmt"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
-	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
+	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
+	"google.golang.org/grpc"
+
 	"github.com/kube-tarian/tarian/pkg/log"
-	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	"github.com/kube-tarian/tarian/pkg/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type actionCommand struct {
 	globalFlags *flags.GlobalFlags
 	logger      *logrus.Logger
+
+	grpcClient ugrpc.Client
 
 	name              string
 	namespace         string
@@ -58,15 +62,26 @@ func newAddActionCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 }
 
 func (c *actionCommand) run(_ *cobra.Command, args []string) error {
-	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
-	if err != nil {
-		return fmt.Errorf("add action: %w", err)
+	// TODO: Remove this check when we support more actions
+	if c.action != "delete-pod" {
+		c.logger.Errorf("invalid action: %s", c.action)
+		return fmt.Errorf("add action: invalid action: %s", c.action)
 	}
 
-	configClient, err := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
-	if err != nil {
-		return fmt.Errorf("add action: failed to create config client: %w", err)
+	if c.grpcClient == nil {
+		opts, err := util.GetDialOptions(c.logger, c.globalFlags.ServerTLSEnabled, c.globalFlags.ServerTLSInsecureSkipVerify, c.globalFlags.ServerTLSCAFile)
+		if err != nil {
+			return fmt.Errorf("add constraints: %w", err)
+		}
+
+		grpcConn, err := grpc.Dial(c.globalFlags.ServerAddr, opts...)
+		if err != nil {
+			return fmt.Errorf("add constraints: failed to connect to server: %w", err)
+		}
+		defer grpcConn.Close()
+		c.grpcClient = ugrpc.NewGRPCClient(grpcConn)
 	}
+	configClient := c.grpcClient.NewConfigClient()
 
 	req := &tarianpb.AddActionRequest{
 		Action: &tarianpb.Action{
@@ -84,6 +99,15 @@ func (c *actionCommand) run(_ *cobra.Command, args []string) error {
 
 	if c.onFalcoAlert != "" {
 		req.Action.OnFalcoAlert = true
+		falcoAlert := map[string]bool{
+			"alert":     true,
+			"critical":  true,
+			"emergency": true,
+		}
+		if !falcoAlert[c.onFalcoAlert] {
+			c.logger.Errorf("invalid falco alert: %s", c.onFalcoAlert)
+			return fmt.Errorf("add action: invalid falco alert: %s", c.onFalcoAlert)
+		}
 		req.Action.FalcoPriority = tarianpb.FalcoPriorityFromString(c.onFalcoAlert)
 	}
 

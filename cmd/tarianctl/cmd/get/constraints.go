@@ -3,14 +3,15 @@ package get
 import (
 	"context"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
-	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
+	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
 	"github.com/kube-tarian/tarian/pkg/log"
-	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
+	"github.com/kube-tarian/tarian/pkg/util"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/olekukonko/tablewriter"
@@ -21,6 +22,8 @@ import (
 type constraintsCommand struct {
 	globalFlags *flags.GlobalFlags
 	logger      *logrus.Logger
+
+	grpcClient ugrpc.Client
 
 	output string
 }
@@ -49,15 +52,20 @@ tctl get c -o yaml
 }
 
 func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) error {
-	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
-	if err != nil {
-		return fmt.Errorf("get constraints: %w", err)
-	}
+	if c.grpcClient == nil {
+		opts, err := util.GetDialOptions(c.logger, c.globalFlags.ServerTLSEnabled, c.globalFlags.ServerTLSInsecureSkipVerify, c.globalFlags.ServerTLSCAFile)
+		if err != nil {
+			return fmt.Errorf("add constraints: %w", err)
+		}
 
-	client, err := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
-	if err != nil {
-		return fmt.Errorf("get constraints: %w", err)
+		grpcConn, err := grpc.Dial(c.globalFlags.ServerAddr, opts...)
+		if err != nil {
+			return fmt.Errorf("add constraints: failed to connect to server: %w", err)
+		}
+		defer grpcConn.Close()
+		c.grpcClient = ugrpc.NewGRPCClient(grpcConn)
 	}
+	client := c.grpcClient.NewConfigClient()
 
 	response, err := client.GetConstraints(context.Background(), &tarianpb.GetConstraintsRequest{})
 	if err != nil {
@@ -66,55 +74,16 @@ func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) error {
 
 	outputFormat := c.output
 	if outputFormat == "" {
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Namespace", "Constraint Name", "Selector", "Allowed Processes", "Allowed Files"})
-		table.SetColumnSeparator(" ")
-		table.SetCenterSeparator("-")
-		table.SetAlignment(tablewriter.ALIGN_LEFT)
-
-		for _, c := range response.GetConstraints() {
-			table.Append([]string{
-				c.GetNamespace(),
-				c.GetName(),
-				matchLabelsToString(c.GetSelector().GetMatchLabels()),
-				allowedProcessesToString(c.GetAllowedProcesses()),
-				allowedFilesToString(c.GetAllowedFiles()),
-			})
-		}
-
-		table.Render()
+		constraintsTableOutput(response.GetConstraints(), c.logger.Out)
 	} else if outputFormat == "yaml" {
-		for _, constraint := range response.GetConstraints() {
-			d, err := yaml.Marshal(constraint)
-			if err != nil {
-				return fmt.Errorf("get constraints: %w", err)
-			}
-			fmt.Print(string(d))
-			fmt.Println("---")
+		err = constraintsYamlOutput(response.GetConstraints(), c.logger)
+		if err != nil {
+			return fmt.Errorf("get constraints: %w", err)
 		}
+	} else {
+		return fmt.Errorf("get constraints: invalid output format: %s", outputFormat)
 	}
 	return nil
-}
-
-func matchLabelsToString(labels []*tarianpb.MatchLabel) string {
-	if len(labels) == 0 {
-		return ""
-	}
-
-	str := strings.Builder{}
-	str.WriteString("matchLabels:")
-
-	for i, l := range labels {
-		str.WriteString(l.GetKey())
-		str.WriteString("=")
-		str.WriteString(l.GetValue())
-
-		if i < len(labels)-1 {
-			str.WriteString(",")
-		}
-	}
-
-	return str.String()
 }
 
 func allowedProcessesToString(rules []*tarianpb.AllowedProcessRule) string {
@@ -146,4 +115,40 @@ func allowedFilesToString(rules []*tarianpb.AllowedFileRule) string {
 	}
 
 	return str.String()
+}
+
+func constraintsTableOutput(constraints []*tarianpb.Constraint, out io.Writer) {
+	table := tablewriter.NewWriter(out)
+	table.SetHeader([]string{"Namespace", "Constraint Name", "Selector", "Allowed Processes", "Allowed Files"})
+	table.SetColumnSeparator(" ")
+	table.SetCenterSeparator("-")
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+
+	for _, c := range constraints {
+		table.Append([]string{
+			c.GetNamespace(),
+			c.GetName(),
+			matchLabelsToString(c.GetSelector().GetMatchLabels()),
+			allowedProcessesToString(c.GetAllowedProcesses()),
+			allowedFilesToString(c.GetAllowedFiles()),
+		})
+	}
+
+	table.Render()
+}
+
+func constraintsYamlOutput(constraints []*tarianpb.Constraint, logger *logrus.Logger) error {
+	logger.SetFormatter(&log.NoTimestampFormatter{})
+	for _, constraint := range constraints {
+		d, err := yaml.Marshal(constraint)
+		if err != nil {
+			log.DefaultFormat()
+			return err
+		}
+
+		logger.Info(string(d))
+		logger.Info("---\n")
+	}
+	log.DefaultFormat()
+	return nil
 }

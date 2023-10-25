@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgraph-io/dgo/v210"
 	"github.com/kube-tarian/tarian/pkg/clusteragent"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/podagent"
@@ -31,19 +30,18 @@ const (
 
 // TestHelper is a helper struct for setting up and managing testing components.
 type TestHelper struct {
-	server       *grpc.Server               // The gRPC server used for testing.
-	clusterAgent *clusteragent.ClusterAgent // The ClusterAgent for cluster management.
-	podAgent     *podagent.PodAgent         // The PodAgent for managing pods.
-	t            *testing.T                 // The testing.T instance for reporting test failures.
-	dgraphConfig dgraphstore.DgraphConfig   // Configuration for Dgraph database.
-	dg           *dgo.Dgraph                // Dgraph client used for testing.
+	server       *grpc.Server             // The gRPC server used for testing.
+	clusterAgent clusteragent.Agent       // The ClusterAgent for cluster management.
+	podAgent     podagent.Agent           // The PodAgent for managing pods.
+	t            *testing.T               // The testing.T instance for reporting test failures.
+	dgraphConfig dgraphstore.DgraphConfig // Configuration for Dgraph database.
+	dg           dgraphstore.Client       // The Dgraph client.
 }
 
 // NewE2eHelper creates a new TestHelper instance for e2e tests.
 func NewE2eHelper(t *testing.T) *TestHelper {
 	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	grpcClient, err := dgraphstore.NewGrpcClient(cfg.Address, dialOpts)
-
+	grpcClient, err := grpc.Dial(cfg.Address, dialOpts...)
 	if err != nil {
 		t.Fatal("error while initiating dgraph client", "err", err)
 	}
@@ -51,12 +49,12 @@ func NewE2eHelper(t *testing.T) *TestHelper {
 	dg := dgraphstore.NewDgraphClient(grpcClient)
 
 	storeSet := store.Set{}
-	storeSet.EventStore = dgraphstore.NewDgraphEventStore(dg)
-	storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
-	storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
+	storeSet.EventStore = dg.NewDgraphEventStore()
+	storeSet.ActionStore = dg.NewDgraphActionStore()
+	storeSet.ConstraintStore = dg.NewDgraphConstraintStore()
 
 	srv, err := server.NewServer(log.GetLogger(), storeSet, "", "", "", []nats.Option{}, nats.StreamConfig{})
-	grpcServer := srv.GrpcServer
+	grpcServer := srv.GetGrpcServer()
 	require.Nil(t, err)
 
 	clusterAgentConfig := &clusteragent.Config{
@@ -112,6 +110,6 @@ func (th *TestHelper) PrepareDatabase() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	err := dgraphstore.ApplySchema(ctx, th.dg)
+	err := th.dg.ApplySchema(ctx)
 	require.Nil(th.t, err)
 }

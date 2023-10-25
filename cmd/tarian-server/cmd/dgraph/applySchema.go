@@ -25,6 +25,8 @@ type applySchemaCommand struct {
 	logger      *logrus.Logger
 
 	timeout time.Duration
+
+	dgraphClient dgraphstore.Client
 }
 
 func newApplySchemaCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
@@ -46,26 +48,31 @@ func newApplySchemaCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 
 func (o *applySchemaCommand) run(_ *cobra.Command, args []string) error {
 	var cfg dgraphstore.DgraphConfig
-	err := envconfig.Process("Dgraph", &cfg)
-	if err != nil {
-		return fmt.Errorf("apply-schema: dgraph config error: %w", err)
-	}
 
-	dialOpts, err := BuildDgraphDialOpts(cfg, o.logger)
-	if err != nil {
-		return fmt.Errorf("apply-schema: %w", err)
-	}
-	grpcClient, err := dgraphstore.NewGrpcClient(cfg.Address, dialOpts)
-	if err != nil {
-		return fmt.Errorf("apply-schema: error while creating grpc client: %w", err)
-	}
+	if o.dgraphClient == nil {
+		err := envconfig.Process("Dgraph", &cfg)
+		if err != nil {
+			return fmt.Errorf("apply-schema: dgraph config error: %w", err)
+		}
 
-	dg := dgraphstore.NewDgraphClient(grpcClient)
+		dialOpts, err := BuildDgraphDialOpts(cfg, o.logger)
+		if err != nil {
+			return fmt.Errorf("apply-schema: %w", err)
+		}
+		grpcClient, err := grpc.Dial(cfg.Address, dialOpts...)
+		if err != nil {
+			return fmt.Errorf("apply-schema: error while creating grpc client: %w", err)
+		}
+		defer grpcClient.Close()
+
+		o.dgraphClient = dgraphstore.NewDgraphClient(grpcClient)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), o.timeout)
 	defer cancel()
 
-	err = dgraphstore.ApplySchema(ctx, dg)
+	err := o.dgraphClient.ApplySchema(ctx)
+
 	if err != nil {
 		return fmt.Errorf("apply-schema: failed to apply schema: %w", err)
 	}

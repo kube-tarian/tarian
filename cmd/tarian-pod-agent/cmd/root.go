@@ -14,7 +14,7 @@ var globalFlags *flags.GlobalFlags
 
 func newRootCommand(logger *logrus.Logger) *cobra.Command {
 	var rootCmd = &cobra.Command{
-		Use:           "Tarian Pod Agent",
+		Use:           "tarian-pod-agent",
 		Short:         "The Tarian pod agent is the component which runs as a sidecar to monitor your main container.",
 		Version:       version.GetVersion(),
 		SilenceUsage:  true,

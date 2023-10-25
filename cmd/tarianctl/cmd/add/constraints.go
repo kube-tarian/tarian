@@ -9,18 +9,21 @@ import (
 	"time"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
-	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
+	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
 	"github.com/kube-tarian/tarian/pkg/log"
-	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	"github.com/kube-tarian/tarian/pkg/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
 )
 
 type constraintsCommand struct {
 	globalFlags *flags.GlobalFlags
 	logger      *logrus.Logger
+
+	grpcClient ugrpc.Client
 
 	name                  string
 	namespace             string
@@ -62,28 +65,33 @@ tarianctl add constraint --name nginx --namespace default --match-labels run=ngi
 }
 
 func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) error {
-	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
-	if err != nil {
-		return fmt.Errorf("add constraints: %w", err)
-	}
+	if c.grpcClient == nil {
+		opts, err := util.GetDialOptions(c.logger, c.globalFlags.ServerTLSEnabled, c.globalFlags.ServerTLSInsecureSkipVerify, c.globalFlags.ServerTLSCAFile)
+		if err != nil {
+			return fmt.Errorf("add constraints: %w", err)
+		}
 
-	configClient, err := client.NewConfigClient(c.globalFlags.ServerAddr, opts...)
-	if err != nil {
-		return fmt.Errorf("add constraints: failed to create config client: %w", err)
+		grpcConn, err := grpc.Dial(c.globalFlags.ServerAddr, opts...)
+		if err != nil {
+			return fmt.Errorf("add constraints: failed to connect to server: %w", err)
+		}
+		defer grpcConn.Close()
+		c.grpcClient = ugrpc.NewGRPCClient(grpcConn)
 	}
-
-	eventClient, err := client.NewEventClient(c.globalFlags.ServerAddr, opts...)
-	if err != nil {
-		return fmt.Errorf("add constraints: failed to create event client: %w", err)
-	}
+	configClient := c.grpcClient.NewConfigClient()
+	eventClient := c.grpcClient.NewEventClient()
 
 	fromViolatedPod := c.fromViolatedPod
-
 	var req *tarianpb.AddConstraintRequest
 
 	// validate required fields
 	if fromViolatedPod == "" && c.name == "" {
 		err := errors.New("either constraint name or from-violated-pod is required")
+		return fmt.Errorf("add constraints: %w", err)
+	}
+
+	if fromViolatedPod != "" && c.name != "" {
+		err := errors.New("constraint name and from-violated-pod cannot be used together")
 		return fmt.Errorf("add constraints: %w", err)
 	}
 
@@ -118,9 +126,18 @@ func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) error {
 			if err != nil {
 				return fmt.Errorf("add constraints: %w", err)
 			}
-
 			c.logger.Info(string(d))
 		} else {
+			if c.allowedFileSha256Sums == nil && c.allowedProcesses == nil {
+				err := errors.New("no allowed processes or files found, use --allowed-processes or --allowed-file-sha256sums or both")
+				return fmt.Errorf("add constraints: %w", err)
+			}
+
+			if c.matchLabels == nil {
+				err := errors.New("no match labels found, use --match-labels")
+				return fmt.Errorf("add constraints: %w", err)
+			}
+
 			response, err := configClient.AddConstraint(context.Background(), req)
 			if err != nil {
 				return fmt.Errorf("add constraints: failed to add constraints: %w", err)
@@ -137,29 +154,6 @@ func (c *constraintsCommand) run(cobraCmd *cobra.Command, args []string) error {
 		c.logger.Warn("No new constraint")
 	}
 	return nil
-}
-
-func matchLabelsFromString(strLabels []string) []*tarianpb.MatchLabel {
-	if strLabels == nil {
-		return nil
-	}
-
-	labels := []*tarianpb.MatchLabel{}
-
-	for _, s := range strLabels {
-		idx := strings.Index(s, "=")
-
-		if idx < 0 {
-			continue
-		}
-
-		key := s[:idx]
-		value := strings.Trim(s[idx+1:], "\"")
-
-		labels = append(labels, &tarianpb.MatchLabel{Key: key, Value: value})
-	}
-
-	return labels
 }
 
 func allowedProcessesFromString(strProcesses []string) []*tarianpb.AllowedProcessRule {
@@ -192,7 +186,7 @@ func allowedFilesFromString(strFiles []string) []*tarianpb.AllowedFileRule {
 	for _, s := range strFiles {
 		idx := strings.Index(s, "=")
 
-		if idx < 0 {
+		if idx < 0 || idx == len(s)-1 {
 			continue
 		}
 
@@ -237,7 +231,7 @@ func (c *constraintsCommand) buildConstraintFromViolatedPod(podName string, even
 	resp, err := eventClient.GetEvents(ctx, &tarianpb.GetEventsRequest{Limit: 1000})
 	cancel()
 	if err != nil {
-		return nil, fmt.Errorf("add constraints: buildConstraintFromViolatedPod: %w", err)
+		return nil, fmt.Errorf("buildConstraintFromViolatedPod: %w", err)
 	}
 
 	targets := []*tarianpb.Target{}
@@ -247,7 +241,7 @@ func (c *constraintsCommand) buildConstraintFromViolatedPod(podName string, even
 
 	if len(targets) == 0 {
 		err := errors.New("zero target found")
-		return nil, fmt.Errorf("add constraints: buildConstraintFromViolatedPod: %w", err)
+		return nil, fmt.Errorf("buildConstraintFromViolatedPod: %w", err)
 	}
 
 	// build process rules
@@ -271,13 +265,13 @@ func (c *constraintsCommand) buildConstraintFromViolatedPod(podName string, even
 
 	if targets[0].GetPod() == nil {
 		err := errors.New("no pod found")
-		return nil, fmt.Errorf("add constraints: buildConstraintFromViolatedPod: %w", err)
+		return nil, fmt.Errorf("buildConstraintFromViolatedPod: %w", err)
 	}
 
 	labels := targets[0].GetPod().GetLabels()
 	if labels == nil {
 		err := errors.New("no labels found")
-		return nil, fmt.Errorf("add constraints: buildConstraintFromViolatedPod: %w", err)
+		return nil, fmt.Errorf("buildConstraintFromViolatedPod: %w", err)
 	}
 
 	ignoredLabel := "pod-template-hash"

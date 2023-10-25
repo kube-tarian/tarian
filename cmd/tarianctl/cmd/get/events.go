@@ -3,15 +3,16 @@ package get
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/kube-tarian/tarian/cmd/tarianctl/cmd/flags"
-	"github.com/kube-tarian/tarian/cmd/tarianctl/util"
+	ugrpc "github.com/kube-tarian/tarian/cmd/tarianctl/util/grpc"
+	"github.com/kube-tarian/tarian/pkg/util"
+	"google.golang.org/grpc"
+
 	"github.com/kube-tarian/tarian/pkg/log"
-	"github.com/kube-tarian/tarian/pkg/tarianctl/client"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
@@ -21,6 +22,8 @@ import (
 type eventsCommand struct {
 	globalFlags *flags.GlobalFlags
 	logger      *logrus.Logger
+
+	grpcClient ugrpc.Client
 
 	limit uint
 }
@@ -46,65 +49,27 @@ func newGetEventsCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
 }
 
 func (c *eventsCommand) run(_ *cobra.Command, args []string) error {
-	opts, err := util.ClientOptionsFromCliContext(c.logger, c.globalFlags)
-	if err != nil {
-		return fmt.Errorf("get events: %w", err)
-	}
+	if c.grpcClient == nil {
+		opts, err := util.GetDialOptions(c.logger, c.globalFlags.ServerTLSEnabled, c.globalFlags.ServerTLSInsecureSkipVerify, c.globalFlags.ServerTLSCAFile)
+		if err != nil {
+			return fmt.Errorf("add constraints: %w", err)
+		}
 
-	client, err := client.NewEventClient(c.globalFlags.ServerAddr, opts...)
-	if err != nil {
-		return fmt.Errorf("get events: %w", err)
+		grpcConn, err := grpc.Dial(c.globalFlags.ServerAddr, opts...)
+		if err != nil {
+			return fmt.Errorf("add constraints: failed to connect to server: %w", err)
+		}
+		defer grpcConn.Close()
+		c.grpcClient = ugrpc.NewGRPCClient(grpcConn)
 	}
+	client := c.grpcClient.NewEventClient()
 
 	response, err := client.GetEvents(context.Background(), &tarianpb.GetEventsRequest{Limit: uint32(c.limit)})
 	if err != nil {
 		return fmt.Errorf("get events: failed to get events: %w", err)
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Time", "Namespace", "Pod", "Events"})
-	table.SetColWidth(80)
-	table.SetColumnSeparator(" ")
-	table.SetCenterSeparator("-")
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetReflowDuringAutoWrap(false)
-
-	for _, e := range response.GetEvents() {
-		for _, t := range e.GetTargets() {
-			evt := strings.Builder{}
-			if t.GetViolatedProcesses() != nil {
-				evt.WriteString("violated processes\n")
-				evt.WriteString(violatedProcessesToString(t.GetViolatedProcesses()))
-			}
-
-			if t.GetViolatedFiles() != nil {
-				evt.WriteString("violated files\n")
-				evt.WriteString(violatedFilesToString(t.GetViolatedFiles()))
-			}
-
-			if t.GetFalcoAlert() != nil {
-				evt.WriteString("falco alert\n")
-				evt.WriteString(falcoAlertToString(t.GetFalcoAlert()))
-			}
-
-			if e.GetType() == tarianpb.EventTypePodDeleted {
-				evt.WriteString("pod deleted")
-			}
-
-			evt.WriteString("\n")
-
-			table.Append(
-				[]string{
-					e.GetServerTimestamp().AsTime().Format(time.RFC3339),
-					t.GetPod().GetNamespace(),
-					t.GetPod().GetName(),
-					evt.String(),
-				},
-			)
-		}
-	}
-
-	table.Render()
+	eventsTableOutput(response.GetEvents(), c.logger)
 	return nil
 }
 
@@ -163,4 +128,51 @@ func falcoAlertToString(f *tarianpb.FalcoAlert) string {
 	}
 
 	return f.GetPriority().ToString() + ": " + f.GetOutput()
+}
+
+func eventsTableOutput(events []*tarianpb.Event, logger *logrus.Logger) {
+	table := tablewriter.NewWriter(logger.Out)
+	table.SetHeader([]string{"Time", "Namespace", "Pod", "Events"})
+	table.SetColWidth(80)
+	table.SetColumnSeparator(" ")
+	table.SetCenterSeparator("-")
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.SetReflowDuringAutoWrap(false)
+
+	for _, e := range events {
+		for _, t := range e.GetTargets() {
+			evt := strings.Builder{}
+			if t.GetViolatedProcesses() != nil {
+				evt.WriteString("violated processes\n")
+				evt.WriteString(violatedProcessesToString(t.GetViolatedProcesses()))
+			}
+
+			if t.GetViolatedFiles() != nil {
+				evt.WriteString("violated files\n")
+				evt.WriteString(violatedFilesToString(t.GetViolatedFiles()))
+			}
+
+			if t.GetFalcoAlert() != nil {
+				evt.WriteString("falco alert\n")
+				evt.WriteString(falcoAlertToString(t.GetFalcoAlert()))
+			}
+
+			if e.GetType() == tarianpb.EventTypePodDeleted {
+				evt.WriteString("pod deleted")
+			}
+
+			evt.WriteString("\n")
+
+			table.Append(
+				[]string{
+					e.GetServerTimestamp().AsTime().Format(time.RFC3339),
+					t.GetPod().GetNamespace(),
+					t.GetPod().GetName(),
+					evt.String(),
+				},
+			)
+		}
+	}
+
+	table.Render()
 }

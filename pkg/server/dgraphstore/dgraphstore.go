@@ -5,6 +5,7 @@ import (
 
 	"github.com/dgraph-io/dgo/v210"
 	"github.com/dgraph-io/dgo/v210/protos/api"
+	"github.com/kube-tarian/tarian/pkg/store"
 	"google.golang.org/grpc"
 )
 
@@ -19,29 +20,26 @@ type DgraphConfig struct {
 // defaultTimeout is the default timeout used for context operations (30 seconds).
 const defaultTimeout = 30 * time.Second
 
-// NewGrpcClient creates a new gRPC client connection to the specified address with custom options.
-//
-// Parameters:
-// - address: The address of the gRPC server to connect to, e.g., "localhost:9080".
-// - opts: Additional gRPC DialOptions (optional).
-//
-// Returns:
-// - A new gRPC client connection.
-// - An error if there was an issue establishing the connection.
-func NewGrpcClient(address string, opts []grpc.DialOption) (*grpc.ClientConn, error) {
-	grpcClient, err := grpc.Dial(address, opts...)
-	return grpcClient, err
+type client struct {
+	dg *dgo.Dgraph
 }
 
 // NewDgraphClient creates a new Dgraph client using a provided gRPC client connection.
-//
-// Parameters:
-// - grpcClient: An established gRPC client connection to a Dgraph server.
-//
-// Returns:
-// - A new Dgraph client.
-func NewDgraphClient(grpcClient *grpc.ClientConn) *dgo.Dgraph {
-	return dgo.NewDgraphClient(
-		api.NewDgraphClient(grpcClient),
-	)
+func NewDgraphClient(conn *grpc.ClientConn) Client {
+	return &client{dg: dgo.NewDgraphClient(api.NewDgraphClient(conn))}
+}
+
+// NewDgraphConstraintStore creates a new DgraphConstraintStore with the provided Dgraph client.
+func (c *client) NewDgraphConstraintStore() store.ConstraintStore {
+	return newDgraphConstraintStore(c.dg)
+}
+
+// NewDgraphActionStore creates a new DgraphActionStore with the provided Dgraph client.
+func (c *client) NewDgraphActionStore() store.ActionStore {
+	return newDgraphActionStore(c.dg)
+}
+
+// NewDgraphEventStore creates a new DgraphEventStore with the provided Dgraph client.
+func (c *client) NewDgraphEventStore() store.EventStore {
+	return newDgraphEventStore(c.dg)
 }

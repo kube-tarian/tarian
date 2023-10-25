@@ -54,7 +54,7 @@ type PodAgent struct {
 //
 // Returns:
 //   - *PodAgent: A new instance of the PodAgent.
-func NewPodAgent(logger *logrus.Logger, clusterAgentAddress string) *PodAgent {
+func NewPodAgent(logger *logrus.Logger, clusterAgentAddress string) Agent {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &PodAgent{
@@ -72,6 +72,7 @@ func NewPodAgent(logger *logrus.Logger, clusterAgentAddress string) *PodAgent {
 //   - labels: The labels to set for the pod.
 func (p *PodAgent) SetPodLabels(labels []*tarianpb.Label) {
 	p.podLabels = labels
+	p.logger.Debug("pod label(s) set to: ", p.podLabels)
 }
 
 // SetPodName sets the name of the pod.
@@ -80,14 +81,16 @@ func (p *PodAgent) SetPodLabels(labels []*tarianpb.Label) {
 //   - name: The name of the pod.
 func (p *PodAgent) SetPodName(name string) {
 	p.podName = name
+	p.logger.Debug("pod name set to: ", p.podName)
 }
 
-// SetpodUID sets the UID of the pod.
+// SetPodUID sets the UID of the pod.
 //
 // Parameters:
 //   - uid: The UID of the pod.
-func (p *PodAgent) SetpodUID(uid string) {
+func (p *PodAgent) SetPodUID(uid string) {
 	p.podUID = uid
+	p.logger.Debug("pod UID set to: ", p.podUID)
 }
 
 // SetNamespace sets the namespace of the pod.
@@ -96,6 +99,7 @@ func (p *PodAgent) SetpodUID(uid string) {
 //   - namespace: The namespace of the pod.
 func (p *PodAgent) SetNamespace(namespace string) {
 	p.namespace = namespace
+	p.logger.Debug("pod namespace set to: ", p.namespace)
 }
 
 // SetFileValidationInterval sets the interval for file validation.
@@ -104,11 +108,13 @@ func (p *PodAgent) SetNamespace(namespace string) {
 //   - t: The duration for file validation interval.
 func (p *PodAgent) SetFileValidationInterval(t time.Duration) {
 	p.fileValidationInterval = t
+	p.logger.Debug("file validation interval set to: ", p.fileValidationInterval)
 }
 
 // EnableRegisterFiles enables file registration.
 func (p *PodAgent) EnableRegisterFiles() {
 	p.enableRegisterFiles = true
+	p.logger.Debug("file registration enabled")
 }
 
 // SetRegisterFilePaths sets the file paths to register.
@@ -117,6 +123,7 @@ func (p *PodAgent) EnableRegisterFiles() {
 //   - paths: The file paths to register.
 func (p *PodAgent) SetRegisterFilePaths(paths []string) {
 	p.registerFilePaths = paths
+	p.logger.Debug("file paths to register set to: ", p.registerFilePaths)
 }
 
 // SetRegisterFileIgnorePaths sets the file paths to ignore during registration.
@@ -125,22 +132,24 @@ func (p *PodAgent) SetRegisterFilePaths(paths []string) {
 //   - paths: The file paths to ignore during registration.
 func (p *PodAgent) SetRegisterFileIgnorePaths(paths []string) {
 	p.registerFileIgnorePaths = paths
+	p.logger.Debug("file paths to ignore during registration set to: ", p.registerFileIgnorePaths)
 }
 
 // Dial establishes a connection to the cluster agent.
 func (p *PodAgent) Dial() {
+	p.logger.Debug("establishing a connection to the cluster agent.....")
 	var err error
 	p.grpcConn, err = grpc.Dial(p.clusterAgentAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	p.configClient = tarianpb.NewConfigClient(p.grpcConn)
-	p.eventClient = tarianpb.NewEventClient(p.grpcConn)
-
 	if err != nil {
 		p.logger.WithError(err).Fatal("couldn't connect to the cluster agent")
 	}
+	p.configClient = tarianpb.NewConfigClient(p.grpcConn)
+	p.eventClient = tarianpb.NewEventClient(p.grpcConn)
 }
 
 // GracefulStop stops the PodAgent gracefully.
 func (p *PodAgent) GracefulStop() {
+	p.logger.Debug("gracefully stopping the pod agent")
 	p.cancelFunc()
 
 	if p.grpcConn != nil {
@@ -150,6 +159,7 @@ func (p *PodAgent) GracefulStop() {
 
 // RunThreatScan starts the threat scan loop.
 func (p *PodAgent) RunThreatScan() {
+	p.logger.Info("starting threat scan....")
 	p.Dial()
 	defer p.grpcConn.Close()
 
@@ -171,6 +181,7 @@ func (p *PodAgent) RunThreatScan() {
 
 // RunRegister starts the registration loop.
 func (p *PodAgent) RunRegister() {
+	p.logger.Info("starting file registration....")
 	p.Dial()
 	defer p.grpcConn.Close()
 
@@ -202,6 +213,7 @@ func (p *PodAgent) SetConstraints(constraints []*tarianpb.Constraint) {
 	defer p.constraintsLock.Unlock()
 
 	p.constraints = constraints
+	p.logger.Debugf("constraints %v set", p.constraints)
 }
 
 // GetConstraints retrieves the constraints for the pod.
@@ -226,6 +238,7 @@ func (p *PodAgent) loopSyncConstraints(ctx context.Context) error {
 
 // SyncConstraints retrieves and synchronizes constraints from the cluster agent.
 func (p *PodAgent) SyncConstraints() {
+	p.logger.Debug("syncing constraints from the cluster agent")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 	r, err := p.configClient.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{Namespace: p.namespace, Labels: p.podLabels})

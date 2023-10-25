@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"net"
 	"os"
@@ -12,11 +10,9 @@ import (
 	"github.com/kube-tarian/tarian/cmd/tarian-cluster-agent/cmd/flags"
 	"github.com/kube-tarian/tarian/pkg/clusteragent"
 	"github.com/kube-tarian/tarian/pkg/log"
+	"github.com/kube-tarian/tarian/pkg/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
@@ -41,6 +37,8 @@ type runCommand struct {
 	enableAddConstraint bool
 
 	falcoListenerHTTPPort string
+
+	clusterAgent clusteragent.Agent
 }
 
 func newRunCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
@@ -76,17 +74,20 @@ func (c *runCommand) run(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("run: failed to listen: %w", err)
 	}
 
-	clusterAgentConfig, err := c.newClusterAgentConfigFromCliContext()
-	if err != nil {
-		return fmt.Errorf("run: %w", err)
-	}
-	clusterAgent, err := clusteragent.NewClusterAgent(c.logger, clusterAgentConfig)
-	if err != nil {
-		return fmt.Errorf("run: %w", err)
-	}
-	defer clusterAgent.Close()
+	if c.clusterAgent == nil {
+		clusterAgentConfig, err := c.newClusterAgentConfigFromCliContext()
+		if err != nil {
+			return fmt.Errorf("run: %w", err)
+		}
 
-	grpcServer := clusterAgent.GetGrpcServer()
+		c.clusterAgent, err = clusteragent.NewClusterAgent(c.logger, clusterAgentConfig)
+		if err != nil {
+			return fmt.Errorf("run: %w", err)
+		}
+		defer c.clusterAgent.Close()
+	}
+
+	grpcServer := c.clusterAgent.GetGrpcServer()
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
@@ -97,7 +98,7 @@ func (c *runCommand) run(_ *cobra.Command, args []string) error {
 		grpcServer.GracefulStop()
 	}()
 
-	go clusterAgent.Run()
+	go c.clusterAgent.Run()
 
 	c.logger.WithField("address", listener.Addr()).Info("tarian-cluster-agent is listening at")
 
@@ -111,36 +112,10 @@ func (c *runCommand) run(_ *cobra.Command, args []string) error {
 }
 
 func (c *runCommand) newClusterAgentConfigFromCliContext() (*clusteragent.Config, error) {
-	dialOpts := []grpc.DialOption{}
-
-	if c.serverTLSEnabled {
-		certPool, _ := x509.SystemCertPool()
-		if certPool == nil {
-			certPool = x509.NewCertPool()
-		}
-
-		serverCAFile := c.serverTLSCAFile
-
-		if serverCAFile != "" {
-			serverCACert, err := os.ReadFile(serverCAFile)
-			if err != nil {
-				c.logger.WithError(err).WithField("filename", serverCAFile).Error("failed to read server tls ca files")
-				return nil, fmt.Errorf("newClusterAgentConfigFromCliContext: %w", err)
-			}
-
-			if ok := certPool.AppendCertsFromPEM(serverCACert); !ok {
-				c.logger.WithError(err).Error("failed to append server ca file")
-			}
-		}
-
-		tlsConfig := &tls.Config{ServerName: "", RootCAs: certPool}
-		tlsConfig.InsecureSkipVerify = c.serverTLSInsecureSkipVerify
-
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
-	} else {
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dialOpts, err := util.GetDialOptions(c.logger, c.serverTLSEnabled, c.serverTLSInsecureSkipVerify, c.serverTLSCAFile)
+	if err != nil {
+		return nil, fmt.Errorf("new cluster agent config: %w", err)
 	}
-
 	config := &clusteragent.Config{
 		ServerAddress:         c.serverAddress,
 		ServerGrpcDialOptions: dialOpts,

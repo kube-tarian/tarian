@@ -18,6 +18,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -47,6 +48,9 @@ type runCommand struct {
 	natsStreamConfigReplicas   int
 	natsStramConfigMaxAge      time.Duration
 	natsStreamConfigDuplicates time.Duration
+
+	dgraphClient dgraphstore.Client
+	server       server.Server
 }
 
 func newRunCommand(globalFlags *flags.GlobalFlags) *cobra.Command {
@@ -89,33 +93,36 @@ func (o *runCommand) addFlags(cmd *cobra.Command) {
 }
 
 func (o *runCommand) run(_ *cobra.Command, args []string) error {
-	// Create server
 	host := o.host
 	port := o.port
 
-	dgraphAddress := os.Getenv("DGRAPH_ADDRESS")
+	if o.dgraphClient == nil {
+		dgraphAddress := os.Getenv("DGRAPH_ADDRESS")
+		cfg := dgraphstore.DgraphConfig{Address: dgraphAddress}
+
+		err := envconfig.Process("Dgraph", &cfg)
+		if err != nil {
+			return fmt.Errorf("run: dgraph config error: %w", err)
+		}
+
+		dialOpts, err := dgraph.BuildDgraphDialOpts(cfg, o.logger)
+		if err != nil {
+			return fmt.Errorf("run: %w", err)
+		}
+
+		grpcClient, err := grpc.Dial(cfg.Address, dialOpts...)
+		if err != nil {
+			return fmt.Errorf("run: failed to connect to server: %w", err)
+		}
+		defer grpcClient.Close()
+		o.dgraphClient = dgraphstore.NewDgraphClient(grpcClient)
+		o.logger.Debug("Created dgraphstore client")
+	}
+
 	storeSet := store.Set{}
-	cfg := dgraphstore.DgraphConfig{Address: dgraphAddress}
-
-	err := envconfig.Process("Dgraph", &cfg)
-	if err != nil {
-		return fmt.Errorf("run: dgraph config error: %w", err)
-	}
-
-	dialOpts, err := dgraph.BuildDgraphDialOpts(cfg, o.logger)
-	if err != nil {
-		return fmt.Errorf("run: %w", err)
-	}
-
-	grpcClient, err := dgraphstore.NewGrpcClient(cfg.Address, dialOpts)
-	if err != nil {
-		return fmt.Errorf("run: error while initiating dgraph client: %w", err)
-	}
-
-	dg := dgraphstore.NewDgraphClient(grpcClient)
-	storeSet.EventStore = dgraphstore.NewDgraphEventStore(dg)
-	storeSet.ActionStore = dgraphstore.NewDgraphActionStore(dg)
-	storeSet.ConstraintStore = dgraphstore.NewDgraphConstraintStore(dg)
+	storeSet.EventStore = o.dgraphClient.NewDgraphEventStore()
+	storeSet.ActionStore = o.dgraphClient.NewDgraphActionStore()
+	storeSet.ConstraintStore = o.dgraphClient.NewDgraphConstraintStore()
 
 	natsOpts := []nats.Option{}
 	for _, rootCA := range o.natsTLSRootCAs {
@@ -141,18 +148,21 @@ func (o *runCommand) run(_ *cobra.Command, args []string) error {
 		Duplicates: o.natsStreamConfigDuplicates,
 	}
 
-	serv, err := server.NewServer(o.logger, storeSet, o.tlsCertFile, o.tlsPrivateKeyFile, o.natsURL, natsOpts, streamConfig)
-	if err != nil {
-		return fmt.Errorf("run: error while initiating tarian-server: %w", err)
+	if o.server == nil {
+		serv, err := server.NewServer(o.logger, storeSet, o.tlsCertFile, o.tlsPrivateKeyFile, o.natsURL, natsOpts, streamConfig)
+		if err != nil {
+			return fmt.Errorf("run: error while initiating tarian-server: %w", err)
+		}
+		o.server = serv
 	}
 
-	sigCh := make(chan os.Signal, 1)
+	var sigCh = make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
 		sig := <-sigCh
 		o.logger.Warn("got sigterm signal, attempting graceful shutdown: signal: ", sig)
-		serv.Stop()
+		o.server.Stop()
 	}()
 
 	if o.alertManagerAddress != "" {
@@ -160,13 +170,14 @@ func (o *runCommand) run(_ *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("run: invalid url in alertmanager-address: %w", err)
 		}
-		serv.WithAlertDispatcher(url, o.alertEvaluationInterval).StartAlertDispatcher()
+
+		o.server.WithAlertDispatcher(url, o.alertEvaluationInterval).StartAlertDispatcher()
 	}
 
 	addr := host + ":" + port
 	// Run server
-	o.logger.Info("tarian-server is starting...")
-	if err := serv.Start(addr); err != nil {
+	o.logger.Infof("tarian-server is listening at: %s", addr)
+	if err := o.server.Start(addr); err != nil {
 		return fmt.Errorf("run: failed to start server: %w", err)
 	}
 

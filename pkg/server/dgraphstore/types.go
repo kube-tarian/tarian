@@ -1,6 +1,11 @@
 package dgraphstore
 
-import "time"
+import (
+	"context"
+	"time"
+
+	"github.com/kube-tarian/tarian/pkg/store"
+)
 
 // Constraint represents a constraint in the Dgraph database.
 type Constraint struct {
@@ -57,4 +62,16 @@ type Target struct {
 	ViolatedFiles     string   `json:"target_violated_files,omitempty"`     // Violated files associated with the target (in JSON format).
 	FalcoAlert        string   `json:"target_falco_alert,omitempty"`        // Falco alert associated with the target (in JSON format).
 	Pod               *Pod     `json:"pod,omitempty"`                       // Pod associated with the target.
+}
+
+// Client is an interface for creating Dgraph clients.
+type Client interface {
+	// NewDgraphActionStore returns a new Dgraph action store.
+	NewDgraphActionStore() store.ActionStore
+	// NewDgraphConstraintStore returns a new Dgraph constraint store.
+	NewDgraphConstraintStore() store.ConstraintStore
+	// NewDgraphEventStore returns a new Dgraph event store.
+	NewDgraphEventStore() store.EventStore
+	// ApplySchema applies the Dgraph schema.
+	ApplySchema(ctx context.Context) error
 }
