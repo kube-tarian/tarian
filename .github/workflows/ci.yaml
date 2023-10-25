@@ -11,6 +11,8 @@ on:
       - "charts/**"
       - ".github/workflows/ci.yaml"
       - "**.go"
+      - "**.proto"
+      - "go.mod"
 
 permissions: read-all
 
