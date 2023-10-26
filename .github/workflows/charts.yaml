@@ -14,52 +14,42 @@ on:
 permissions: read-all
 
 jobs:
-  # SKIP: Need more refactoring for this workflow, it needs images to be pushed to registry first
-
-  # lint-helm-chart-test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Set up Helm
-  #       uses: Azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 #v3.5
-  #       with:
-  #         version: v3.12.1
-
-  #     - uses: actions/setup-python@v4
-  #       with:
-  #         python-version: '3.9'
-  #         check-latest: true
-
-  #     - name: Set up chart-testing
-  #       uses: helm/chart-testing-action@v2.4.0
-
-  #     - name: Run chart-testing (list-changed)
-  #       id: list-changed
-  #       run: |
-  #         changed=$(ct list-changed --target-branch ${{ github.event.repository.default_branch }})
-  #         if [[ -n "$changed" ]]; then
-  #           echo "changed=true" >> "$GITHUB_OUTPUT"
-  #         fi
-
-  #     - name: Run chart-testing (lint)
-  #       if: steps.list-changed.outputs.changed == 'true'
-  #       run: ct lint --target-branch ${{ github.event.repository.default_branch }}
-
-  #     - name: Create kind cluster
-  #       if: steps.list-changed.outputs.changed == 'true'
-  #       uses: helm/kind-action@v1.7.0
-
-  #     - name: Run chart-testing (install)
-  #       if: steps.list-changed.outputs.changed == 'true'
-  #       run: ct install --target-branch ${{ github.event.repository.default_branch }}
-
-  charts-test:
+  lint-helm-charts:
     runs-on: ubuntu-latest
-    # needs: lint-helm-chart-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: Azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 #v3.5
+        with:
+          version: v3.12.1
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+          check-latest: true
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.4.0
+
+      - name: Run chart-testing (list-changed)
+        id: list-changed
+        run: |
+          changed=$(ct list-changed --target-branch ${{ github.event.repository.default_branch }})
+          if [[ -n "$changed" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run chart-testing (lint)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: ct lint --target-branch ${{ github.event.repository.default_branch }}
+
+  install-helm-charts:
+    runs-on: ubuntu-latest
+    needs: lint-helm-charts
     env:
       GOPATH: ${{ github.workspace }}/../go
       HOME: ${{ github.workspace }}/..
@@ -150,37 +140,3 @@ jobs:
           kubectl logs -n tarian-system daemonsets/tarian-node-agent
           echo "======================================================================================================================"
           exit 1
-
-  # SKIP: Add this part into release workflow
-
-  # release:
-  #   if: startsWith(github.ref, 'refs/heads/main')
-  #   needs: charts-test
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: write
-  #   env:
-  #     GOPATH: ${{ github.workspace }}/../go
-  #     HOME: ${{ github.workspace }}/..
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # @3.1.0
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Configure Git
-  #       run: |
-  #         git config user.name "$GITHUB_ACTOR"
-  #         git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
-  #     - name: Install Helm
-  #       uses: Azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 #v3.5 # @v3.5
-  #       with:
-  #         version: '3.11.0'
-
-  #     - name: Run chart-releaser
-  #       uses: helm/chart-releaser-action@c25b74a986eb925b398320414b576227f375f946 # @v1.2.1
-  #       with:
-  #         config: .cr.yaml
-  #       env:
-  #         CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

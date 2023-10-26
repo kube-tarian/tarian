@@ -1,0 +1,230 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: "Log level"
+        required: true
+        default: "debug"
+  release:
+    types: [created]
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/release.yaml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/release.yaml"
+
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    env:
+      GOPATH: ${{ github.workspace }}/../go
+      HOME: ${{ github.workspace }}/..
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
+        with:
+          submodules: "recursive"
+
+      - name: Set up Go
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #4.1.0
+        with:
+          go-version: "1.21"
+          cache: false
+
+      - name: EBPF prerequisites
+        run: |
+          set -x
+          sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang
+          make ebpf
+
+      - name: Run unit tests
+        run: make unit-test
+
+  test-k8s:
+    runs-on: ubuntu-latest
+    env:
+      GOPATH: ${{ github.workspace }}/../go
+      HOME: ${{ github.workspace }}/..
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
+        with:
+          submodules: "recursive"
+
+      - name: Set up Go
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe #4.1.0
+        with:
+          go-version: "1.21"
+          cache: false
+
+      - name: Install dependencies
+        run: |
+          set -x
+          # Install required dependencies and tools
+          sudo apt update && sudo apt install -y pkg-config libelf-dev clang
+          go install github.com/mgechev/revive@latest
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
+
+      - name: Create Kind registry
+        run: |
+          set -x
+          # Create a Kind registry
+          ./dev/run-kind-registry.sh
+
+      - name: Kind Cluster
+        uses: helm/kind-action@dda0770415bac9fc20092cacbc54aa298604d140 #v1.8.0
+        with:
+          config: "dev/cluster-config.yaml"
+          cluster_name: tarian-testing
+
+      - name: Testing Kind cluster setup
+        run: |
+          set -x
+          # Verify Kind cluster setup
+          kubectl cluster-info
+          kubectl wait --for=condition=ready pod --all --all-namespaces --timeout=300s
+          kubectl get pods -n kube-system
+          echo "kubectl config current-context:" $(kubectl config current-context)
+          echo "KUBECONFIG env var:" ${KUBECONFIG}
+
+      - name: Build
+        run: |
+          set -x
+          sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
+          make bin/protoc bin/goreleaser
+          bash ./dev/run-kind-registry.sh
+          make ebpf generate
+          ./bin/goreleaser release --snapshot --rm-dist
+          make push-local-images
+          cp dist/tarianctl_linux_amd64/tarianctl ./bin/
+
+      - name: Run unit tests
+        run: make unit-test
+
+      - name: Install Tarian
+        run: |
+          set -x
+          ./bin/tarianctl install --charts ./charts -l debug --agents-values ./dev/values/agents.yaml --server-values ./dev/values/server.yaml
+        continue-on-error: true
+
+      - name: Wait for pods to be ready
+        id: wait-until-tarian-is-ready
+        run: |
+          set -x
+          # Wait for all pods in the tarian-system namespace to be in the "Ready" state
+          kubectl wait --for=condition=ready pod --all -n tarian-system --timeout=300s
+        continue-on-error: true
+
+      - name: Run tests
+        id: run-tests
+        if: steps.wait-until-tarian-is-ready.outcome == 'success'
+        run: make k8s-test
+        continue-on-error: true
+
+      - name: Collect deployment information in case of failure
+        if: steps.wait-until-tarian-is-ready.outcome != 'success' || steps.run-tests.outcome != 'success'
+        run: |
+          set -x
+          # Collect logs and information for debugging in case of failure
+          kubectl get pods -n tarian-system
+          echo "======================================================================================================================"
+          kubectl describe pods -n tarian-system
+          echo "======================================================================================================================"
+          kubectl logs -n tarian-system deploy/tarian-server
+          echo "======================================================================================================================"
+          kubectl logs -n tarian-system deploy/tarian-cluster-agent
+          echo "======================================================================================================================"
+          kubectl logs -n tarian-system deploy/tarian-controller-manager
+          echo "======================================================================================================================"
+          kubectl logs -n tarian-system daemonsets/tarian-node-agent
+          echo "======================================================================================================================"
+          exit 1
+
+  publish-containers:
+    needs: [unit-test, test-k8s]
+    if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: write
+    env:
+      GOPATH: ${{ github.workspace }}/../go
+      HOME: ${{ github.workspace }}/..
+    steps:
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # @3.1.0
+        with:
+          submodules: "recursive"
+      - uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # @3.3.1
+        with:
+          go-version: "1.19"
+      - run: sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang
+      - run: go install google.golang.org/protobuf/cmd/protoc-gen-go@32051b4f86e54c2142c7c05362c6e96ae3454a1c # @v1.28.0
+      - run: go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
+      - run: make bin/protoc ebpf bin/goreleaser
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@42d299face0c5c43a0487c477f595ac9cf22f1a7 # @v1.12.0
+        with:
+          registry: ghcr.io
+          username: devopstoday11
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            ./bin/goreleaser
+          elif [[ $GITHUB_REF == refs/heads/main ]]; then
+            ./bin/goreleaser --snapshot
+          fi
+        env:
+          CONTAINER_REGISTRY: ghcr.io/${{ github.repository_owner }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: docker images
+      - run: |
+          if [[ $GITHUB_REF == refs/heads/main ]]; then
+            docker push ghcr.io/${{ github.repository_owner}}/tarian-server
+            docker push ghcr.io/${{ github.repository_owner}}/tarian-cluster-agent
+            docker push ghcr.io/${{ github.repository_owner}}/tarian-node-agent
+            docker push ghcr.io/${{ github.repository_owner}}/tarian-pod-agent
+            docker push ghcr.io/${{ github.repository_owner}}/tarianctl
+          fi
+
+  release:
+    if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
+    needs: [publish-containers]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GOPATH: ${{ github.workspace }}/../go
+      HOME: ${{ github.workspace }}/..
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # @3.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: Azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 #v3.5 # @v3.5
+        with:
+          version: "3.11.0"
+
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@c25b74a986eb925b398320414b576227f375f946 # @v1.2.1
+        with:
+          config: .cr.yaml
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
