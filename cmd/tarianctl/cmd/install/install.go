@@ -36,8 +36,8 @@ type installCmd struct {
 	onlyAgents bool // install only agents
 
 	// clients
-	helmClient *helm.Client
-	kubeClient *kubeclient.Client
+	helmClient helm.Client
+	kubeClient kubeclient.Client
 }
 
 // NewInstallCommand creates a new install command
@@ -108,14 +108,18 @@ func (c *installCmd) run(cmd *cobra.Command, args []string) error {
 	c.logger.Infof("Installing Tarian in namespace '%v'...", c.namespace)
 
 	// Create Helm and Kubernetes client instances
-	c.helmClient, err = helm.NewHelmClient(c.logger, c.kubeconfig, c.kubeContext)
-	if err != nil {
-		return fmt.Errorf("install: failed to create helm client: %w", err)
+	if c.helmClient == nil {
+		c.helmClient, err = helm.NewHelmClient(c.logger, c.kubeconfig, c.kubeContext)
+		if err != nil {
+			return fmt.Errorf("install: failed to create helm client: %w", err)
+		}
 	}
 
-	c.kubeClient, err = kubeclient.NewKubeClient(c.logger, c.kubeconfig, c.kubeContext)
-	if err != nil {
-		return fmt.Errorf("install: failed to get kubeclient: %w", err)
+	if c.kubeClient == nil {
+		c.kubeClient, err = kubeclient.NewKubeClient(c.logger, c.kubeconfig, c.kubeContext)
+		if err != nil {
+			return fmt.Errorf("install: failed to get kubeclient: %w", err)
+		}
 	}
 
 	var g errgroup.Group
@@ -136,23 +140,23 @@ func (c *installCmd) run(cmd *cobra.Command, args []string) error {
 	if c.onlyAgents {
 		// Install Tarian Cluster Agent and Node Agent
 		c.logger.Warn("Please don't forget to provide tarian server address via helm values file.")
-		err = c.installAgents(tempDir)
+		err = c.installAgents()
 		if err != nil {
-			return err
+			return fmt.Errorf("install: %w", err)
 		}
 	} else {
 		// Install Tarian Server and Cluster Agent and Node Agent
-		err = c.installServer(tempDir)
+		err = c.installServer()
 		if err != nil {
-			return err
+			return fmt.Errorf("install: %w", err)
 		}
-		err = c.installAgents(tempDir)
+		err = c.installAgents()
 		if err != nil {
-			return err
+			return fmt.Errorf("install: %w", err)
 		}
 	}
 
-	c.logger.Info("Tarian successfully installed.")
+	c.logger.Infof("Tarian successfully installed in namespace '%v'", c.namespace)
 	return nil
 }
 
@@ -161,14 +165,14 @@ func (c *installCmd) installNats(tempDir string) error {
 	// Add Helm repository for Nats
 	err := c.helmClient.AddRepo("nats", "https://nats-io.github.io/k8s/helm/charts/")
 	if err != nil {
-		return fmt.Errorf("install: failed to add nats repo: %w", err)
+		return fmt.Errorf("failed to add nats repo: %w", err)
 	}
 
 	// Install Nats using Helm
 	natsValuesFile := filepath.Join(tempDir, "nats-values.yaml")
 	err = natsHelmDefaultValues(natsValuesFile)
 	if err != nil {
-		return fmt.Errorf("install: failed to get nats helm default values file: %w", err)
+		return fmt.Errorf("failed to get nats helm default values file: %w", err)
 	}
 	valuesFiles := []string{natsValuesFile}
 	if c.natsValues != nil {
@@ -178,7 +182,7 @@ func (c *installCmd) installNats(tempDir string) error {
 
 	err = c.helmClient.Install("nats", "nats/nats", c.namespace, valuesFiles, natsVer, nil)
 	if err != nil {
-		return fmt.Errorf("install: failed to install nats: %w", err)
+		return fmt.Errorf("failed to install nats: %w", err)
 	}
 
 	c.logger.Info("Waiting for Nats pods to be ready...")
@@ -186,7 +190,7 @@ func (c *installCmd) installNats(tempDir string) error {
 	// Wait for Nats pods to become ready
 	err = c.kubeClient.WaitForPodsToBeReady(c.namespace, "app.kubernetes.io/name=nats")
 	if err != nil {
-		return fmt.Errorf("install: nats pods failed to be ready: %w", err)
+		return fmt.Errorf("nats pods failed to be ready: %w", err)
 	}
 	return nil
 }
@@ -197,14 +201,14 @@ func (c *installCmd) installDgraph(tempDir string) error {
 	// Add Helm repository for DGraph
 	err := c.helmClient.AddRepo("dgraph", "https://charts.dgraph.io")
 	if err != nil {
-		return fmt.Errorf("install: failed to add dgraph repo: %w", err)
+		return fmt.Errorf("failed to add dgraph repo: %w", err)
 	}
 
 	// Install DGraph using Helm
 	dgraphValuesFile := filepath.Join(tempDir, "dgraph-values.yaml")
 	err = dgraphHelmDefaultValues(dgraphValuesFile)
 	if err != nil {
-		return fmt.Errorf("install: failed to get dgraph helm default values file: %w", err)
+		return fmt.Errorf("failed to get dgraph helm default values file: %w", err)
 	}
 
 	valuesFiles := []string{dgraphValuesFile}
@@ -213,7 +217,7 @@ func (c *installCmd) installDgraph(tempDir string) error {
 	}
 	err = c.helmClient.Install("dgraph", "dgraph/dgraph", c.namespace, valuesFiles, "", nil)
 	if err != nil {
-		return fmt.Errorf("install: failed to install dgraph: %w", err)
+		return fmt.Errorf("failed to install dgraph: %w", err)
 	}
 
 	c.logger.Info("Waiting for DGraph pods to be ready...")
@@ -221,18 +225,18 @@ func (c *installCmd) installDgraph(tempDir string) error {
 	// Wait for DGraph pods to become ready
 	err = c.kubeClient.WaitForPodsToBeReady(c.namespace, "app=dgraph")
 	if err != nil {
-		return fmt.Errorf("install: dgraph pods failed to be ready: %w", err)
+		return fmt.Errorf("dgraph pods failed to be ready: %w", err)
 	}
 	return nil
 }
 
-func (c *installCmd) installServer(tempDir string) error {
+func (c *installCmd) installServer() error {
 	// If charts path is not specified, add Tarian Helm repository
 	c.logger.Info("Installing Tarian Server...")
 	if c.charts == "" {
 		err := c.helmClient.AddRepo("tarian", "https://kube-tarian.github.io/helm-charts")
 		if err != nil {
-			return fmt.Errorf("install: failed to add tarian repo: %w", err)
+			return fmt.Errorf("failed to add tarian repo: %w", err)
 		}
 		c.charts = "tarian"
 	}
@@ -241,9 +245,14 @@ func (c *installCmd) installServer(tempDir string) error {
 	set := []string{"server.dgraph.address=dgraph-dgraph-alpha:9080"}
 
 	// Install Tarian Server using Helm
+	if c.serverValues != nil {
+		c.logger.Infof("Installing Helm chart %s with name %s in namespace %s with values file(s) %s", chart, "tarian-server", c.namespace, strings.Join(c.serverValues, ", "))
+	} else {
+		c.logger.Infof("Installing asdfasdf Helm chart %s with name %s in namespace %s", chart, "tarian-server", c.namespace)
+	}
 	err := c.helmClient.Install("tarian-server", chart, c.namespace, c.serverValues, "", set)
 	if err != nil {
-		return fmt.Errorf("install: failed to install tarian server: %w", err)
+		return fmt.Errorf("failed to install tarian server: %w", err)
 	}
 
 	c.logger.Info("Waiting for Tarian Server pods to be ready...")
@@ -251,7 +260,7 @@ func (c *installCmd) installServer(tempDir string) error {
 	// Wait for Tarian Server pods to become ready
 	err = c.kubeClient.WaitForPodsToBeReady(c.namespace, "app=tarian-server")
 	if err != nil {
-		return fmt.Errorf("install: tarian server pods failed to be ready: %w", err)
+		return fmt.Errorf("tarian server pods failed to be ready: %w", err)
 	}
 
 	c.logger.Info("Apply schema to DGraph...")
@@ -259,7 +268,7 @@ func (c *installCmd) installServer(tempDir string) error {
 	// Get the name of the Tarian Server pod
 	podName, err := c.kubeClient.GetPodName(c.namespace, "app=tarian-server")
 	if err != nil {
-		return fmt.Errorf("install: failed to get tarian server pod name: %w", err)
+		return fmt.Errorf("failed to get tarian server pod name: %w", err)
 	}
 
 	// Define the command to apply schema to DGraph
@@ -268,7 +277,7 @@ func (c *installCmd) installServer(tempDir string) error {
 	// Execute the command in the Tarian Server pod
 	output, err := c.kubeClient.ExecPodWithOneContainer(c.namespace, podName, dgraphCmd)
 	if err != nil {
-		return fmt.Errorf("install: failed to apply schema to dgraph: %w", err)
+		return fmt.Errorf("failed to apply schema to dgraph: %w", err)
 	}
 
 	if strings.Contains(output, "error while applying dgraph schema") {
@@ -277,12 +286,12 @@ func (c *installCmd) installServer(tempDir string) error {
 	return nil
 }
 
-func (c *installCmd) installAgents(tempDir string) error {
+func (c *installCmd) installAgents() error {
 	c.logger.Info("Installing Tarian Cluster Agent...")
 	if c.charts == "" {
 		err := c.helmClient.AddRepo("tarian", "https://kube-tarian.github.io/helm-charts")
 		if err != nil {
-			return fmt.Errorf("install: failed to add tarian repo: %w", err)
+			return fmt.Errorf("failed to add tarian repo: %w", err)
 		}
 		c.charts = "tarian"
 	}
@@ -290,9 +299,14 @@ func (c *installCmd) installAgents(tempDir string) error {
 	chart := c.charts + "/tarian-cluster-agent"
 
 	// Install Tarian Cluster Agent using Helm
+	if c.agentsValues != nil {
+		c.logger.Infof("Installing Helm chart %s with name %s in namespace %s with values file(s) %s", chart, "tarian-cluster-agent", c.namespace, strings.Join(c.agentsValues, ", "))
+	} else {
+		c.logger.Infof("Installing Helm chart %s with name %s in namespace %s", chart, "tarian-cluster-agent", c.namespace)
+	}
 	err := c.helmClient.Install("tarian", chart, c.namespace, c.agentsValues, "", nil)
 	if err != nil {
-		return fmt.Errorf("install: failed to install tarian cluster agent: %w", err)
+		return fmt.Errorf("failed to install tarian cluster agent: %w", err)
 	}
 
 	c.logger.Info("Waiting for Tarian Cluster/Node Agent pods to be ready...")
@@ -300,7 +314,8 @@ func (c *installCmd) installAgents(tempDir string) error {
 	// Wait for Tarian Cluster/Node Agent pods to become ready
 	err = c.kubeClient.WaitForPodsToBeReady(c.namespace, "app=tarian")
 	if err != nil {
-		return fmt.Errorf("install: tarian cluster/node agent pods failed to be ready: %w", err)
+		return fmt.Errorf("tarian cluster/node agent pods failed to be ready: %w", err)
 	}
+	c.logger.Debug("Tarian Cluster Agent and Node Agent successfully installed.")
 	return nil
 }

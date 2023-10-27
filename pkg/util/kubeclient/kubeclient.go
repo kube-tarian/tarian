@@ -17,15 +17,14 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-// Client represents a Kubernetes client for interacting with Kubernetes clusters.
-type Client struct {
+type client struct {
 	client     *kubernetes.Clientset
 	restConfig *rest.Config
 	logger     *logrus.Logger
 }
 
 // NewKubeClient returns a new Kubernetes client.
-func NewKubeClient(logger *logrus.Logger, kubeconfig string, kubeContext string) (*Client, error) {
+func NewKubeClient(logger *logrus.Logger, kubeconfig string, kubeContext string) (Client, error) {
 	var restConfig *rest.Config
 	var err error
 	if kubeContext != "" {
@@ -42,20 +41,20 @@ func NewKubeClient(logger *logrus.Logger, kubeconfig string, kubeContext string)
 		return nil, fmt.Errorf("failed to build kubeconfig: %w", err)
 	}
 
-	client, err := kubernetes.NewForConfig(restConfig)
+	clientSet, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kube client: %w", err)
 	}
 
-	return &Client{
-		client:     client,
+	return &client{
+		client:     clientSet,
 		restConfig: restConfig,
 		logger:     logger,
 	}, nil
 }
 
 // WaitForPodsToBeReady waits for pods to be ready in the specified namespace and with the given label selector.
-func (k *Client) WaitForPodsToBeReady(namespace, labelSelector string) error {
+func (k *client) WaitForPodsToBeReady(namespace, labelSelector string) error {
 	return wait.Poll(2*time.Second, 5*time.Minute, func() (bool, error) {
 		k.logger.Debugf(`Waiting for pods "%v" to be in the "Running" state...`, labelSelector)
 
@@ -85,7 +84,7 @@ func (k *Client) WaitForPodsToBeReady(namespace, labelSelector string) error {
 }
 
 // ExecPodWithOneContainer executes a command in a pod with one container.
-func (k *Client) ExecPodWithOneContainer(namespace, podName string, cmd []string) (string, error) {
+func (k *client) ExecPodWithOneContainer(namespace, podName string, cmd []string) (string, error) {
 	podOpts := &corev1.PodExecOptions{
 		Command: cmd,
 		Stdout:  true,
@@ -126,7 +125,7 @@ func (k *Client) ExecPodWithOneContainer(namespace, podName string, cmd []string
 }
 
 // GetPodName returns the name of a pod in the specified namespace and with the given label selector.
-func (k *Client) GetPodName(namespace, labelSelector string) (string, error) {
+func (k *client) GetPodName(namespace, labelSelector string) (string, error) {
 	podList, err := k.client.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})

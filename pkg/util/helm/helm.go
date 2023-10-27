@@ -8,8 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Client represents a Helm client for managing Helm charts.
-type Client struct {
+type client struct {
 	helmBin     string         // path to the helm binary
 	kubeconfig  string         // path to the kubeconfig file
 	kubeContext string         // name of the kubeconfig context
@@ -17,7 +16,7 @@ type Client struct {
 }
 
 // NewHelmClient returns a new Helm client.
-func NewHelmClient(logger *logrus.Logger, kubeconfig string, kubeContext string) (*Client, error) {
+func NewHelmClient(logger *logrus.Logger, kubeconfig string, kubeContext string) (Client, error) {
 	helmBinaryPath, err := exec.LookPath("helm")
 	if err != nil {
 		return nil, fmt.Errorf("seems like helm is not installed, please install helm first")
@@ -32,7 +31,7 @@ func NewHelmClient(logger *logrus.Logger, kubeconfig string, kubeContext string)
 		return nil, fmt.Errorf("helm version >=v3.*.* is required, current version: %s", string(output))
 	}
 
-	return &Client{
+	return &client{
 		helmBin:     helmBinaryPath,
 		kubeconfig:  kubeconfig,
 		kubeContext: kubeContext,
@@ -41,7 +40,7 @@ func NewHelmClient(logger *logrus.Logger, kubeconfig string, kubeContext string)
 }
 
 // AddRepo adds a Helm repository.
-func (h *Client) AddRepo(name string, url string) error {
+func (h *client) AddRepo(name string, url string) error {
 	h.logger.Debugf("Adding Helm repo %s with URL %s", name, url)
 	args := []string{
 		"repo",
@@ -63,8 +62,7 @@ func (h *Client) AddRepo(name string, url string) error {
 }
 
 // Install installs a Helm chart.
-func (h *Client) Install(name string, chart string, namespace string, valuesFiles []string, version string, setArgs []string) error {
-	h.logger.Debugf("Installing Helm chart %s with name %s in namespace %s", chart, name, namespace)
+func (h *client) Install(name string, chart string, namespace string, valuesFiles []string, version string, setArgs []string) error {
 	args := []string{
 		"upgrade", "--install",
 		name, chart,
