@@ -4,6 +4,8 @@ package kubeclient
 type Client interface {
 	// WaitForPodsToBeReady waits for pods to be ready in the specified namespace and with the given label selector.
 	WaitForPodsToBeReady(namespace, labelSelector string) error
+	// WaitForPodsToBeDeleted waits for pods to be deleted in the specified namespace and with the given label selector.
+	WaitForPodsToBeDeleted(namespace, labelSelector string) error
 	// ExecPodWithOneContainer executes a command in a pod with one container.
 	ExecPodWithOneContainer(namespace, podName string, cmd []string) (string, error)
 	// GetPodName returns the name of a pod in the specified namespace and with the given label selector.

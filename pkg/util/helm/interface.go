@@ -6,4 +6,6 @@ type Client interface {
 	AddRepo(name string, url string) error
 	// UpdateRepo updates a Helm repository.
 	Install(name string, chart string, namespace string, valuesFiles []string, version string, setArgs []string) error
+	// Uninstall uninstalls a Helm chart.
+	Uninstall(name string, namespace string) error
 }

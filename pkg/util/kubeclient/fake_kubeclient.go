@@ -30,3 +30,9 @@ func (f *fakeClient) WaitForPodsToBeReady(namespace string, labelSelector string
 	f.logger.Infof("Waiting for pods in namespace %s with label selector %s to be ready", namespace, labelSelector)
 	return nil
 }
+
+// WaitForPodsToBeDeleted implements Client.
+func (f *fakeClient) WaitForPodsToBeDeleted(namespace string, labelSelector string) error {
+	f.logger.Infof("waiting for pods in namespace %s with label selector %s to be deleted", namespace, labelSelector)
+	return nil
+}
