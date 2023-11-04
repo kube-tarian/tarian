@@ -8,28 +8,32 @@ Tarian welcomes and accepts contributions via GitHub pull requests.
 - [Go 1.19+](https://golang.org/)
 - [Kubectl](https://kubernetes.io/docs/tasks/tools/)
 - Docker for developing with local cluster
+- [Helm](https://helm.sh/)
+- You should be root user to run tarian
 
-### Kind
+## Setup
 
+1. Clone the repo with submodules
+
+```bash
+git clone --recurse-submodules https://github.com/kube-tarian/tarian.git
+```
+
+2. Kind
+
+This step will create a kind cluster with a local image registry hosted on localhost:5000
 ```bash
 make create-kind-cluster
 ```
+OR
 
-### Minikube
+Minikube
 
 ```bash
 make create-minikube-cluster
 ```
 
-## Setup
-
-1. Clone submodules
-
-```bash
-git submodule update --init --recursive
-```
-
-2. Prepare build tools
+3. Prepare build tools
 
 ```bash
 sudo apt update && sudo apt install make unzip pkg-config libelf-dev clang gcc linux-tools-common linux-tools-common linux-tools-generic
@@ -56,25 +60,48 @@ Usage: /usr/lib/linux-tools/5.15.0-40-generic/bpftool [OPTIONS] OBJECT { COMMAND
                     {-V|--version} }
 ```
 
-3. Build local images
+In case if you see warning:
+```
+WARNING: bpftool not found for kernel 5.15.0-87
+ 
+  You may need to install the following packages for this specific kernel:
+    linux-tools-5.15.0-87-generic
+    linux-cloud-tools-5.15.0-87-generic
+ 
+  You may also want to install one of the following packages to keep up to date:
+    linux-tools-generic
+    linux-cloud-tools-generic
+```
+Install the packages listed above.
+
+4. Build local images and binaries
 
 ```bash
 make local-images
 ```
+All the binaries are in `./bin` and images are pushed to local image registry
 
-4. Apply tarian-k8s manifests
+5. Install tarian using install command
+```
+export PATH=$PATH:./bin
+
+tarianctl install --charts charts -l debug --agents-values dev/values/agents.yaml --server-values dev/values/server.yaml
+```
+
+or
 
 ```bash
 make deploy
 ```
+If you use make deploy then follow next two steps:
 
-5. Wait for all the pods to be ready
+1. Wait for all the pods to be ready
 
 ```bash
 kubectl wait --for=condition=ready pod --all -n tarian-system
 ```
 
-6. Run DB migration:
+2. Once the pods are up then run DB migration:
 
 ```bash
 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dgraph apply-schema
