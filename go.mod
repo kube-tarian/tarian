@@ -1,6 +1,6 @@
 module github.com/kube-tarian/tarian
 
-go 1.20
+go 1.21.5
 
 require (
 	github.com/go-openapi/runtime v0.25.0
