@@ -10,7 +10,7 @@ require (
 	github.com/open-policy-agent/cert-controller v0.6.0
 	github.com/prometheus/alertmanager v0.24.0
 	github.com/scylladb/go-set v1.0.2
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	google.golang.org/grpc v1.52.3
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v3 v3.0.1
@@ -65,7 +65,7 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/net v0.17.0
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783 // indirect
-	golang.org/x/sys v0.13.0
+	golang.org/x/sys v0.15.0
 	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
@@ -83,7 +83,7 @@ require (
 )
 
 require (
-	github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0
+	github.com/aquasecurity/libbpfgo v0.6.0-libbpf-1.3
 	github.com/dgraph-io/dgo/v210 v210.0.0-20220113041351-ba0e5dfc4c3e
 	github.com/nats-io/nats.go v1.22.1
 	github.com/sethvargo/go-retry v0.2.4
