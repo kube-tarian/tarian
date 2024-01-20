@@ -33,8 +33,4 @@ RUN chmod +x kubectl
 RUN sudo mv kubectl /usr/local/bin
 
 # Install Helm
-RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-RUN chmod 700 get_helm.sh
-RUN ./get_helm.sh
-
-CMD ["/bin/bash"]
+RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
