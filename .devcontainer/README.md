@@ -1,6 +1,6 @@
-**How to Use Devcontainer in Visual Studio Code** 
+## How to Use Devcontainer in Visual Studio Code
 
-**Prerequisite -** 
+**Prerequisite** 
 
 Install "Dev Containers" extension in VS Code.
 
