@@ -1,6 +1,6 @@
 module github.com/kube-tarian/tarian
 
-go 1.20
+go 1.21.5
 
 require (
 	github.com/go-openapi/runtime v0.25.0
@@ -83,7 +83,7 @@ require (
 )
 
 require (
-	github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0
+	github.com/aquasecurity/libbpfgo v0.6.0-libbpf-1.3
 	github.com/dgraph-io/dgo/v210 v210.0.0-20220113041351-ba0e5dfc4c3e
 	github.com/nats-io/nats.go v1.22.1
 	github.com/sethvargo/go-retry v0.2.4
