@@ -1,22 +1,10 @@
 version = 1
 
 [[analyzers]]
-name = "secrets"
-enabled = true
-
-[[analyzers]]
-name = "docker"
-enabled = true
-
-[[analyzers]]
-name = "test-coverage"
-enabled = false
+name = "shell"
 
 [[analyzers]]
 name = "go"
-enabled = true
 
   [analyzers.meta]
-  import_root = "github.com/kube-tarian/tarian"
-  dependencies_vendored = true
- 
+  import_root = "github.com/kumari-anupam/tarian"
