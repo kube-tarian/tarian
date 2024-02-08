@@ -1,5 +1,7 @@
 version = 1
 
+exclude_patterns = ["test/k8s/test.sh"]
+
 [[analyzers]]
 name = "shell"
 
