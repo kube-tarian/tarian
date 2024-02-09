@@ -84,7 +84,9 @@ require (
 
 require (
 	github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0
+	github.com/cilium/ebpf v0.12.3
 	github.com/dgraph-io/dgo/v210 v210.0.0-20220113041351-ba0e5dfc4c3e
+	github.com/intelops/tarian-detector v0.0.0-20230731211348-fd00556994bd
 	github.com/nats-io/nats.go v1.22.1
 	github.com/sethvargo/go-retry v0.2.4
 	github.com/sirupsen/logrus v1.9.3
@@ -96,6 +98,7 @@ require github.com/mattn/go-runewidth v0.0.9 // indirect
 require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
+	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2 // indirect
 )
 
 require (

@@ -1,6 +1,8 @@
 package server
 
 import (
+	"encoding/json"
+
 	"github.com/kube-tarian/tarian/pkg/protoqueue"
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
@@ -53,7 +55,10 @@ func (iw *IngestionWorker) Start() {
 			continue
 		}
 
+		buf, err := json.Marshal(event)
+
 		event.ServerTimestamp = timestamppb.Now()
+		logrus.Info(">> DEBUG IngestionWorker", "event", string(buf))
 		err = iw.eventStore.Add(event)
 
 		if err != nil {

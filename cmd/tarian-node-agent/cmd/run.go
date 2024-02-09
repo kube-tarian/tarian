@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/cilium/ebpf/rlimit"
 	"github.com/kube-tarian/tarian/cmd/tarian-node-agent/cmd/flags"
 	"github.com/kube-tarian/tarian/pkg/log"
 	"github.com/kube-tarian/tarian/pkg/nodeagent"
@@ -63,6 +64,10 @@ func (c *runCommand) run(_ *cobra.Command, args []string) error {
 	} else if os.IsNotExist(err) {
 		c.logger.WithField("path", nodeagent.HostProcDir).Error("host proc is not mounted")
 		return fmt.Errorf("host proc is not mounted: %w", err)
+	}
+
+	if err := rlimit.RemoveMemlock(); err != nil {
+		c.logger.Fatal(err)
 	}
 
 	addr := c.clusterAgentHost + ":" + c.clusterAgentPort
