@@ -83,6 +83,29 @@ func (k *client) WaitForPodsToBeReady(namespace, labelSelector string) error {
 	})
 }
 
+// WaitForPodsToBeDeleted waits for pods to be deleted in the specified namespace and with the given label selector.
+func (k *client) WaitForPodsToBeDeleted(namespace, labelSelector string) error {
+	return wait.Poll(2*time.Second, 5*time.Minute, func() (bool, error) {
+		k.logger.Debugf(`Waiting for pods "%v" to be deleted...`, labelSelector)
+
+		podList, err := k.client.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{
+			LabelSelector: labelSelector,
+		})
+		if err != nil {
+			return false, nil
+		}
+
+		if len(podList.Items) == 0 {
+			k.logger.Infof("All pods '%v' are deleted.", labelSelector)
+			return true, nil
+		}
+		for _, pod := range podList.Items {
+			k.logger.Debugf("Pod %s status %v", pod.Name, pod.Status.Phase)
+		}
+		return false, nil
+	})
+}
+
 // ExecPodWithOneContainer executes a command in a pod with one container.
 func (k *client) ExecPodWithOneContainer(namespace, podName string, cmd []string) (string, error) {
 	podOpts := &corev1.PodExecOptions{

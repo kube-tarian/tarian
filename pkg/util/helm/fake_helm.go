@@ -24,3 +24,9 @@ func (f *fakeClient) Install(name string, chart string, namespace string, values
 	f.logger.Infof("Installing Helm chart %s with name %s in namespace %s", chart, name, namespace)
 	return nil
 }
+
+// UnInstall implements Client.
+func (f *fakeClient) Uninstall(name string, namespace string) error {
+	f.logger.Infof("Uninstalling Helm chart %s in namespace %s", name, namespace)
+	return nil
+}

@@ -95,3 +95,25 @@ func (h *client) Install(name string, chart string, namespace string, valuesFile
 
 	return err
 }
+
+// Uninstall uninstalls a Helm chart.
+func (h *client) Uninstall(name string, namespace string) error {
+	h.logger.Debugf("Uninstalling Helm chart %s in namespace %s", name, namespace)
+	args := []string{
+		"uninstall", name,
+		"--namespace", namespace,
+	}
+
+	if h.kubeconfig != "" {
+		args = append(args, "--kubeconfig", h.kubeconfig)
+	}
+
+	if h.kubeContext != "" {
+		args = append(args, "--kube-context", h.kubeContext)
+	}
+
+	output, err := exec.Command(h.helmBin, args...).CombinedOutput()
+	h.logger.Debug(string(output))
+
+	return err
+}
