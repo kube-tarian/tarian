@@ -45,8 +45,6 @@ func init() {
 func NewManager(logger *logrus.Logger, port int, healthProbeBindAddress string, leaderElection bool) (manager.Manager, error) {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
-		MetricsBindAddress:     "0",
-		Port:                   port,
 		HealthProbeBindAddress: healthProbeBindAddress,
 		LeaderElection:         leaderElection,
 		LeaderElectionID:       leaderElectionID,
