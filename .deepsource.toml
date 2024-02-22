@@ -1,12 +1,22 @@
 version = 1
 
-exclude_patterns = ["test/k8s/test.sh"]
+[[analyzers]]
+name = "secrets"
+enabled = true
 
 [[analyzers]]
-name = "shell"
+name = "docker"
+enabled = true
+
+[[analyzers]]
+name = "test-coverage"
+enabled = false
 
 [[analyzers]]
 name = "go"
+enabled = true
 
   [analyzers.meta]
-  import_root = "github.com/kumari-anupam/tarian"
+  import_root = "github.com/kube-tarian/tarian"
+  dependencies_vendored = true
+ 
