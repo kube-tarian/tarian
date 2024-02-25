@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 var (
@@ -79,9 +80,10 @@ func RegisterControllers(logger *logrus.Logger, mgr manager.Manager, cfg PodAgen
 		"/inject-pod-agent",
 		&webhook.Admission{
 			Handler: &PodAgentInjector{
-				Client: mgr.GetClient(),
-				config: cfg,
-				logger: logger,
+				Client:  mgr.GetClient(),
+				decoder: admission.NewDecoder(scheme),
+				config:  cfg,
+				logger:  logger,
 			},
 		},
 	)
