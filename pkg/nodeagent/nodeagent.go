@@ -105,17 +105,17 @@ func (n *NodeAgent) Run() {
 	defer n.grpcConn.Close()
 
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(3)
 
 	go func() {
 		_ = n.loopSyncConstraints(n.cancelCtx)
 		wg.Done()
 	}()
 
-	/*go func() {
+	go func() {
 		_ = n.loopValidateProcesses(n.cancelCtx)
 		wg.Done()
-	}()*/
+	}()
 
 	go func() {
 		_ = n.loopTarianDetectorReadEvents(n.cancelCtx)
@@ -414,15 +414,17 @@ func (n *NodeAgent) RegisterViolationsAsNewConstraint(violation *ProcessViolatio
 }
 
 func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
-	//---------------tarian-detector dev branch code integration---------------
+	// tarian-detector dev branch code integration
 	tarianEbpfModule, err := tarian.GetModule()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Errorf("error while get tarian ebpf module: %w", err)
+		return fmt.Errorf("error while get tarian-detector ebpf module: %w", err)
 	}
 
 	tarianDetector, err := tarianEbpfModule.Prepare()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Errorf("error while prepare tarian detector: %w", err)
+		return fmt.Errorf("error while prepare tarian-detector: %w", err)
 	}
 
 	// Instantiate event detectors
@@ -434,39 +436,31 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 	// Start and defer Close
 	err = eventsDetector.Start()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Errorf("error while start tarian detector: %w", err)
+		return fmt.Errorf("error while start tarian-detector: %w", err)
 	}
 	defer eventsDetector.Close()
-
-	log.Printf("%d probes running...\n", eventsDetector.Count())
 
 	go func() {
 		for {
 			event, err := eventsDetector.ReadAsInterface()
 			if err != nil {
-				log.Print(err)
+				fmt.Errorf("error while read event: %w", err)
+				log.Print("error: ", err)
 				continue
 			}
 
-			/*k8sCtx, err := GetK8sContext(watcher, e["hostProcessId"].(uint32))
-			if err != nil {
-				e["kubernetes"] = err.Error()
-			} else {
-				e["kubernetes"] = k8sCtx
-			}*/
-
-			// utils.PrintEvent(e, eventsDetector.GetTotalCount())
+			if event == nil {
+				continue
+			}
 			detectionDataType := event["eventId"].(string)
 			byteData, err := json.Marshal(event)
 			if err != nil {
-				fmt.Errorf("********tarian-detector: error while marshaling json", "err", err, "detectionDataType", detectionDataType)
 				n.logger.Error("tarian-detector: error while marshaling json", "err", err, "detectionDataType", detectionDataType)
 				continue
 			}
 
 			n.SendDetectionEventToClusterAgent(detectionDataType, string(byteData))
-			fmt.Println("********tarian-detector: ", detectionDataType, "binary_file_path", event["directory"], "hostProcessId", event["hostProcessId"], "processId",
-				event["processId"], "comm", event["processName"])
 			n.logger.Info("tarian-detector: ", detectionDataType, "binary_file_path", event["directory"], "hostProcessId", event["hostProcessId"],
 				"processId", event["processId"], "comm", event["processName"])
 		}
