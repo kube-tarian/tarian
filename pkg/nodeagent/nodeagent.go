@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -417,13 +416,13 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 	// tarian-detector dev branch code integration
 	tarianEbpfModule, err := tarian.GetModule()
 	if err != nil {
-		fmt.Errorf("error while get tarian ebpf module: %w", err)
+		n.logger.Errorf("error while get tarian ebpf module: %w", err)
 		return fmt.Errorf("error while get tarian-detector ebpf module: %w", err)
 	}
 
 	tarianDetector, err := tarianEbpfModule.Prepare()
 	if err != nil {
-		fmt.Errorf("error while prepare tarian detector: %w", err)
+		n.logger.Errorf("error while prepare tarian detector: %w", err)
 		return fmt.Errorf("error while prepare tarian-detector: %w", err)
 	}
 
@@ -436,7 +435,7 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 	// Start and defer Close
 	err = eventsDetector.Start()
 	if err != nil {
-		fmt.Errorf("error while start tarian detector: %w", err)
+		n.logger.Errorf("error while start tarian detector: %w", err)
 		return fmt.Errorf("error while start tarian-detector: %w", err)
 	}
 	defer eventsDetector.Close()
@@ -445,8 +444,7 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 		for {
 			event, err := eventsDetector.ReadAsInterface()
 			if err != nil {
-				fmt.Errorf("error while read event: %w", err)
-				log.Print("error: ", err)
+				n.logger.Errorf("error while read event: %w", err)
 				continue
 			}
 
