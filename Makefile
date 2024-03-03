@@ -109,9 +109,6 @@ $(LIBBPF_OBJ): $(LIBBPF_SRC) $(wildcard $(LIBBPF_SRC)/*.[ch]) | $(OUTPUT)/libbpf
 
 libbpfgo-static: $(VMLINUXH) | $(LIBBPF_OBJ)
 
-$(NODEAGENT_EBPF_DIR)/capture_exec.bpf.o: vmlinuxh libbpfgo-static ## Build eBPF object
-	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(ARCH) -I$(OUTPUT) -c $(NODEAGENT_EBPF_DIR)/c/capture_exec.bpf.c -o $@
-
 ##@ Development
 
 generate: bin/controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
@@ -123,15 +120,7 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	CGO_CFLAGS=$(CGO_CFLAGS_STATIC) CGO_LDFLAGS=$(CGO_LDFLAGS_STATIC) go vet ./...
 
-ebpf: $(NODEAGENT_EBPF_DIR)/capture_exec.bpf.o
-
-# recipe to execute the executable file
-execute: export LINUX_VERSION_MAJOR := $(KV_MAJOR)
-execute: export LINUX_VERSION_MINOR := $(KV_MINOR)
-execute: export LINUX_VERSION_PATCH := $(KV_PATCH)
-
-build: bin/goreleaser generate proto ebpf ## Build binaries and copy to ./bin/
-	echo "linux version: $(KV_MAJOR).$(KV_MINOR).$(KV_PATCH)"
+build: bin/goreleaser generate proto ## Build binaries and copy to ./bin/
 	./bin/goreleaser build --single-target --snapshot --rm-dist --single-target
 	cp dist/*/tarian* ./bin/
 

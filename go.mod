@@ -63,7 +63,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/net v0.21.0
 	golang.org/x/oauth2 v0.17.0 // indirect
-	golang.org/x/sys v0.17.0
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/term v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
@@ -83,7 +83,7 @@ require (
 	github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0
 	github.com/cilium/ebpf v0.13.1
 	github.com/dgraph-io/dgo/v210 v210.0.0-20220113041351-ba0e5dfc4c3e
-	github.com/intelops/tarian-detector v0.0.0-20240223205958-674f5351cece
+	github.com/intelops/tarian-detector v0.0.0-20240226164335-7701e4e67daa
 	github.com/nats-io/nats.go v1.22.1
 	github.com/sethvargo/go-retry v0.2.4
 	github.com/sirupsen/logrus v1.9.3
