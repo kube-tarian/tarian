@@ -62,6 +62,14 @@ BPFTOOL = $(shell which bpftool || /bin/false)
 VMLINUXH = $(OUTPUT)/vmlinux.h
 NODEAGENT_EBPF_DIR = pkg/nodeagent/ebpf
 
+# extracts the major, minor, and patch version numbers of the kernel version
+KERNEL_VERSION = $(word 1, $(subst -, ,$(shell uname -r)))
+KV_S = $(subst ., ,$(KERNEL_VERSION))
+KV_MAJOR = $(word 1,$(KV_S))
+KV_MINOR = $(word 2,$(KV_S))
+KV_PATCH = $(word 3,$(KV_S))
+
+
 # output
 
 $(OUTPUT):
@@ -117,7 +125,13 @@ vet: ## Run go vet against code.
 
 ebpf: $(NODEAGENT_EBPF_DIR)/capture_exec.bpf.o
 
+# recipe to execute the executable file
+execute: export LINUX_VERSION_MAJOR := $(KV_MAJOR)
+execute: export LINUX_VERSION_MINOR := $(KV_MINOR)
+execute: export LINUX_VERSION_PATCH := $(KV_PATCH)
+
 build: bin/goreleaser generate proto ebpf ## Build binaries and copy to ./bin/
+	echo "linux version: $(KV_MAJOR).$(KV_MINOR).$(KV_PATCH)"
 	./bin/goreleaser build --single-target --snapshot --rm-dist --single-target
 	cp dist/*/tarian* ./bin/
 
@@ -132,7 +146,7 @@ local-images: build
 	docker build -f Dockerfile-server -t localhost:5000/tarian-server dist/tarian-server_linux_amd64/ && docker push localhost:5000/tarian-server
 	docker build -f Dockerfile-cluster-agent -t localhost:5000/tarian-cluster-agent dist/tarian-cluster-agent_linux_amd64/ && docker push localhost:5000/tarian-cluster-agent
 	docker build -f Dockerfile-pod-agent -t localhost:5000/tarian-pod-agent dist/tarian-pod-agent_linux_amd64/ && docker push localhost:5000/tarian-pod-agent
-	docker build -f Dockerfile-node-agent -t localhost:5000/tarian-node-agent dist/tarian-node-agent_linux_amd64/ && docker push localhost:5000/tarian-node-agent
+	docker build --build-arg KERNEL_VERSION_MAJOR=$(KV_MAJOR) --build-arg KERNEL_VERSION_MINOR=$(KV_MINOR) --build-arg KERNEL_VERSION_PATCH=$(KV_PATCH) -f Dockerfile-node-agent -t localhost:5000/tarian-node-agent dist/tarian-node-agent_linux_amd64/ && docker push localhost:5000/tarian-node-agent
 	docker build -f Dockerfile-tarianctl -t localhost:5000/tarianctl dist/tarianctl_linux_amd64/ && docker push localhost:5000/tarianctl
 
 push-local-images:
