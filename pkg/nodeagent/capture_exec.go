@@ -66,15 +66,8 @@ type CaptureExec struct {
 //   - *CaptureExec: A new instance of CaptureExec.
 //   - error: An error if creating the eBPF capture execution instance fails.
 func NewCaptureExec(logger *logrus.Logger) (*CaptureExec, error) {
-	// Create a new instance of eBPF capture execution.
-	// bpfCaptureExec, err := ebpf.NewBpfCaptureExec(logger)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("NewCaptureExec: failed to create bpf capture exec: %w", err)
-	// }
-
 	return &CaptureExec{
-		eventsChan: make(chan ExecEvent, 1000),
-		//	bpfCaptureExec:     bpfCaptureExec,
+		eventsChan:         make(chan ExecEvent, 1000),
 		logger:             logger,
 		eventsDetectorChan: make(chan map[string]any, 1000),
 	}, nil
@@ -149,8 +142,6 @@ func (c *CaptureExec) Start() error {
 		// Create an ExecEvent and send it to the events channel.
 		execEvent := ExecEvent{
 			Pid: pid,
-			//Command: command,
-			//	Filename:          filename,
 			ContainerID:       containerID,
 			K8sPodName:        podName,
 			K8sPodUID:         podUID,
