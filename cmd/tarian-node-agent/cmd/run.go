@@ -71,7 +71,10 @@ func (c *runCommand) run(_ *cobra.Command, args []string) error {
 	}
 
 	addr := c.clusterAgentHost + ":" + c.clusterAgentPort
-	agent := nodeagent.NewNodeAgent(c.logger, addr)
+	agent, err := nodeagent.NewNodeAgent(c.logger, addr)
+	if err != nil {
+		return fmt.Errorf("error while creating tarian-node-agent: %w", err)
+	}
 	agent.EnableAddConstraint(c.enableAddConstraint)
 	agent.SetNodeName(c.nodeNmae)
 

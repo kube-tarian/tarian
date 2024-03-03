@@ -43,6 +43,7 @@ type NodeAgent struct {
 
 	enableAddConstraint bool
 	nodeName            string
+	eventsDetector      *detector.EventsDetector
 }
 
 // NewNodeAgent creates a new instance of the NodeAgent.
@@ -53,8 +54,14 @@ type NodeAgent struct {
 //
 // Returns:
 //   - *NodeAgent: A new NodeAgent instance.
-func NewNodeAgent(logger *logrus.Logger, clusterAgentAddress string) *NodeAgent {
+func NewNodeAgent(logger *logrus.Logger, clusterAgentAddress string) (*NodeAgent, error) {
 	ctx, cancel := context.WithCancel(context.Background())
+
+	eventsDetector, err := integrateTarianDetector(logger)
+	if err != nil {
+		fmt.Errorf("error while integrate tarian detector: %v", err)
+		return nil, fmt.Errorf("error while integrate tarian-detector: %w", err)
+	}
 
 	return &NodeAgent{
 		clusterAgentAddress:    clusterAgentAddress,
@@ -62,7 +69,8 @@ func NewNodeAgent(logger *logrus.Logger, clusterAgentAddress string) *NodeAgent 
 		cancelFunc:             cancel,
 		constraintsInitialized: false,
 		logger:                 logger,
-	}
+		eventsDetector:         eventsDetector,
+	}, nil
 }
 
 // EnableAddConstraint sets whether the NodeAgent should enable adding new constraints.
@@ -412,18 +420,21 @@ func (n *NodeAgent) RegisterViolationsAsNewConstraint(violation *ProcessViolatio
 	}
 }
 
-func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
-	// tarian-detector dev branch code integration
+// integrateTarianDetector integrates tarian-detector and returns an EventsDetector and an error.
+//
+// It takes a logger of type *logrus.Logger as a parameter.
+// Returns a pointer to detector.EventsDetector and an error.
+func integrateTarianDetector(logger *logrus.Logger) (*detector.EventsDetector, error) {
 	tarianEbpfModule, err := tarian.GetModule()
 	if err != nil {
-		n.logger.Errorf("error while get tarian ebpf module: %w", err)
-		return fmt.Errorf("error while get tarian-detector ebpf module: %w", err)
+		logger.Error("error while get tarian ebpf module: %v", err)
+		return nil, fmt.Errorf("error while get tarian-detector ebpf module: %w", err)
 	}
 
 	tarianDetector, err := tarianEbpfModule.Prepare()
 	if err != nil {
-		n.logger.Errorf("error while prepare tarian detector: %w", err)
-		return fmt.Errorf("error while prepare tarian-detector: %w", err)
+		logger.Error("error while prepare tarian detector: %v", err)
+		return nil, fmt.Errorf("error while prepare tarian-detector: %w", err)
 	}
 
 	// Instantiate event detectors
@@ -435,16 +446,25 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 	// Start and defer Close
 	err = eventsDetector.Start()
 	if err != nil {
-		n.logger.Errorf("error while start tarian detector: %w", err)
-		return fmt.Errorf("error while start tarian-detector: %w", err)
+		logger.Errorf("error while start tarian detector: %v", err)
+		return nil, fmt.Errorf("error while start tarian-detector: %w", err)
 	}
-	defer eventsDetector.Close()
+
+	return eventsDetector, nil
+}
+
+// loopTarianDetectorReadEvents reads events from the Tarian detector and sends them to the cluster agent.
+//
+// ctx context.Context
+// error
+func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
+	defer n.eventsDetector.Close()
 
 	go func() {
 		for {
-			event, err := eventsDetector.ReadAsInterface()
+			event, err := n.eventsDetector.ReadAsInterface()
 			if err != nil {
-				n.logger.Errorf("error while read event: %w", err)
+				n.logger.Errorf("tarian-detector: error while read event: %w", err)
 				continue
 			}
 
@@ -454,7 +474,7 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 			detectionDataType := event["eventId"].(string)
 			byteData, err := json.Marshal(event)
 			if err != nil {
-				n.logger.Error("tarian-detector: error while marshaling json", "err", err, "detectionDataType", detectionDataType)
+				n.logger.Error("tarian-detector: error while marshaling event", "err", err)
 				continue
 			}
 
