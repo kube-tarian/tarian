@@ -58,12 +58,6 @@ jobs:
           go-version: "1.21"
           cache: false
 
-      - name: EBPF prerequisites
-        run: |
-          set -x
-          sudo apt update && sudo apt install -y jq pkg-config libelf-dev clang
-          make ebpf
-
       - name: Run unit tests
         run: make unit-test
 

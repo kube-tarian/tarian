@@ -196,7 +196,7 @@ func (n *NodeAgent) SyncConstraints() {
 // Returns:
 //   - error: An error, if any, encountered during the loop.
 func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
-	captureExec, err := NewCaptureExec(n.logger)
+	captureExec, err := NewCaptureExec(ctx, n.logger)
 	if err != nil {
 		return fmt.Errorf("nodeagent: %w", err)
 	}

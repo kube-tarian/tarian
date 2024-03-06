@@ -1,8 +1,6 @@
 run:
   timeout: 10m
   concurrency: 4
-  skip-files:
-  - pkg/nodeagent/ebpf/exec.go
 
 linters:
   disable-all: true
