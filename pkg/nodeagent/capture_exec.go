@@ -1,11 +1,12 @@
 package nodeagent
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/aquasecurity/libbpfgo"
 	"github.com/intelops/tarian-detector/pkg/detector"
 	"github.com/intelops/tarian-detector/tarian"
-	"github.com/kube-tarian/tarian/pkg/nodeagent/ebpf"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -48,12 +49,16 @@ type ExecEvent struct {
 // CaptureExec captures and processes execution events, associating them with Kubernetes Pods.
 // It uses eBPF (Extended Berkeley Packet Filter) to capture execution events in the Linux kernel.
 type CaptureExec struct {
-	eventsChan         chan ExecEvent       // Channel for sending captured execution events
-	shouldClose        bool                 // Flag indicating whether the capture should be closed
-	bpfCaptureExec     *ebpf.BpfCaptureExec // Instance of eBPF capture execution
-	nodeName           string               // The name of the node where the capture is running
-	logger             *logrus.Logger       // Logger instance for logging
+	ctx                context.Context
+	eventsChan         chan ExecEvent // Channel for sending captured execution events
+	shouldClose        bool           // Flag indicating whether the capture should be closed
+	bpfModule          *libbpfgo.Module
+	bpfProg            *libbpfgo.BPFProg
+	bpfRingBuffer      *libbpfgo.RingBuffer
+	nodeName           string         // The name of the node where the capture is running
+	logger             *logrus.Logger // Logger instance for logging
 	eventsDetectorChan chan map[string]any
+	eventsDetector     *detector.EventsDetector
 }
 
 // NewCaptureExec creates a new CaptureExec instance for capturing and processing execution events.
@@ -65,8 +70,9 @@ type CaptureExec struct {
 // Returns:
 //   - *CaptureExec: A new instance of CaptureExec.
 //   - error: An error if creating the eBPF capture execution instance fails.
-func NewCaptureExec(logger *logrus.Logger) (*CaptureExec, error) {
+func NewCaptureExec(ctx context.Context, logger *logrus.Logger) (*CaptureExec, error) {
 	return &CaptureExec{
+		ctx:                ctx,
 		eventsChan:         make(chan ExecEvent, 1000),
 		logger:             logger,
 		eventsDetectorChan: make(chan map[string]any, 1000),
@@ -100,7 +106,7 @@ func (c *CaptureExec) Start() error {
 	}
 	watcher.Start()
 
-	err = c.GetTarianDetectorEvents()
+	err = c.GetTarianDetectorEbpfEvents()
 	if err != nil {
 		return fmt.Errorf("CaptureExec.Start: failed to get tarian detector events: %w", err)
 	}
@@ -141,7 +147,7 @@ func (c *CaptureExec) Start() error {
 
 		// Create an ExecEvent and send it to the events channel.
 		execEvent := ExecEvent{
-			Pid: pid,
+			Pid:               pid,
 			ContainerID:       containerID,
 			K8sPodName:        podName,
 			K8sPodUID:         podUID,
@@ -158,6 +164,7 @@ func (c *CaptureExec) Start() error {
 // Close stops the capture process and closes associated resources.
 func (c *CaptureExec) Close() {
 	c.shouldClose = true
+	c.eventsDetector.Close()
 }
 
 // GetEventsChannel returns the channel for receiving execution events.
@@ -165,16 +172,18 @@ func (c *CaptureExec) GetEventsChannel() chan ExecEvent {
 	return c.eventsChan
 }
 
-func (c *CaptureExec) GetTarianDetectorEvents() error {
+func (c *CaptureExec) GetTarianDetectorEbpfEvents() error {
 	tarianEbpfModule, err := tarian.GetModule()
 	if err != nil {
-		c.logger.Error("error while get tarian ebpf module: %v", err)
+		fmt.Println("error while get tarian ebpf module: ", err)
+		c.logger.Errorf("error while get tarian ebpf module: %v", err)
 		return fmt.Errorf("error while get tarian-detector ebpf module: %w", err)
 	}
 
 	tarianDetector, err := tarianEbpfModule.Prepare()
 	if err != nil {
-		c.logger.Error("error while prepare tarian detector: %v", err)
+		fmt.Printf("error while prepare tarian detector: %v", err)
+		c.logger.Errorf("error while prepare tarian detector: %v", err)
 		return fmt.Errorf("error while prepare tarian-detector: %w", err)
 	}
 
@@ -187,16 +196,20 @@ func (c *CaptureExec) GetTarianDetectorEvents() error {
 	// Start and defer Close
 	err = eventsDetector.Start()
 	if err != nil {
+		fmt.Printf("error while start tarian detector: %v", err)
 		c.logger.Errorf("error while start tarian detector: %v", err)
 		return fmt.Errorf("error while start tarian-detector: %w", err)
 	}
 
-	defer eventsDetector.Close()
+	c.eventsDetector = eventsDetector
+
+	defer c.eventsDetector.Close()
 
 	go func() {
 		for {
-			event, err := eventsDetector.ReadAsInterface()
+			event, err := c.eventsDetector.ReadAsInterface()
 			if err != nil {
+				fmt.Printf("error while read event: %v", err)
 				fmt.Print("error while read event as interface: ", err)
 				c.logger.WithError(err).Error("error while read event")
 				continue
@@ -210,6 +223,7 @@ func (c *CaptureExec) GetTarianDetectorEvents() error {
 		}
 	}()
 
-	return nil
+	<-c.ctx.Done()
+	return c.ctx.Err()
 
 }
