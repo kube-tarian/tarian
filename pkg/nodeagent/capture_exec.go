@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aquasecurity/libbpfgo"
 	"github.com/intelops/tarian-detector/pkg/detector"
 	"github.com/intelops/tarian-detector/tarian"
 	"github.com/sirupsen/logrus"
@@ -52,9 +51,6 @@ type CaptureExec struct {
 	ctx                context.Context
 	eventsChan         chan ExecEvent // Channel for sending captured execution events
 	shouldClose        bool           // Flag indicating whether the capture should be closed
-	bpfModule          *libbpfgo.Module
-	bpfProg            *libbpfgo.BPFProg
-	bpfRingBuffer      *libbpfgo.RingBuffer
 	nodeName           string         // The name of the node where the capture is running
 	logger             *logrus.Logger // Logger instance for logging
 	eventsDetectorChan chan map[string]any
@@ -106,7 +102,7 @@ func (c *CaptureExec) Start() error {
 	}
 	watcher.Start()
 
-	err = c.GetTarianDetectorEbpfEvents()
+	err = c.getTarianDetectorEbpfEvents()
 	if err != nil {
 		return fmt.Errorf("CaptureExec.Start: failed to get tarian detector events: %w", err)
 	}
@@ -172,7 +168,11 @@ func (c *CaptureExec) GetEventsChannel() chan ExecEvent {
 	return c.eventsChan
 }
 
-func (c *CaptureExec) GetTarianDetectorEbpfEvents() error {
+// getTarianDetectorEbpfEvents retrieves Tarian detector EBPF events.
+//
+// No parameters.
+// Returns an error.
+func (c *CaptureExec) getTarianDetectorEbpfEvents() error {
 	tarianEbpfModule, err := tarian.GetModule()
 	if err != nil {
 		fmt.Println("error while get tarian ebpf module: ", err)
