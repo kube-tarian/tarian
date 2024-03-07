@@ -80,7 +80,6 @@ require (
 )
 
 require (
-	github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0
 	github.com/cilium/ebpf v0.13.1
 	github.com/dgraph-io/dgo/v210 v210.0.0-20220113041351-ba0e5dfc4c3e
 	github.com/intelops/tarian-detector v0.0.0-20240226164335-7701e4e67daa

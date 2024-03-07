@@ -43,7 +43,6 @@ type NodeAgent struct {
 
 	enableAddConstraint bool
 	nodeName            string
-	eventsDetector      *detector.EventsDetector
 }
 
 // NewNodeAgent creates a new instance of the NodeAgent.
@@ -54,15 +53,8 @@ type NodeAgent struct {
 //
 // Returns:
 //   - *NodeAgent: A new NodeAgent instance.
-func NewNodeAgent(logger *logrus.Logger, clusterAgentAddress string) (*NodeAgent, error) {
+func NewNodeAgent(logger *logrus.Logger, clusterAgentAddress string) *NodeAgent {
 	ctx, cancel := context.WithCancel(context.Background())
-
-	eventsDetector, err := integrateTarianDetector(logger)
-	if err != nil {
-		logger.Errorf("error while integrate tarian detector: %v", err)
-		cancel()
-		return nil, fmt.Errorf("error while integrate tarian-detector: %w", err)
-	}
 
 	return &NodeAgent{
 		clusterAgentAddress:    clusterAgentAddress,
@@ -70,8 +62,7 @@ func NewNodeAgent(logger *logrus.Logger, clusterAgentAddress string) (*NodeAgent
 		cancelFunc:             cancel,
 		constraintsInitialized: false,
 		logger:                 logger,
-		eventsDetector:         eventsDetector,
-	}, nil
+	}
 }
 
 // EnableAddConstraint sets whether the NodeAgent should enable adding new constraints.
@@ -204,15 +195,18 @@ func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
 
 	captureExec.SetNodeName(n.nodeName)
 
-	execEvent := captureExec.GetEventsChannel()
+	exeEvent := captureExec.GetEvent()
 	go captureExec.Start()
 
 	for {
 		select {
+		case err := <-exeEvent.errChan:
+			captureExec.Close()
+			return fmt.Errorf("nodeagent: %w", err)
 		case <-ctx.Done():
 			captureExec.Close()
 			return fmt.Errorf("nodeagent: %w", ctx.Err())
-		case evt := <-execEvent:
+		case evt := <-exeEvent.eventsChan:
 			if !n.constraintsInitialized {
 				continue
 			}
@@ -421,21 +415,21 @@ func (n *NodeAgent) RegisterViolationsAsNewConstraint(violation *ProcessViolatio
 	}
 }
 
-// integrateTarianDetector integrates tarian-detector and returns an EventsDetector and an error.
+// loopTarianDetectorReadEvents reads events from the Tarian detector and sends them to the cluster agent.
 //
-// It takes a logger of type *logrus.Logger as a parameter.
-// Returns a pointer to detector.EventsDetector and an error.
-func integrateTarianDetector(logger *logrus.Logger) (*detector.EventsDetector, error) {
+// ctx context.Context
+// error
+func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 	tarianEbpfModule, err := tarian.GetModule()
 	if err != nil {
-		logger.Errorf("error while get tarian ebpf module: %v", err)
-		return nil, fmt.Errorf("error while get tarian-detector ebpf module: %w", err)
+		n.logger.Errorf("error while get tarian ebpf module: %v", err)
+		return fmt.Errorf("error while get tarian-detector ebpf module: %w", err)
 	}
 
 	tarianDetector, err := tarianEbpfModule.Prepare()
 	if err != nil {
-		logger.Errorf("error while prepare tarian detector: %v", err)
-		return nil, fmt.Errorf("error while prepare tarian-detector: %w", err)
+		n.logger.Errorf("error while prepare tarian detector: %v", err)
+		return fmt.Errorf("error while prepare tarian-detector: %w", err)
 	}
 
 	// Instantiate event detectors
@@ -447,23 +441,15 @@ func integrateTarianDetector(logger *logrus.Logger) (*detector.EventsDetector, e
 	// Start and defer Close
 	err = eventsDetector.Start()
 	if err != nil {
-		logger.Errorf("error while start tarian detector: %v", err)
-		return nil, fmt.Errorf("error while start tarian-detector: %w", err)
+		n.logger.Errorf("error while start tarian detector: %v", err)
+		return fmt.Errorf("error while start tarian-detector: %w", err)
 	}
 
-	return eventsDetector, nil
-}
-
-// loopTarianDetectorReadEvents reads events from the Tarian detector and sends them to the cluster agent.
-//
-// ctx context.Context
-// error
-func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
-	defer n.eventsDetector.Close()
+	defer eventsDetector.Close()
 
 	go func() {
 		for {
-			event, err := n.eventsDetector.ReadAsInterface()
+			event, err := eventsDetector.ReadAsInterface()
 			if err != nil {
 				n.logger.Errorf("tarian-detector: error while read event: %v", err)
 				continue

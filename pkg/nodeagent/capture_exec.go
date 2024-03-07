@@ -49,12 +49,18 @@ type ExecEvent struct {
 // It uses eBPF (Extended Berkeley Packet Filter) to capture execution events in the Linux kernel.
 type CaptureExec struct {
 	ctx                context.Context
-	eventsChan         chan ExecEvent // Channel for sending captured execution events
+	event              Event          // captured Event
 	shouldClose        bool           // Flag indicating whether the capture should be closed
 	nodeName           string         // The name of the node where the capture is running
 	logger             *logrus.Logger // Logger instance for logging
 	eventsDetectorChan chan map[string]any
 	eventsDetector     *detector.EventsDetector
+}
+
+// Event contains the events channel and the error channel
+type Event struct {
+	eventsChan chan ExecEvent
+	errChan    chan error
 }
 
 // NewCaptureExec creates a new CaptureExec instance for capturing and processing execution events.
@@ -69,7 +75,7 @@ type CaptureExec struct {
 func NewCaptureExec(ctx context.Context, logger *logrus.Logger) (*CaptureExec, error) {
 	return &CaptureExec{
 		ctx:                ctx,
-		eventsChan:         make(chan ExecEvent, 1000),
+		event:              Event{eventsChan: make(chan ExecEvent, 1000), errChan: make(chan error)},
 		logger:             logger,
 		eventsDetectorChan: make(chan map[string]any, 1000),
 	}, nil
@@ -85,11 +91,12 @@ func (c *CaptureExec) SetNodeName(name string) {
 
 // Start begins capturing execution events and associating them with Kubernetes Pods.
 // It returns an error if any of the setup steps fail.
-func (c *CaptureExec) Start() error {
+func (c *CaptureExec) Start() {
 	// Get in-cluster configuration for Kubernetes.
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		return fmt.Errorf("CaptureExec.Start: failed to get in cluster config: %w", err)
+		c.event.errChan <- fmt.Errorf("CaptureExec.Start: failed to get in cluster config: %w", err)
+		return
 	}
 
 	// Create a Kubernetes client.
@@ -98,13 +105,15 @@ func (c *CaptureExec) Start() error {
 	// Create a PodWatcher to watch for Pods on the node.
 	watcher, err := NewPodWatcher(c.logger, k8sClient, c.nodeName)
 	if err != nil {
-		return fmt.Errorf("CaptureExec.Start: failed to create pod watcher: %w", err)
+		c.event.errChan <- fmt.Errorf("CaptureExec.Start: failed to create pod watcher: %w", err)
+		return
 	}
 	watcher.Start()
 
 	err = c.getTarianDetectorEbpfEvents()
 	if err != nil {
-		return fmt.Errorf("CaptureExec.Start: failed to get tarian detector events: %w", err)
+		c.event.errChan <- fmt.Errorf("CaptureExec.Start: failed to get tarian detector events: %w", err)
+		return
 	}
 
 	for {
@@ -151,10 +160,8 @@ func (c *CaptureExec) Start() error {
 			K8sPodLabels:      podLabels,
 			K8sPodAnnotations: podAnnotations,
 		}
-
-		c.eventsChan <- execEvent
+		c.event.eventsChan <- execEvent
 	}
-	return nil
 }
 
 // Close stops the capture process and closes associated resources.
@@ -163,9 +170,9 @@ func (c *CaptureExec) Close() {
 	c.eventsDetector.Close()
 }
 
-// GetEventsChannel returns the channel for receiving execution events.
-func (c *CaptureExec) GetEventsChannel() chan ExecEvent {
-	return c.eventsChan
+// GetEvent returns the Event which contains channel for receiving events and error channel.
+func (c *CaptureExec) GetEvent() Event {
+	return c.event
 }
 
 // getTarianDetectorEbpfEvents retrieves Tarian detector EBPF events.
