@@ -125,7 +125,7 @@ func (c *CaptureExec) Start() {
 			break
 		}
 
-		pid := bpfEvt["processId"].(uint32)
+		pid := bpfEvt["hostProcessId"].(uint32)
 		// Retrieve the container ID.
 		containerID, err := procsContainerID(pid)
 		fmt.Println("containerID", containerID, "err", err)
@@ -153,6 +153,8 @@ func (c *CaptureExec) Start() {
 		// Create an ExecEvent and send it to the events channel.
 		execEvent := ExecEvent{
 			Pid:               pid,
+			Filename:          bpfEvt["directory"].(string) + "/" + bpfEvt["processName"].(string),
+			Command:           bpfEvt["processName"].(string),
 			ContainerID:       containerID,
 			K8sPodName:        podName,
 			K8sPodUID:         podUID,
@@ -182,15 +184,13 @@ func (c *CaptureExec) GetEvent() Event {
 func (c *CaptureExec) getTarianDetectorEbpfEvents() error {
 	tarianEbpfModule, err := tarian.GetModule()
 	if err != nil {
-		fmt.Println("error while get tarian ebpf module: ", err)
-		c.logger.Errorf("error while get tarian ebpf module: %v", err)
+		c.logger.Errorf("error while get tarian-detector ebpf module: %v", err)
 		return fmt.Errorf("error while get tarian-detector ebpf module: %w", err)
 	}
 
 	tarianDetector, err := tarianEbpfModule.Prepare()
 	if err != nil {
-		fmt.Printf("error while prepare tarian detector: %v", err)
-		c.logger.Errorf("error while prepare tarian detector: %v", err)
+		c.logger.Errorf("error while prepare tarian-detector: %v", err)
 		return fmt.Errorf("error while prepare tarian-detector: %w", err)
 	}
 
@@ -203,7 +203,6 @@ func (c *CaptureExec) getTarianDetectorEbpfEvents() error {
 	// Start and defer Close
 	err = eventsDetector.Start()
 	if err != nil {
-		fmt.Printf("error while start tarian detector: %v", err)
 		c.logger.Errorf("error while start tarian detector: %v", err)
 		return fmt.Errorf("error while start tarian-detector: %w", err)
 	}
@@ -216,8 +215,6 @@ func (c *CaptureExec) getTarianDetectorEbpfEvents() error {
 		for {
 			event, err := c.eventsDetector.ReadAsInterface()
 			if err != nil {
-				fmt.Printf("error while read event: %v", err)
-				fmt.Print("error while read event as interface: ", err)
 				c.logger.WithError(err).Error("error while read event")
 				continue
 			}

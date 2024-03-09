@@ -16,6 +16,7 @@ spec:
         image: localhost:5000/tarian-node-agent:latest
         args:
         - --log-level=debug
+        - --log-formatter=json
         - run
         - --cluster-agent-host=tarian-cluster-agent.tarian-system.svc
         - --cluster-agent-port=80

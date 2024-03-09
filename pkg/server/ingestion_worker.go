@@ -1,8 +1,6 @@
 package server
 
 import (
-	"encoding/json"
-
 	"github.com/kube-tarian/tarian/pkg/protoqueue"
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
@@ -55,14 +53,7 @@ func (iw *IngestionWorker) Start() {
 			continue
 		}
 
-		buf, err := json.Marshal(event)
-		if err != nil {
-			iw.logger.WithError(err).Error("marshaling error: error while processing event")
-			continue
-		}
-
 		event.ServerTimestamp = timestamppb.Now()
-		logrus.Info(">> DEBUG IngestionWorker", "event", string(buf))
 		err = iw.eventStore.Add(event)
 
 		if err != nil {

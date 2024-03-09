@@ -16,7 +16,7 @@ spec:
       - name: tarian-server
         image: "localhost:5000/tarian-server:latest"
         args:
-        - "--log-formatter=text"
+        - "--log-formatter=json"
         - "--log-level=debug"
         - run
         - "--alertmanager-address=http://alertmanager:9093"
