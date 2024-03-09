@@ -422,13 +422,13 @@ func (n *NodeAgent) RegisterViolationsAsNewConstraint(violation *ProcessViolatio
 func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 	tarianEbpfModule, err := tarian.GetModule()
 	if err != nil {
-		n.logger.Errorf("error while get tarian ebpf module: %v", err)
+		n.logger.Errorf("error while get tarian-detector ebpf module: %v", err)
 		return fmt.Errorf("error while get tarian-detector ebpf module: %w", err)
 	}
 
 	tarianDetector, err := tarianEbpfModule.Prepare()
 	if err != nil {
-		n.logger.Errorf("error while prepare tarian detector: %v", err)
+		n.logger.Errorf("error while prepare tarian-detector: %v", err)
 		return fmt.Errorf("error while prepare tarian-detector: %w", err)
 	}
 

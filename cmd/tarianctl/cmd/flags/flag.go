@@ -93,7 +93,6 @@ func (globalFlags *GlobalFlags) ValidateGlobalFlags() error {
 func (globalFlags *GlobalFlags) GetFlagValuesFromEnvVar(logger *logrus.Logger) {
 	// Read environment variable for "server-address" flag
 	if globalFlags.ServerAddr == defaultServerAddress || globalFlags.ServerAddr == "" {
-		fmt.Println("here")
 		if serverAddressEnv := os.Getenv(tarianServerAddressEnv); serverAddressEnv != "" {
 			logger.Debugf("Setting server address from environment variable, TARIAN_SERVER_ADDRESS=%s", serverAddressEnv)
 			globalFlags.ServerAddr = serverAddressEnv

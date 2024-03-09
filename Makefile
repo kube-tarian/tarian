@@ -39,11 +39,6 @@ BASEDIR = $(abspath ./)
 OUTPUT = ./output
 ARCH := $(shell uname -m | sed 's/x86_64/amd64/g; s/aarch64/arm64/g')
 
-LIBBPF_SRC = $(abspath ./3rdparty/libbpf/src)
-LIBBPF_OBJ = $(abspath $(OUTPUT)/libbpf.a)
-LIBBPF_OBJDIR = $(abspath $(OUTPUT)/libbpf)
-LIBBPF_DESTDIR = $(abspath $(OUTPUT))
-
 CC = gcc
 GO = go
 CFLAGS = -g -O2 -Wall -fpie
@@ -72,9 +67,6 @@ KV_PATCH = $(word 3,$(KV_S))
 $(OUTPUT):
 	mkdir -p $(OUTPUT)
 
-$(OUTPUT)/libbpf:
-	mkdir -p $(OUTPUT)/libbpf
-
 # vmlinux header file
 
 .PHONY: vmlinuxh
@@ -94,16 +86,6 @@ $(VMLINUXH): $(OUTPUT)
 		$(BPFTOOL) btf dump file $(BTFFILE) format c > $(VMLINUXH); \
 	fi
 	
-# libbpf
-
-$(LIBBPF_OBJ): $(LIBBPF_SRC) $(wildcard $(LIBBPF_SRC)/*.[ch]) | $(OUTPUT)/libbpf
-	CC="$(CC)" CFLAGS="$(CFLAGS)" LD_FLAGS="$(LDFLAGS)" \
-		$(MAKE) -C $(LIBBPF_SRC) \
-		BUILD_STATIC_ONLY=1 \
-		OBJDIR=$(LIBBPF_OBJDIR) \
-		DESTDIR=$(LIBBPF_DESTDIR) \
-		INCLUDEDIR= LIBDIR= UAPIDIR= install
-
 ##@ Development
 
 generate: bin/controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
