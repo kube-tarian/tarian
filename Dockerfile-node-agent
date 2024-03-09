@@ -10,6 +10,8 @@ ENV LINUX_VERSION_MAJOR=$KERNEL_VERSION_MAJOR
 ENV LINUX_VERSION_MINOR=$KERNEL_VERSION_MINOR
 ENV LINUX_VERSION_PATCH=$KERNEL_VERSION_PATCH
 
+RUN apt-get update && apt-get install -y libelf-dev
+
 COPY ./tarian-node-agent .
 
 ENTRYPOINT ["./tarian-node-agent"]
