@@ -110,11 +110,8 @@ func (c *CaptureExec) Start() {
 	}
 	watcher.Start()
 
-	err = c.getTarianDetectorEbpfEvents()
-	if err != nil {
-		c.event.errChan <- fmt.Errorf("CaptureExec.Start: failed to get tarian detector events: %w", err)
-		return
-	}
+	// Can't get the returned error with Goroutine. If it's needed, we can use a channel.
+	go c.getTarianDetectorEbpfEvents()
 
 	for {
 		// Wait for eBPF execution events.
