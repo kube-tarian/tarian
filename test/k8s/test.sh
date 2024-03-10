@@ -59,8 +59,9 @@ test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- 
   || (echo "expected alerts created" && false)
 
 # run command to register constraints
-kubectl exec -ti nginx2 -c nginx -- pwd
-kubectl exec -ti nginx2 -c nginx -- ls /
+# multiple times to compensate occassional eBPF missing events
+for i in {1..5}; do kubectl exec -ti nginx2 -c nginx -- pwd; sleep 1; done
+for i in {1..5}; do kubectl exec -ti nginx2 -c nginx -- ls /; sleep 1; done
 
 # give time for tarian-cluser-agent to process data from node agents
 sleep 5

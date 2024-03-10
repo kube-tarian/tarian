@@ -18,6 +18,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // ThreatScanAnnotation is the annotation key used to enable threat scans on pods.
@@ -104,15 +107,10 @@ func (n *NodeAgent) Run() {
 	defer n.grpcConn.Close()
 
 	wg := sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(2)
 
 	go func() {
 		_ = n.loopSyncConstraints(n.cancelCtx)
-		wg.Done()
-	}()
-
-	go func() {
-		_ = n.loopValidateProcesses(n.cancelCtx)
 		wg.Done()
 	}()
 
@@ -180,70 +178,228 @@ func (n *NodeAgent) SyncConstraints() {
 	n.constraintsInitialized = true
 }
 
-// loopValidateProcesses continuously validates processes against constraints.
+// loopTarianDetectorReadEvents reads events from the Tarian detector and sends them to the cluster agent.
 //
-// Parameters:
-//   - ctx: The context for the loop.
-//
-// Returns:
-//   - error: An error, if any, encountered during the loop.
-func (n *NodeAgent) loopValidateProcesses(ctx context.Context) error {
-	captureExec, err := NewCaptureExec(ctx, n.logger)
+// ctx context.Context
+// error
+func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
+	// Create a PodWatcher to watch for Pods on the node.
+	podWatcher, err := n.setupPodWatcher()
 	if err != nil {
-		return fmt.Errorf("nodeagent: %w", err)
+		return err
+	}
+	podWatcher.Start()
+
+	eventsDetector, err := n.setupEventsDetector()
+	if err != nil {
+		return err
 	}
 
-	captureExec.SetNodeName(n.nodeName)
-
-	exeEvent := captureExec.GetEvent()
-	go captureExec.Start()
+	// Start eventsDetector and defer Close
+	err = eventsDetector.Start()
+	if err != nil {
+		n.logger.Errorf("error while starting tarian detector: %v", err)
+		return fmt.Errorf("error while starting tarian-detector: %w", err)
+	}
+	defer eventsDetector.Close()
 
 	for {
 		select {
-		case err := <-exeEvent.errChan:
-			captureExec.Close()
-			return fmt.Errorf("nodeagent: %w", err)
 		case <-ctx.Done():
-			captureExec.Close()
-			return fmt.Errorf("nodeagent: %w", ctx.Err())
-		case evt := <-exeEvent.eventsChan:
-			if !n.constraintsInitialized {
+			return ctx.Err()
+		default:
+			event, err := eventsDetector.ReadAsInterface()
+			if err != nil {
+				n.logger.Errorf("tarian-detector: error while read event: %v", err)
 				continue
 			}
 
-			_, threatScanAnnotationPresent := evt.K8sPodAnnotations[ThreatScanAnnotation]
-			registerAnnotationValue, registerAnnotationPresent := evt.K8sPodAnnotations[RegisterAnnotation]
-			if !threatScanAnnotationPresent && !registerAnnotationPresent {
+			if event == nil {
 				continue
 			}
 
-			// Pod has a register annotation but the cluster disables registration
-			if registerAnnotationPresent && !n.enableAddConstraint {
+			pid := event["hostProcessId"].(uint32)
+
+			// Retrieve the container ID.
+			containerID, err := procsContainerID(pid)
+			if err != nil {
 				continue
 			}
 
-			violation := n.ValidateProcess(&evt)
-			if violation != nil {
-				registerProcess := false
-				registerRules := strings.Split(registerAnnotationValue, ",")
-				for _, rule := range registerRules {
-					switch strings.TrimSpace(rule) {
-					case "processes":
-						registerProcess = true
-					case "all":
-						registerProcess = true
-					}
+			if containerID == "" {
+				continue
+			}
+
+			// Find the corresponding Kubernetes Pod.
+			pod := podWatcher.FindPod(containerID)
+			if pod == nil {
+				continue
+			}
+
+			// TODO: sys_execve_entry could be added here
+			// But for kubectl exec, the detected entry comm is still the wrapper: runc:init
+			// With sys_execve_exit, the comm is the target process
+			detectionDataType := event["eventId"].(string)
+			if detectionDataType == "sys_execve_exit" {
+				execEvent, err2 := n.execEventFromTarianDetector(event, containerID, pod)
+				if err2 != nil {
+					n.logger.WithField("err", err2).Error("tarian-detector: error while converting tarian-detector to execEvent")
 				}
 
-				if registerProcess {
-					n.logger.WithField("comm", evt).Debug("violated process detected, going to register")
-					n.RegisterViolationsAsNewConstraint(violation)
-				} else {
-					n.logger.WithField("comm", evt).Debug("violated process detected")
-					n.ReportViolationsToClusterAgent(violation)
+				if execEvent != nil {
+					n.handleExecEvent(execEvent)
 				}
+			}
+
+			byteData, err := json.Marshal(event)
+			if err != nil {
+				n.logger.Error("tarian-detector: error while marshaling event", "err", err)
+				continue
+			}
+
+			n.SendDetectionEventToClusterAgent(detectionDataType, string(byteData))
+			n.logger.WithField("binary_file_path", event["directory"]).WithField("hostProcessId", event["hostProcessId"]).
+				WithField("processId", event["processId"]).WithField("comm", event["processName"]).Info("tarian-detector: ", detectionDataType)
+		}
+	}
+}
+
+func (n *NodeAgent) setupEventsDetector() (*detector.EventsDetector, error) {
+	tarianEbpfModule, err := tarian.GetModule()
+	if err != nil {
+		n.logger.Errorf("error while get tarian-detector ebpf module: %v", err)
+		return nil, fmt.Errorf("error while get tarian-detector ebpf module: %w", err)
+	}
+
+	tarianDetector, err := tarianEbpfModule.Prepare()
+	if err != nil {
+		n.logger.Errorf("error while prepare tarian-detector: %v", err)
+		return nil, fmt.Errorf("error while prepare tarian-detector: %w", err)
+	}
+
+	// Instantiate event detectors
+	eventsDetector := detector.NewEventsDetector()
+
+	// Add ebpf programs to detectors
+	eventsDetector.Add(tarianDetector)
+
+	return eventsDetector, nil
+}
+
+func (n *NodeAgent) setupPodWatcher() (*PodWatcher, error) {
+	// Get in-cluster configuration for Kubernetes.
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		n.logger.Errorf("error while creating k8s client config: %v", err)
+		return nil, fmt.Errorf("error while creating k8s client config: %w", err)
+	}
+
+	// Create a Kubernetes client.
+	k8sClient := kubernetes.NewForConfigOrDie(config)
+
+	watcher, err := NewPodWatcher(n.logger, k8sClient, n.nodeName)
+	if err != nil {
+		n.logger.Errorf("error while starting pod-watcher: %v", err)
+		return nil, fmt.Errorf("error while starting pod-watcher: %w", err)
+	}
+
+	return watcher, nil
+}
+
+func (n *NodeAgent) execEventFromTarianDetector(bpfEvt map[string]any, containerID string, pod *corev1.Pod) (*ExecEvent, error) {
+	pid := bpfEvt["hostProcessId"].(uint32)
+
+	var podName string
+	var podUID string
+	var namespace string
+	var podLabels map[string]string
+	var podAnnotations map[string]string
+
+	podName = pod.GetName()
+	podUID = string(pod.GetUID())
+	namespace = pod.GetNamespace()
+	podLabels = pod.GetLabels()
+	podAnnotations = pod.GetAnnotations()
+
+	// Create an ExecEvent and send it to the events channel.
+	execEvent := &ExecEvent{
+		Pid:               pid,
+		Filename:          bpfEvt["directory"].(string) + "/" + bpfEvt["processName"].(string),
+		Command:           bpfEvt["processName"].(string),
+		ContainerID:       containerID,
+		K8sPodName:        podName,
+		K8sPodUID:         podUID,
+		K8sNamespace:      namespace,
+		K8sPodLabels:      podLabels,
+		K8sPodAnnotations: podAnnotations,
+	}
+
+	return execEvent, nil
+}
+
+func (n *NodeAgent) handleExecEvent(evt *ExecEvent) error {
+	if !n.constraintsInitialized {
+		return nil
+	}
+
+	_, threatScanAnnotationPresent := evt.K8sPodAnnotations[ThreatScanAnnotation]
+	registerAnnotationValue, registerAnnotationPresent := evt.K8sPodAnnotations[RegisterAnnotation]
+	if !threatScanAnnotationPresent && !registerAnnotationPresent {
+		return nil
+	}
+
+	// Pod has a register annotation but the cluster disables registration
+	if registerAnnotationPresent && !n.enableAddConstraint {
+		return nil
+	}
+
+	violation := n.ValidateProcess(evt)
+	if violation != nil {
+		registerProcess := false
+		registerRules := strings.Split(registerAnnotationValue, ",")
+		for _, rule := range registerRules {
+			switch strings.TrimSpace(rule) {
+			case "processes":
+				registerProcess = true
+			case "all":
+				registerProcess = true
 			}
 		}
+
+		if registerProcess {
+			n.logger.WithField("comm", evt).Debug("violated process detected, going to register")
+			n.RegisterViolationsAsNewConstraint(violation)
+		} else {
+			n.logger.WithField("comm", evt).Debug("violated process detected")
+			n.ReportViolationsToClusterAgent(violation)
+		}
+	}
+
+	return nil
+}
+
+// SendDetectionEventToClusterAgent sends a detection event to the cluster agent.
+//
+// It takes two parameters: detectionDataType of type string, and detectionData of type string.
+func (n *NodeAgent) SendDetectionEventToClusterAgent(detectionDataType, detectionData string) {
+	req := tarianpb.IngestEventRequest{
+		Event: &tarianpb.Event{
+			Type:            tarianpb.EventTypeDetection,
+			ClientTimestamp: timestamppb.New(time.Now()),
+			Targets: []*tarianpb.Target{
+				{
+					DetectionDataType: detectionDataType,
+					DetectionData:     detectionData,
+				},
+			},
+		},
+	}
+
+	resp, err := n.eventClient.IngestEvent(context.Background(), &req)
+	if err != nil {
+		n.logger.Error("error while sending detection events", "err", err)
+	} else {
+		n.logger.Debug("ingest event response", "response", resp)
 	}
 }
 
@@ -412,91 +568,6 @@ func (n *NodeAgent) RegisterViolationsAsNewConstraint(violation *ProcessViolatio
 		n.logger.WithError(err).Error("error while registering process constraint")
 	} else {
 		n.logger.WithField("response", response).Debug("add constraint response")
-	}
-}
-
-// loopTarianDetectorReadEvents reads events from the Tarian detector and sends them to the cluster agent.
-//
-// ctx context.Context
-// error
-func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
-	tarianEbpfModule, err := tarian.GetModule()
-	if err != nil {
-		n.logger.Errorf("error while get tarian-detector ebpf module: %v", err)
-		return fmt.Errorf("error while get tarian-detector ebpf module: %w", err)
-	}
-
-	tarianDetector, err := tarianEbpfModule.Prepare()
-	if err != nil {
-		n.logger.Errorf("error while prepare tarian-detector: %v", err)
-		return fmt.Errorf("error while prepare tarian-detector: %w", err)
-	}
-
-	// Instantiate event detectors
-	eventsDetector := detector.NewEventsDetector()
-
-	// Add ebpf programs to detectors
-	eventsDetector.Add(tarianDetector)
-
-	// Start and defer Close
-	err = eventsDetector.Start()
-	if err != nil {
-		n.logger.Errorf("error while start tarian detector: %v", err)
-		return fmt.Errorf("error while start tarian-detector: %w", err)
-	}
-
-	defer eventsDetector.Close()
-
-	go func() {
-		for {
-			event, err := eventsDetector.ReadAsInterface()
-			if err != nil {
-				n.logger.Errorf("tarian-detector: error while read event: %v", err)
-				continue
-			}
-
-			if event == nil {
-				continue
-			}
-			detectionDataType := event["eventId"].(string)
-			byteData, err := json.Marshal(event)
-			if err != nil {
-				n.logger.Error("tarian-detector: error while marshaling event", "err", err)
-				continue
-			}
-
-			n.SendDetectionEventToClusterAgent(detectionDataType, string(byteData))
-			n.logger.Info("tarian-detector: ", detectionDataType, "binary_file_path", event["directory"], "hostProcessId", event["hostProcessId"],
-				"processId", event["processId"], "comm", event["processName"])
-		}
-	}()
-
-	<-ctx.Done()
-	return ctx.Err()
-}
-
-// SendDetectionEventToClusterAgent sends a detection event to the cluster agent.
-//
-// It takes two parameters: detectionDataType of type string, and detectionData of type string.
-func (n *NodeAgent) SendDetectionEventToClusterAgent(detectionDataType, detectionData string) {
-	req := tarianpb.IngestEventRequest{
-		Event: &tarianpb.Event{
-			Type:            tarianpb.EventTypeDetection,
-			ClientTimestamp: timestamppb.New(time.Now()),
-			Targets: []*tarianpb.Target{
-				{
-					DetectionDataType: detectionDataType,
-					DetectionData:     detectionData,
-				},
-			},
-		},
-	}
-
-	resp, err := n.eventClient.IngestEvent(context.Background(), &req)
-	if err != nil {
-		n.logger.Error("error while sending detection events", "err", err)
-	} else {
-		n.logger.Debug("ingest event response", "response", resp)
 	}
 }
 
