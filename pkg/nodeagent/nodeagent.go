@@ -247,7 +247,10 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 				}
 
 				if execEvent != nil {
-					n.handleExecEvent(execEvent)
+					err3 := n.handleExecEvent(execEvent)
+					if err3 != nil {
+						n.logger.WithField("err", err3).Error("node-agent: error while handling exec event")
+					}
 				}
 			}
 
