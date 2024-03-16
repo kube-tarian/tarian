@@ -38,6 +38,7 @@ builds:
     main: ./cmd/tarian-node-agent/
     binary: tarian-node-agent
     env:
+      - CGO_ENABLED=0
     goos:
       - linux
     goarch:
