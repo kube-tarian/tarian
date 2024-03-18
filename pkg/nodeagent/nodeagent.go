@@ -574,6 +574,91 @@ func (n *NodeAgent) RegisterViolationsAsNewConstraint(violation *ProcessViolatio
 	}
 }
 
+// loopTarianDetectorReadEvents reads events from the Tarian detector and sends them to the cluster agent.
+//
+// ctx context.Context
+// error
+func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
+	tarianEbpfModule, err := tarian.GetModule()
+	if err != nil {
+		n.logger.Errorf("error while get tarian-detector ebpf module: %v", err)
+		return fmt.Errorf("error while get tarian-detector ebpf module: %w", err)
+	}
+
+	tarianDetector, err := tarianEbpfModule.Prepare()
+	if err != nil {
+		n.logger.Errorf("error while prepare tarian-detector: %v", err)
+		return fmt.Errorf("error while prepare tarian-detector: %w", err)
+	}
+
+	// Instantiate event detectors
+	eventsDetector := detector.NewEventsDetector()
+
+	// Add ebpf programs to detectors
+	eventsDetector.Add(tarianDetector)
+
+	// Start and defer Close
+	err = eventsDetector.Start()
+	if err != nil {
+		n.logger.Errorf("error while start tarian detector: %v", err)
+		return fmt.Errorf("error while start tarian-detector: %w", err)
+	}
+
+	defer eventsDetector.Close()
+
+	go func() {
+		for {
+			event, err := eventsDetector.ReadAsInterface()
+			if err != nil {
+				n.logger.Errorf("tarian-detector: error while read event: %v", err)
+				continue
+			}
+
+			if event == nil {
+				continue
+			}
+			detectionDataType := event["eventId"].(string)
+			byteData, err := json.Marshal(event)
+			if err != nil {
+				n.logger.Error("tarian-detector: error while marshaling event", "err", err)
+				continue
+			}
+
+			n.SendDetectionEventToClusterAgent(detectionDataType, string(byteData))
+			n.logger.Info("tarian-detector: ", detectionDataType, "binary_file_path", event["directory"], "hostProcessId", event["hostProcessId"],
+				"processId", event["processId"], "comm", event["processName"])
+		}
+	}()
+
+	<-ctx.Done()
+	return ctx.Err()
+}
+
+// SendDetectionEventToClusterAgent sends a detection event to the cluster agent.
+//
+// It takes two parameters: detectionDataType of type string, and detectionData of type string.
+func (n *NodeAgent) SendDetectionEventToClusterAgent(detectionDataType, detectionData string) {
+	req := tarianpb.IngestEventRequest{
+		Event: &tarianpb.Event{
+			Type:            tarianpb.EventTypeDetection,
+			ClientTimestamp: timestamppb.New(time.Now()),
+			Targets: []*tarianpb.Target{
+				{
+					DetectionDataType: detectionDataType,
+					DetectionData:     detectionData,
+				},
+			},
+		},
+	}
+
+	resp, err := n.eventClient.IngestEvent(context.Background(), &req)
+	if err != nil {
+		n.logger.Error("error while sending detection events", "err", err)
+	} else {
+		n.logger.Debug("ingest event response", "response", resp)
+	}
+}
+
 // matchLabelsFromPodLabels converts a map of labels to a slice of MatchLabel protobufs.
 //
 // Parameters:

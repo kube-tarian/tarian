@@ -56,12 +56,14 @@ type Event struct {
 
 // Target represents a target in the Dgraph database.
 type Target struct {
-	UID               string   `json:"uid,omitempty"`                       // Unique identifier of the target.
-	DType             []string `json:"dgraph.type,omitempty"`               // Type information for Dgraph.
-	ViolatedProcesses string   `json:"target_violated_processes,omitempty"` // Violated processes associated with the target (in JSON format).
-	ViolatedFiles     string   `json:"target_violated_files,omitempty"`     // Violated files associated with the target (in JSON format).
-	FalcoAlert        string   `json:"target_falco_alert,omitempty"`        // Falco alert associated with the target (in JSON format).
-	Pod               *Pod     `json:"pod,omitempty"`                       // Pod associated with the target.
+	UID               string   `json:"uid,omitempty"`                        // Unique identifier of the target.
+	DType             []string `json:"dgraph.type,omitempty"`                // Type information for Dgraph.
+	ViolatedProcesses string   `json:"target_violated_processes,omitempty"`  // Violated processes associated with the target (in JSON format).
+	ViolatedFiles     string   `json:"target_violated_files,omitempty"`      // Violated files associated with the target (in JSON format).
+	FalcoAlert        string   `json:"target_falco_alert,omitempty"`         // Falco alert associated with the target (in JSON format).
+	Pod               *Pod     `json:"pod,omitempty"`                        // Pod associated with the target.
+	DetectionDataType string   `json:"tarian_detection_data_type,omitempty"` // Type of the tarian detection data.
+	DetectionData     string   `json:"tarian_detection_data,omitempty"`      // The tarian detection data in JSON format.
 }
 
 // Client is an interface for creating Dgraph clients.
