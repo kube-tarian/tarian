@@ -89,8 +89,8 @@ var schema = `
 		target_violated_processes
 		target_violated_files
 		target_falco_alert
-		tarian_detection_data_type
-		tarian_detection_data
+		target_detection_data_type
+		target_detection_data
 	}
 `
 
