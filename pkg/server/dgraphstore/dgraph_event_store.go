@@ -34,13 +34,12 @@ func newDgraphEventStore(dgraphClient *dgo.Dgraph) store.EventStore {
 // - An array of protobuf Event messages representing the retrieved events.
 // - An error if there was an issue with the database query.
 func (d *dgraphEventStore) GetAll(limit uint) ([]*tarianpb.Event, error) {
-	// Dgraph query to retrieve all events, ignoring events with
-	// target_detection_data_type and target_detection_data.
+	// Dgraph query to retrieve all events, ignoring events with eventType as tarian-detection/detection.
 	q := fmt.Sprintf(`
-		{
-			 events(func: type(Event)) @filter(not has(target_detection_data_type) and not has(target_detection_data)) {
+	    {
+			events(func: type(Event)) @filter(not eq(event_type, "tarian-detection/detection")) {
 				%s
-			 } 
+			}
 		}
 	`, eventFields)
 
@@ -129,8 +128,13 @@ func (d *dgraphEventList) toPbEvents() []*tarianpb.Event {
 				}
 			}
 
-			t.DetectionDataType = evtTarget.DetectionDataType
-			t.DetectionData = evtTarget.DetectionData
+			if t.DetectionDataType != "" {
+				t.DetectionDataType = evtTarget.DetectionDataType
+			}
+
+			if t.DetectionData != "" {
+				t.DetectionData = evtTarget.DetectionData
+			}
 
 			event.Targets = append(event.Targets, t)
 		}
@@ -297,8 +301,13 @@ func dgraphEventFromPb(pbEvent *tarianpb.Event) (*Event, error) {
 			}
 		}
 
-		t.DetectionDataType = pbTarget.GetDetectionDataType()
-		t.DetectionData = pbTarget.GetDetectionData()
+		if pbTarget.DetectionDataType != "" {
+			t.DetectionDataType = pbTarget.GetDetectionDataType()
+		}
+
+		if pbTarget.DetectionData != "" {
+			t.DetectionData = pbTarget.GetDetectionData()
+		}
 
 		dgraphEvent.Targets = append(dgraphEvent.Targets, t)
 	}

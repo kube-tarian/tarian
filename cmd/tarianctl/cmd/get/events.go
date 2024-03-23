@@ -162,7 +162,7 @@ func eventsTableOutput(events []*tarianpb.Event, logger *logrus.Logger) {
 			}
 
 			if e.GetType() == tarianpb.EventTypeDetection {
-				detectionEventStr := fmt.Sprintf("detection: %s: %s", t.DetectionDataType, t.DetectionData)
+				detectionEventStr := fmt.Sprintf("detection: %s: %s", t.GetDetectionDataType(), t.GetDetectionData())
 				evt.WriteString("tarian detection event\n")
 				evt.WriteString(detectionEventStr)
 			}
