@@ -50,7 +50,7 @@ func (cs *ConfigServer) GetConstraints(ctx context.Context, request *tarianpb.Ge
 	cs.logger.WithFields(logrus.Fields{
 		"namespace": request.GetNamespace(),
 		"labels":    request.GetLabels(),
-	}).Debug("Received get config RPC")
+	}).Trace("Received get config RPC")
 
 	var constraints []*tarianpb.Constraint
 	var err error
@@ -228,7 +228,7 @@ func (cs *ConfigServer) GetActions(ctx context.Context, request *tarianpb.GetAct
 	cs.logger.WithFields(logrus.Fields{
 		"namespace": request.GetNamespace(),
 		"labels":    request.GetLabels(),
-	}).Debug("Received get actions RPC")
+	}).Trace("Received get actions RPC")
 
 	var actions []*tarianpb.Action
 	var err error
