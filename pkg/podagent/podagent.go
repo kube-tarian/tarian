@@ -238,7 +238,7 @@ func (p *PodAgent) loopSyncConstraints(ctx context.Context) error {
 
 // SyncConstraints retrieves and synchronizes constraints from the cluster agent.
 func (p *PodAgent) SyncConstraints() {
-	p.logger.Debug("syncing constraints from the cluster agent")
+	p.logger.Trace("syncing constraints from the cluster agent")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 	r, err := p.configClient.GetConstraints(ctx, &tarianpb.GetConstraintsRequest{Namespace: p.namespace, Labels: p.podLabels})
@@ -246,8 +246,7 @@ func (p *PodAgent) SyncConstraints() {
 		p.logger.WithError(err).Fatal("couldn't get constraints from the cluster agent")
 	}
 
-	p.logger.WithField("constraints", r.GetConstraints()).Debug("received constraints from the cluster agent")
-
+	p.logger.WithField("constraints", r.GetConstraints()).Trace("received constraints from the cluster agent")
 	cancel()
 
 	p.SetConstraints(r.GetConstraints())
