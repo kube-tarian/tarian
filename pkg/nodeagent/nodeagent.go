@@ -170,7 +170,7 @@ func (n *NodeAgent) SyncConstraints() {
 		n.logger.WithError(err).Fatal("couldn't get constraints from the cluster agent")
 	}
 
-	n.logger.WithField("constraints", r.GetConstraints()).Debug("received constraints from the cluster agent")
+	n.logger.WithField("constraints", r.GetConstraints()).Trace("received constraints from the cluster agent")
 	cancel()
 
 	n.SetConstraints(r.GetConstraints())
@@ -568,7 +568,7 @@ func (n *NodeAgent) RegisterViolationsAsNewConstraint(violation *ProcessViolatio
 
 	response, err := n.configClient.AddConstraint(context.Background(), req)
 	if err != nil {
-		n.logger.WithError(err).Error("error while registering process constraint")
+		n.logger.WithError(err).WithField("response", response).Error("error while registering process constraint")
 	} else {
 		n.logger.WithField("response", response).Debug("add constraint response")
 	}
