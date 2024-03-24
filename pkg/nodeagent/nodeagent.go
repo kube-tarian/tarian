@@ -220,6 +220,11 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 				continue
 			}
 
+			thisPID := event["processId"].(uint32)
+			if thisPID == 1 {
+				continue
+			}
+
 			pid := event["hostProcessId"].(uint32)
 
 			// Retrieve the container ID.
@@ -238,9 +243,6 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 				continue
 			}
 
-			// TODO: sys_execve_entry could be added here
-			// But for kubectl exec, the detected entry comm is still the wrapper: runc:init
-			// With sys_execve_exit, the comm is the target process
 			detectionDataType := event["eventId"].(string)
 			if detectionDataType == "sys_execve_entry" {
 				execEvent, err2 := n.execEventFromTarianDetector(event, containerID, pod)
@@ -255,7 +257,7 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 					}
 				}
 
-				n.logger.WithField("execEvent", execEvent).WithField("event", event).Info("DEBUG")
+				n.logger.WithField("execEvent", execEvent).WithField("event", event).Info("=============== DEBUG")
 			}
 
 			byteData, err := json.Marshal(event)
@@ -264,7 +266,7 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 				continue
 			}
 
-			n.SendDetectionEventToClusterAgent(detectionDataType, string(byteData))
+			go n.SendDetectionEventToClusterAgent(detectionDataType, string(byteData))
 		}
 	}
 }
@@ -387,10 +389,10 @@ func (n *NodeAgent) handleExecEvent(evt *ExecEvent) error {
 
 		if registerProcess {
 			n.logger.WithField("comm", evt).Debug("violated process detected, going to register")
-			n.RegisterViolationsAsNewConstraint(violation)
+			go n.RegisterViolationsAsNewConstraint(violation)
 		} else {
 			n.logger.WithField("comm", evt).Debug("violated process detected")
-			n.ReportViolationsToClusterAgent(violation)
+			go n.ReportViolationsToClusterAgent(violation)
 		}
 	}
 
@@ -418,7 +420,7 @@ func (n *NodeAgent) SendDetectionEventToClusterAgent(detectionDataType, detectio
 	if err != nil {
 		n.logger.Error("error while sending detection events ", "err ", err)
 	} else {
-		n.logger.Debug("ingest event response", "response", resp)
+		n.logger.WithField("response", resp).Trace("ingest event response", "response", resp)
 	}
 }
 
