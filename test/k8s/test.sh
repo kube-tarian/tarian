@@ -5,11 +5,29 @@ set -euxo pipefail
 export TARIAN_SERVER_ADDRESS=localhost:31051
 export PATH=$PATH:./bin
 
+function retry {
+  local retries=$1
+  shift
+
+  local count=0
+  until "$@"; do
+    exit=$?
+    wait=1
+    count=$(($count + 1))
+    if [ $count -lt $retries ]; then
+      echo "Retry $count/$retries exited $exit, retrying in $wait seconds..."
+      sleep $wait
+    else
+      echo "Retry $count/$retries exited $exit, no more retries left."
+      return $exit
+    fi
+  done
+  return 0
+}
+
+
 # run db migration and seed data
-kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dgraph apply-schema || sleep 1
-# Retry in case of failure
-kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dgraph apply-schema || sleep 1
-kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dgraph apply-schema
+retry 10 kubectl exec -ti deploy/tarian-server -n tarian-system -- ./tarian-server dgraph apply-schema
 
 tarianctl add constraint --name nginx --namespace default --match-labels run=nginx --allowed-processes=pause,tarian-pod-agent,nginx 
 tarianctl add constraint --name nginx-files --namespace default --match-labels run=nginx --allowed-file-sha256sums=/usr/share/nginx/html/index.html=38ffd4972ae513a0c79a8be4573403edcd709f0f572105362b08ff50cf6de521
@@ -26,9 +44,7 @@ kubectl get MutatingWebhookConfiguration -o yaml
 sed -i 's/Welcome/Welcome-updated/g' dev/config/monitored-pod/configmap.yaml
 kubectl apply -f dev/config/monitored-pod -R
 kubectl get pods
-kubectl wait --for=condition=ready pod/nginx --timeout=1m || true
-kubectl wait --for=condition=ready pod/nginx --timeout=1m || true
-kubectl wait --for=condition=ready pod/nginx --timeout=1m
+retry 3 kubectl wait --for=condition=ready pod/nginx --timeout=1m
 
 echo test $(kubectl get pod nginx -o json | jq -r '.spec.containers | length') -eq 2 || (echo "expected container count 2" && false)
 test $(kubectl get pod nginx -o json | jq -r '.spec.containers | length') -eq 2 || (echo "expected container count 2" && false)
@@ -67,7 +83,8 @@ test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- 
 for i in {1..5}; do kubectl exec -ti nginx2 -c nginx -- pwd; sleep 1; done
 for i in {1..5}; do kubectl exec -ti nginx2 -c nginx -- ls /; sleep 1; done
 
-# give time for tarian-cluser-agent to process data from node agents
+# give time for tarian-cluser-agent to process data from node agents,
+# due to many events generated from tarian-detector
 sleep 5
 
 tarianctl get constraints

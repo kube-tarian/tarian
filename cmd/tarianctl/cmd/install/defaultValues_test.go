@@ -37,8 +37,8 @@ func TestNatsHelmDefaultValues(t *testing.T) {
 		t.Errorf("natsValuesFile does not contain 'size: 128Mi' in MemStorage")
 	}
 
-	if !containsSubstring(string(yamlContent), "size: 50Mi") {
-		t.Errorf("natsValuesFile does not contain 'size: 50Mi' in FileStorage")
+	if !containsSubstring(string(yamlContent), "size: 200Mi") {
+		t.Errorf("natsValuesFile does not contain 'size: 200Mi' in FileStorage")
 	}
 }
 

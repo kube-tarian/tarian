@@ -11,11 +11,10 @@ import (
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/nats-io/nats.go"
+	"github.com/sethvargo/go-retry"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-	"github.com/sethvargo/go-retry"
 )
 
 // TarianServer represents the Tarian server, which includes gRPC server, event server, ingestion worker, config server, and alert dispatcher.
@@ -59,69 +58,52 @@ func NewServer(logger *logrus.Logger, storeSet store.Set, certFile string, priva
 	var queuePublisher protoqueue.QueuePublisher
 	var queueSubscriber protoqueue.QueueSubscriber
 
+	var queuePublisherForEventDetection protoqueue.QueuePublisher
+	var queueSubscriberForEventDetection protoqueue.QueueSubscriber
+
 	if natsURL == "" {
 		channelQueue := protoqueue.NewChannelQueue()
 		queuePublisher = channelQueue
 		queueSubscriber = channelQueue
+
+		channelQueueForEventDetection := protoqueue.NewChannelQueue()
+		queuePublisherForEventDetection = channelQueueForEventDetection
+		queueSubscriberForEventDetection = channelQueueForEventDetection
 	} else {
-		jetstreamQueue, err := protoqueue.NewJetstream(logger, natsURL, natsOptions, natsStreamConfig.Name)
+		// 1st queue for general events
+		jetstreamQueue, err := createJetStreamQueue(logger, natsURL, natsOptions, natsStreamConfig)
 
-		if err == nil {
-			queuePublisher = jetstreamQueue
-			queueSubscriber = jetstreamQueue
-		} else {
-			logger.WithError(err).Error("failed to create Jetstream queue")
-		}
-
-		ctx := context.Background()
-		backoffConnect := retry.NewConstant(5 * time.Second)
-		backoffConnect = retry.WithCappedDuration(1*time.Minute, backoffConnect)
-		err = retry.Do(ctx, backoffConnect, func(ctx context.Context) error {
-			err = jetstreamQueue.Connect()
-			if err != nil {
-				logger.Errorf("failed to connect to NATS: %s", err)
-				logger.Info("retrying to connect to NATS.......")
-				logger.WithFields(logrus.Fields{
-					"natsURL": natsURL,
-					"error":   err,
-				}).Warn("retrying to connect to NATS.......")
-				err = fmt.Errorf("NewServer: %w", err)
-				return retry.RetryableError(err)
-			}
-
-			return nil
-		})
-
-		if err != nil {
-			logger.WithError(err).Error("failed to connect to NATS")
-			return nil, err
-		}
-
-		backoffInit := retry.NewConstant(5 * time.Second)
-		backoffInit = retry.WithCappedDuration(1*time.Minute, backoffInit)
-		err = retry.Do(ctx, backoffInit, func(ctx context.Context) error {
-			err = jetstreamQueue.Init(natsStreamConfig)
-			if err != nil {
-				logger.WithFields(logrus.Fields{
-					"natsURL": natsURL,
-					"error":   err,
-				}).Warn("retrying to connect to NATS.......")
-				err = fmt.Errorf("NewServer: %w", err)
-				return retry.RetryableError(err)
-			}
-
-			return nil
-		})
-		if err != nil {
-			logger.WithError(err).Error("failed to init stream and subscription")
+		if jetstreamQueue == nil || err != nil {
+			logger.WithError(err).Errorf("failed to init stream and subscription: %s", natsStreamConfig.Name)
 			err = fmt.Errorf("NewServer: %w", err)
 			return nil, err
 		}
+
+		queuePublisher = jetstreamQueue
+		queueSubscriber = jetstreamQueue
+
+		// 2nd queue for event detection
+		// event detection queue is separated because it generates a lot of data and we want the general events
+		// to be taken as a higher priority.
+		natsStreamConfigForEventDetection := natsStreamConfig
+		natsStreamConfigForEventDetection.Name += "-type-detection"
+		natsStreamConfigForEventDetection.Subjects = []string{natsStreamConfigForEventDetection.Name}
+
+		jetstreamQueueForEventDetection, err := createJetStreamQueue(logger, natsURL, natsOptions, natsStreamConfigForEventDetection)
+
+		if jetstreamQueue == nil || err != nil {
+			logger.WithError(err).Errorf("failed to init stream and subscription: %s", natsStreamConfig.Name)
+			err = fmt.Errorf("NewServer: %w", err)
+			return nil, err
+		}
+
+		queuePublisherForEventDetection = jetstreamQueueForEventDetection
+		queueSubscriberForEventDetection = jetstreamQueueForEventDetection
 	}
 
 	configServer := NewConfigServer(logger, storeSet.ConstraintStore, storeSet.ActionStore)
-	eventServer := NewEventServer(logger, storeSet.EventStore, queuePublisher)
-	ingestionWorker := NewIngestionWorker(logger, storeSet.EventStore, queueSubscriber)
+	eventServer := NewEventServer(logger, storeSet.EventStore, queuePublisher, queuePublisherForEventDetection)
+	ingestionWorker := NewIngestionWorker(logger, storeSet.EventStore, queueSubscriber, queueSubscriberForEventDetection)
 
 	tarianpb.RegisterConfigServer(grpcServer, configServer)
 	tarianpb.RegisterEventServer(grpcServer, eventServer)
@@ -142,6 +124,56 @@ func NewServer(logger *logrus.Logger, storeSet store.Set, certFile string, priva
 	return server, nil
 }
 
+func createJetStreamQueue(logger *logrus.Logger, natsURL string, natsOptions []nats.Option, natsStreamConfig nats.StreamConfig) (*protoqueue.JetStream, error) {
+	jetstreamQueue, err := protoqueue.NewJetstream(logger, natsURL, natsOptions, natsStreamConfig.Name)
+
+	if err != nil {
+		logger.WithError(err).Error("failed to create Jetstream queue")
+		return nil, err
+	}
+
+	ctx := context.Background()
+	backoffConnect := retry.NewConstant(5 * time.Second)
+	backoffConnect = retry.WithCappedDuration(1*time.Minute, backoffConnect)
+	err = retry.Do(ctx, backoffConnect, func(ctx context.Context) error {
+		err = jetstreamQueue.Connect()
+		if err != nil {
+			logger.Errorf("failed to connect to NATS: %s", err)
+			logger.WithFields(logrus.Fields{
+				"natsURL": natsURL,
+				"error":   err,
+			}).Warn("retrying to connect to NATS.......")
+			err = fmt.Errorf("createJetStreamQueue: %w", err)
+			return retry.RetryableError(err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		logger.WithError(err).Error("failed to connect to NATS")
+		return nil, err
+	}
+
+	backoffInit := retry.NewConstant(5 * time.Second)
+	backoffInit = retry.WithCappedDuration(1*time.Minute, backoffInit)
+	err = retry.Do(ctx, backoffInit, func(ctx context.Context) error {
+		err = jetstreamQueue.Init(natsStreamConfig)
+		if err != nil {
+			logger.WithFields(logrus.Fields{
+				"natsURL": natsURL,
+				"error":   err,
+			}).Warn("retrying to connect to NATS.......")
+			err = fmt.Errorf("createJetStreamQueue: %w", err)
+			return retry.RetryableError(err)
+		}
+
+		return nil
+	})
+
+	return jetstreamQueue, err
+}
+
 // Start starts the Tarian server to listen on the given gRPC server address.
 //
 // Parameters:
@@ -157,7 +189,7 @@ func (s *TarianServer) Start(grpcListenAddress string) error {
 
 	s.logger.WithField("address", listener.Addr()).Info("tarian-server is listening")
 
-	go s.IngestionWorker.Start()
+	s.IngestionWorker.Start()
 
 	if err := s.GrpcServer.Serve(listener); err != nil {
 		return fmt.Errorf("failed to serve: %w", err)

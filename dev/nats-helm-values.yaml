@@ -10,4 +10,4 @@ nats:
 
     fileStorage:
       enabled: true
-      size: 50Mi
+      size: 200Mi

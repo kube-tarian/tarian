@@ -43,7 +43,7 @@ func natsHelmDefaultValues(natsValuesFile string) error {
 				},
 				FileStorage: StorageOpts{
 					Enabled: true,
-					Size:    "50Mi",
+					Size:    "200Mi",
 				},
 			},
 		},
