@@ -24,7 +24,8 @@ func newDgraphEventStore(dgraphClient *dgo.Dgraph) store.EventStore {
 	return &dgraphEventStore{dgraphClient: dgraphClient}
 }
 
-// GetAll retrieves all events from the Dgraph store.
+// GetAll retrieves all events from the Dgraph store, ignoring events
+// with target_detection_data_type and target_detection_data.
 //
 // Parameters:
 // - limit: The maximum number of events to retrieve.
@@ -33,10 +34,10 @@ func newDgraphEventStore(dgraphClient *dgo.Dgraph) store.EventStore {
 // - An array of protobuf Event messages representing the retrieved events.
 // - An error if there was an issue with the database query.
 func (d *dgraphEventStore) GetAll(limit uint) ([]*tarianpb.Event, error) {
-	// Dgraph query to retrieve all events.
+	// Dgraph query to retrieve all events, ignoring events with eventType as tarian-detection/detection.
 	q := fmt.Sprintf(`
-		{
-			events(func: type(Event)) {
+	    {
+			events(func: type(Event)) @filter(not eq(event_type, "tarian-detection/detection")) {
 				%s
 			}
 		}
@@ -127,6 +128,14 @@ func (d *dgraphEventList) toPbEvents() []*tarianpb.Event {
 				}
 			}
 
+			if t.DetectionDataType != "" {
+				t.DetectionDataType = evtTarget.DetectionDataType
+			}
+
+			if t.DetectionData != "" {
+				t.DetectionData = evtTarget.DetectionData
+			}
+
 			event.Targets = append(event.Targets, t)
 		}
 
@@ -159,6 +168,8 @@ const eventFields = `
 			pod_name
 			pod_labels
 		}
+		target_detection_data_type
+		target_detection_data
 	}
 `
 
@@ -288,6 +299,14 @@ func dgraphEventFromPb(pbEvent *tarianpb.Event) (*Event, error) {
 				PodUID:    pbTarget.Pod.Uid,
 				Labels:    string(labelsJSON),
 			}
+		}
+
+		if pbTarget.DetectionDataType != "" {
+			t.DetectionDataType = pbTarget.GetDetectionDataType()
+		}
+
+		if pbTarget.DetectionData != "" {
+			t.DetectionData = pbTarget.GetDetectionData()
 		}
 
 		dgraphEvent.Targets = append(dgraphEvent.Targets, t)

@@ -55,7 +55,8 @@ func NewKubeClient(logger *logrus.Logger, kubeconfig string, kubeContext string)
 
 // WaitForPodsToBeReady waits for pods to be ready in the specified namespace and with the given label selector.
 func (k *client) WaitForPodsToBeReady(namespace, labelSelector string) error {
-	return wait.Poll(2*time.Second, 5*time.Minute, func() (bool, error) {
+	ctx := context.Background()
+	return wait.PollUntilContextTimeout(ctx, 2*time.Second, 5*time.Minute, false, wait.ConditionWithContextFunc(func(ctx context.Context) (bool, error) {
 		k.logger.Debugf(`Waiting for pods "%v" to be in the "Running" state...`, labelSelector)
 
 		podList, err := k.client.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{
@@ -80,7 +81,7 @@ func (k *client) WaitForPodsToBeReady(namespace, labelSelector string) error {
 
 		k.logger.Infof("All pods '%v' are in the 'Running' state.", labelSelector)
 		return true, nil
-	})
+	}))
 }
 
 // ExecPodWithOneContainer executes a command in a pod with one container.

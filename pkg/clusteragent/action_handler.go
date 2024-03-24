@@ -275,7 +275,7 @@ func (ah *actionHandler) SyncActions() {
 		ah.logger.WithError(err).Error("error while getting actions from the server")
 	}
 
-	ah.logger.WithField("actions", r.GetActions()).Debug("received actions from the server")
+	ah.logger.WithField("actions", r.GetActions()).Trace("received actions from the server")
 	cancel()
 
 	ah.SetActions(r.GetActions())

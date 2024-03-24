@@ -4,7 +4,6 @@
 /vendor
 /.local
 /.vscode
-/pkg/**/capture_exec.bpf.o
 /pkg/tarianpb/api.pb.go
 /pkg/tarianpb/types.pb.go
 coverage.xml

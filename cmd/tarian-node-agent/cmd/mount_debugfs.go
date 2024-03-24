@@ -9,6 +9,7 @@ import (
 // https://man7.org/linux/man-pages/man2/statfs.2.html
 const DebugFSMagic = 0x64626720
 
+// DebugFSRoot is the location of the DebugFS filesystem
 const DebugFSRoot = "/sys/kernel/debug"
 
 func isDebugFsMounted() bool {
