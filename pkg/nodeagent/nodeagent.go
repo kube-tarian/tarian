@@ -400,7 +400,7 @@ func (n *NodeAgent) SendDetectionEventToClusterAgent(detectionDataType, detectio
 
 	resp, err := n.eventClient.IngestEvent(context.Background(), &req)
 	if err != nil {
-		n.logger.Error("error while sending detection events", "err", err)
+		n.logger.Error("error while sending detection events ", "err ", err)
 	} else {
 		n.logger.Debug("ingest event response", "response", resp)
 	}
