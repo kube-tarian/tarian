@@ -107,7 +107,7 @@ jobs:
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@938f6e2f7550e542bd78f3b9e8812665db109e02 # @v1.1.0
           make bin/protoc bin/goreleaser
           bash ./dev/run-kind-registry.sh
-          make ebpf generate
+          make generate
           ./bin/goreleaser release --snapshot --rm-dist
           make push-local-images
           cp dist/tarianctl_linux_amd64/tarianctl ./bin/

@@ -1,7 +1,6 @@
 env:
   - CONTAINER_REGISTRY={{ if index .Env "CONTAINER_REGISTRY" }}{{ .Env.CONTAINER_REGISTRY }}{{ else }}localhost:5000{{ end }}
   - CGO_CFLAGS=-I{{ abs .ModulePath }}/output -Wno-unknown-attributes
-  - CGO_LDFLAGS=-lelf -lz {{ abs .ModulePath}}/output/libbpf.a
 builds:
   - id: tarian-server
     main: ./cmd/tarian-server/
@@ -39,7 +38,7 @@ builds:
     main: ./cmd/tarian-node-agent/
     binary: tarian-node-agent
     env:
-      - CC=clang
+      - CGO_ENABLED=0
     goos:
       - linux
     goarch:

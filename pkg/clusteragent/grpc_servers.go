@@ -187,7 +187,7 @@ func NewEventServer(logger *logrus.Logger, tarianServerAddress string, opts []gr
 //   - *tarianpb.IngestEventResponse: The response indicating the result of ingesting the event.
 //   - error: An error if the request fails.
 func (es *EventServer) IngestEvent(requestContext context.Context, request *tarianpb.IngestEventRequest) (*tarianpb.IngestEventResponse, error) {
-	es.logger.Debug("Received ingest violation event RPC")
+	es.logger.Debug("Received ingest event RPC")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

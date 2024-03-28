@@ -17,6 +17,7 @@ spec:
         image: localhost:5000/tarian-cluster-agent:latest
         args:
         - --log-level=debug
+        - --log-formatter=json
         - run
         - "--server-address=tarian-server:80"
         - --enable-add-constraint
