@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/intelops/tarian-detector/pkg/detector"
+	"github.com/intelops/tarian-detector/pkg/eventparser"
 	"github.com/intelops/tarian-detector/tarian"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
 	"github.com/scylladb/go-set/strset"
@@ -240,7 +242,7 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 			// But for kubectl exec, the detected entry comm is still the wrapper: runc:init
 			// With sys_execve_exit, the comm is the target process
 			detectionDataType := event["eventId"].(string)
-			if detectionDataType == "sys_execve_exit" {
+			if detectionDataType == "sys_execve_entry" {
 				execEvent, err2 := n.execEventFromTarianDetector(event, containerID, pod)
 				if err2 != nil {
 					n.logger.WithField("err", err2).Error("tarian-detector: error while converting tarian-detector to execEvent")
@@ -252,6 +254,8 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 						n.logger.WithField("err", err3).Error("node-agent: error while handling exec event")
 					}
 				}
+
+				n.logger.WithField("execEvent", execEvent).WithField("event", event).Info("DEBUG")
 			}
 
 			byteData, err := json.Marshal(event)
@@ -261,8 +265,6 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 			}
 
 			n.SendDetectionEventToClusterAgent(detectionDataType, string(byteData))
-			n.logger.WithField("binary_file_path", event["directory"]).WithField("hostProcessId", event["hostProcessId"]).
-				WithField("processId", event["processId"]).WithField("comm", event["processName"]).Info("tarian-detector: ", detectionDataType)
 		}
 	}
 }
@@ -324,11 +326,25 @@ func (n *NodeAgent) execEventFromTarianDetector(bpfEvt map[string]any, container
 	podLabels = pod.GetLabels()
 	podAnnotations = pod.GetAnnotations()
 
+	execFileName := bpfEvt["directory"].(string) + "/" + bpfEvt["processName"].(string)
+	if eventContext, ok := bpfEvt["context"].([]eventparser.Arg); ok {
+		for _, c := range eventContext {
+			if c.Name == "filename" {
+				execFileName = c.Value
+				break
+			}
+		}
+	}
+
+	// Running on kubernetes, bpfEvt["processName"] contains `runc:[2:INIT]`
+	// So, we take the command from the executable filename instead.
+	command := filepath.Base(execFileName)
+
 	// Create an ExecEvent and send it to the events channel.
 	execEvent := &ExecEvent{
 		Pid:               pid,
-		Filename:          bpfEvt["directory"].(string) + "/" + bpfEvt["processName"].(string),
-		Command:           bpfEvt["processName"].(string),
+		Filename:          execFileName,
+		Command:           command,
 		ContainerID:       containerID,
 		K8sPodName:        podName,
 		K8sPodUID:         podUID,
