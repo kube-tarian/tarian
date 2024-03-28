@@ -138,6 +138,7 @@ jobs:
       - name: Install Tarian
         run: |
           set -x
+          bash ./dev/kernel-version-script.sh
           ./bin/tarianctl install --charts ./charts -l debug --agents-values ./dev/values/agents.yaml --server-values ./dev/values/server.yaml
         continue-on-error: true
 
