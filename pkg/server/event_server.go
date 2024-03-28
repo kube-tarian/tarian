@@ -48,7 +48,7 @@ func NewEventServer(logger *logrus.Logger, s store.EventStore, ingestionQueue pr
 func (es *EventServer) IngestEvent(ctx context.Context, request *tarianpb.IngestEventRequest) (*tarianpb.IngestEventResponse, error) {
 	es.logger.WithFields(logrus.Fields{
 		"request": request,
-	}).Debug("ingest event")
+	}).Trace("ingest event")
 
 	event := request.GetEvent()
 	if event == nil {
