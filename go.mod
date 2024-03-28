@@ -120,4 +120,4 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 )
 
-replace github.com/intelops/tarian-detector => github.com/andylibrian/tarian-detector v0.0.0-20240314095358-bd4d5419e74a
+replace github.com/intelops/tarian-detector => github.com/andylibrian/tarian-detector v0.0.0-20240328042403-0ad0b29f56cf
