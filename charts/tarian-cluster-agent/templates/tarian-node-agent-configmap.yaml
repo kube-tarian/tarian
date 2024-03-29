@@ -12,7 +12,7 @@ data:
     # Extract major and minor version
     LINUX_VERSION_MAJOR=$(echo "$KERNEL_VERSION" | cut -d'.' -f1)
     LINUX_VERSION_MINOR=$(echo "$KERNEL_VERSION" | cut -d'.' -f2)
-    LINUX_VERSION_PATCH=$(echo "$kernel_version" | cut -d'.' -f3)
+    LINUX_VERSION_PATCH=$(echo "$KERNEL_VERSION" | cut -d'.' -f3)
     
     # Export major and minor version as environment variables
     export LINUX_VERSION_MAJOR
