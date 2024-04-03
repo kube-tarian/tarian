@@ -41,21 +41,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
-        - name: LINUX_VERSION_MAJOR
-          valueFrom:
-            configMapKeyRef:
-              name: kernel-version-script
-              key: get-kernel-version.sh
-        - name: LINUX_VERSION_MINOR
-          valueFrom:
-            configMapKeyRef:
-              name: kernel-version-script
-              key: get-kernel-version.sh
-        - name: LINUX_VERSION_PATCH
-          valueFrom:
-            configMapKeyRef:
-              name: kernel-version-script
-              key: get-kernel-version.sh
       serviceAccountName: {{ .Release.Name }}-node-sa
       volumes:
       - name: host-proc

@@ -36,12 +36,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
-        - name: LINUX_VERSION_MAJOR
-          value: "6"
-        - name: LINUX_VERSION_MINOR
-          value: "5"
-        - name: LINUX_VERSION_PATCH
-          value: "0"
       serviceAccountName: tarian-node-agent
       volumes:
       - name: host-proc

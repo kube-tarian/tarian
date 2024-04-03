@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/cilium/ebpf/rlimit"
@@ -13,6 +14,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
+
+type Uname struct {
+	ub syscall.Utsname
+}
 
 type runCommand struct {
 	globalFlags *flags.GlobalFlags
@@ -66,15 +71,14 @@ func (c *runCommand) run(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("host proc is not mounted: %w", err)
 	}
 
+	c.setLinuxKernelVersion()
+
 	if err := rlimit.RemoveMemlock(); err != nil {
 		c.logger.Fatal(err)
 	}
 
 	addr := c.clusterAgentHost + ":" + c.clusterAgentPort
 	agent := nodeagent.NewNodeAgent(c.logger, addr)
-	/*if err != nil {
-		return fmt.Errorf("error while creating tarian-node-agent: %w", err)
-	}*/
 	agent.EnableAddConstraint(c.enableAddConstraint)
 	agent.SetNodeName(c.nodeNmae)
 
@@ -93,4 +97,42 @@ func (c *runCommand) run(_ *cobra.Command, args []string) error {
 	c.logger.Info("tarian-node-agent shutdown gracefully")
 
 	return nil
+}
+
+// setLinuxKernelVersion sets the Linux kernel version by parsing the uname information.
+func (c *runCommand) setLinuxKernelVersion() {
+	u := &Uname{}
+	err := syscall.Uname(&u.ub)
+
+	if err != nil {
+		c.logger.Fatal("error while making syscall to get linux kernel version, err: ", err)
+	}
+
+	linuxKernelVersion := charsToString(u.ub.Release[:])
+	strArr := strings.Split(linuxKernelVersion, ".")
+	majorVersion := strArr[0]
+	minorVersion := strArr[1]
+	patch := strArr[2]
+	// Split to get the patch version
+	strArr = strings.Split(patch, "-")
+	patchVersion := strArr[0]
+	os.Setenv("LINUX_VERSION_MAJOR", majorVersion)
+	os.Setenv("LINUX_VERSION_MINOR", minorVersion)
+	os.Setenv("LINUX_VERSION_PATCH", patchVersion)
+}
+
+// charsToString converts an array of int8 to a string.
+//
+// ca []int8: the array of int8 to be converted.
+// string: the resulting string from the conversion.
+func charsToString(ca []int8) string {
+	s := make([]byte, len(ca))
+	var i int
+	for ; i < len(ca); i++ {
+		if ca[i] == 0 {
+			break
+		}
+		s[i] = uint8(ca[i])
+	}
+	return string(s[0:i])
 }
