@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Uname contains system uname information.
 type Uname struct {
 	ub syscall.Utsname
 }
@@ -71,7 +72,10 @@ func (c *runCommand) run(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("host proc is not mounted: %w", err)
 	}
 
-	c.setLinuxKernelVersion()
+	if err := c.setLinuxKernelVersion(); err != nil {
+		c.logger.WithError(err).Error("failed to set linux kernel version")
+		return fmt.Errorf("failed to set linux kernel version: %w", err)
+	}
 
 	if err := rlimit.RemoveMemlock(); err != nil {
 		c.logger.Fatal(err)
@@ -100,25 +104,36 @@ func (c *runCommand) run(_ *cobra.Command, args []string) error {
 }
 
 // setLinuxKernelVersion sets the Linux kernel version by parsing the uname information.
-func (c *runCommand) setLinuxKernelVersion() {
+func (c *runCommand) setLinuxKernelVersion() error {
 	u := &Uname{}
 	err := syscall.Uname(&u.ub)
 
 	if err != nil {
-		c.logger.Fatal("error while making syscall to get linux kernel version, err: ", err)
+		c.logger.WithField("error while making syscall to get linux kernel version, err: ", err)
+		return fmt.Errorf("error while making syscall to get linux kernel version: %w", err)
 	}
 
 	linuxKernelVersion := charsToString(u.ub.Release[:])
 	strArr := strings.Split(linuxKernelVersion, ".")
+	if len(strArr) < 3 {
+		c.logger.WithField("version", linuxKernelVersion).Fatal("invalid linux kernel version")
+		return fmt.Errorf("invalid linux kernel version: %s", linuxKernelVersion)
+	}
 	majorVersion := strArr[0]
 	minorVersion := strArr[1]
 	patch := strArr[2]
 	// Split to get the patch version
 	strArr = strings.Split(patch, "-")
+	if len(strArr) < 1 {
+		c.logger.WithField("version", linuxKernelVersion).Fatal("invalid linux patch kernel version")
+		return fmt.Errorf("invalid linux kernel patch version: %s", linuxKernelVersion)
+	}
 	patchVersion := strArr[0]
 	os.Setenv("LINUX_VERSION_MAJOR", majorVersion)
 	os.Setenv("LINUX_VERSION_MINOR", minorVersion)
 	os.Setenv("LINUX_VERSION_PATCH", patchVersion)
+
+	return nil
 }
 
 // charsToString converts an array of int8 to a string.

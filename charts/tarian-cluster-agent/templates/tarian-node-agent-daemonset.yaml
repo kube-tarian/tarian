@@ -37,10 +37,10 @@ spec:
           mountPath: /sys/fs/bpf
           mountPropagation: Bidirectional
         env:
-        - name: NODE_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
       serviceAccountName: {{ .Release.Name }}-node-sa
       volumes:
       - name: host-proc

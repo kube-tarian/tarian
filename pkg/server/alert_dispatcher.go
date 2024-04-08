@@ -76,11 +76,9 @@ func NewAlertmanagerClient(amURL *url.URL) *client.Alertmanager {
 func (a *AlertDispatcher) LoopSendAlerts(ctx context.Context, es store.EventStore) {
 	for {
 		events, err := es.FindWhereAlertNotSent()
-
 		if err != nil {
 			a.logger.WithError(err).Error("alertdispatcher: error while finding events to alert")
 		}
-
 		for _, event := range events {
 			if event.GetType() == tarianpb.EventTypeViolation || event.GetType() == tarianpb.EventTypeFalcoAlert {
 				err := a.SendAlert(event)
@@ -90,6 +88,7 @@ func (a *AlertDispatcher) LoopSendAlerts(ctx context.Context, es store.EventStor
 					if err != nil {
 						a.logger.WithError(err).Warn("alertdispatcher: error while updating alert sent")
 					}
+					a.logger.Debug("alertdispatcher: AlertSentAt time upated successfully", event.GetUid())
 				}
 			}
 		}
