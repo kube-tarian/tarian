@@ -338,7 +338,7 @@ func dgraphEventFromPb(pbEvent *tarianpb.Event) (*Event, error) {
 func (d *dgraphEventStore) FindWhereAlertNotSent() ([]*tarianpb.Event, error) {
 	q := fmt.Sprintf(`
 	    {
-			events(func: type(Event)) @filter(not has(event_alert_sent_at)) {
+			events(func: type(Event)) @filter(not eq(event_type, "tarian-detection/detection") AND not has(event_alert_sent_at)) {
 				%s
 			}
 		}

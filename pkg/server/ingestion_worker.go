@@ -4,6 +4,7 @@ import (
 	"github.com/kube-tarian/tarian/pkg/protoqueue"
 	"github.com/kube-tarian/tarian/pkg/store"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
+	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -54,6 +55,8 @@ func (iw *IngestionWorker) Start() {
 		}
 
 		event.ServerTimestamp = timestamppb.Now()
+		uid := uuid.NewV4()
+		event.Uid = uid.String()
 		err = iw.eventStore.Add(event)
 
 		if err != nil {
