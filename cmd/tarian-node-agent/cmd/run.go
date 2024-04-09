@@ -124,10 +124,6 @@ func (c *runCommand) setLinuxKernelVersion() error {
 	patch := strArr[2]
 	// Split to get the patch version
 	strArr = strings.Split(patch, "-")
-	if len(strArr) < 1 {
-		c.logger.WithField("version", linuxKernelVersion).Fatal("invalid linux patch kernel version")
-		return fmt.Errorf("invalid linux kernel patch version: %s", linuxKernelVersion)
-	}
 	patchVersion := strArr[0]
 	os.Setenv("LINUX_VERSION_MAJOR", majorVersion)
 	os.Setenv("LINUX_VERSION_MINOR", minorVersion)
