@@ -80,8 +80,7 @@ test $(kubectl run -ti --restart=Never verify-alerts --image=curlimages/curl -- 
 
 # run command to register constraints
 # multiple times to compensate occassional eBPF missing events
-for i in {1..5}; do kubectl exec -ti nginx2 -c nginx -- pwd; sleep 1; done
-for i in {1..5}; do kubectl exec -ti nginx2 -c nginx -- ls /; sleep 1; done
+kubectl exec -ti nginx2 -c nginx -- bash -c 'for i in {1..200}; do zgrep; sleep 0.1s; done;'
 
 # give time for tarian-cluser-agent to process data from node agents,
 # due to many events generated from tarian-detector
@@ -90,7 +89,7 @@ sleep 5
 tarianctl get constraints
 
 # test register constraint using annotation
-tarianctl get constraints | grep run=nginx2 | grep pwd
+tarianctl get constraints | grep run=nginx2 | grep zgrep
 
 # action
 tarianctl add action --name nginx-delete --match-labels=run=nginx --action=delete-pod
