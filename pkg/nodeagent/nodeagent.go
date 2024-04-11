@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/intelops/tarian-detector/pkg/detector"
+	ebpf "github.com/intelops/tarian-detector/pkg/eBPF"
 	"github.com/intelops/tarian-detector/pkg/eventparser"
 	"github.com/intelops/tarian-detector/tarian"
 	"github.com/kube-tarian/tarian/pkg/tarianpb"
@@ -192,7 +193,7 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 	}
 	podWatcher.Start()
 
-	eventsDetector, err := n.setupEventsDetector()
+	eventsDetector, tarianDetector, tarianEbpfModule, err := n.setupEventsDetector()
 	if err != nil {
 		return err
 	}
@@ -204,6 +205,12 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 		return fmt.Errorf("error while starting tarian-detector: %w", err)
 	}
 	defer eventsDetector.Close()
+
+	// Attaches tarian module programs to the kernel
+	err = tarianEbpfModule.Attach(tarianDetector)
+	if err != nil {
+		return fmt.Errorf("error while attaching tarian-detector: %w", err)
+	}
 
 	for {
 		select {
@@ -220,11 +227,6 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 				continue
 			}
 
-			thisPID := event["processId"].(uint32)
-			if thisPID == 1 {
-				continue
-			}
-
 			pid := event["hostProcessId"].(uint32)
 
 			// Retrieve the container ID.
@@ -237,13 +239,14 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 				continue
 			}
 
+			detectionDataType := event["eventId"].(string)
+
 			// Find the corresponding Kubernetes Pod.
 			pod := podWatcher.FindPod(containerID)
 			if pod == nil {
 				continue
 			}
 
-			detectionDataType := event["eventId"].(string)
 			if detectionDataType == "sys_execve_entry" {
 				execEvent, err2 := n.execEventFromTarianDetector(event, containerID, pod)
 				if err2 != nil {
@@ -257,7 +260,7 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 					}
 				}
 
-				n.logger.WithField("execEvent", execEvent).WithField("event", event).Info("=============== DEBUG")
+				n.logger.WithField("execEvent", execEvent).WithField("event", event).Info("handled exec event")
 			}
 
 			byteData, err := json.Marshal(event)
@@ -271,17 +274,17 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 	}
 }
 
-func (n *NodeAgent) setupEventsDetector() (*detector.EventsDetector, error) {
+func (n *NodeAgent) setupEventsDetector() (*detector.EventsDetector, *ebpf.Handler, *ebpf.Module, error) {
 	tarianEbpfModule, err := tarian.GetModule()
 	if err != nil {
 		n.logger.Errorf("error while get tarian-detector ebpf module: %v", err)
-		return nil, fmt.Errorf("error while get tarian-detector ebpf module: %w", err)
+		return nil, nil, nil, fmt.Errorf("error while getting tarian-detector ebpf module: %w", err)
 	}
 
 	tarianDetector, err := tarianEbpfModule.Prepare()
 	if err != nil {
 		n.logger.Errorf("error while prepare tarian-detector: %v", err)
-		return nil, fmt.Errorf("error while prepare tarian-detector: %w", err)
+		return nil, nil, nil, fmt.Errorf("error while preparing tarian-detector: %w", err)
 	}
 
 	// Instantiate event detectors
@@ -290,7 +293,13 @@ func (n *NodeAgent) setupEventsDetector() (*detector.EventsDetector, error) {
 	// Add ebpf programs to detectors
 	eventsDetector.Add(tarianDetector)
 
-	return eventsDetector, nil
+	// Attaches tarian module programs to the kernel
+	err = tarianEbpfModule.Attach(tarianDetector)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("error while preparing tarian-detector: %w", err)
+	}
+
+	return eventsDetector, tarianDetector, tarianEbpfModule, nil
 }
 
 func (n *NodeAgent) setupPodWatcher() (*PodWatcher, error) {
