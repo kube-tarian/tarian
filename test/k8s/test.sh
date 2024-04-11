@@ -59,7 +59,6 @@ kubectl logs deploy/tarian-server -n tarian-system
 tarianctl get events
 
 # need to support both dev/config and charts, there's a naming difference
-kubectl logs `kubectl get ds -n tarian-system -o name` -n tarian-system
 kubectl logs deploy/tarian-cluster-agent -n tarian-system
 
 # assert contains sleep
