@@ -66,7 +66,7 @@ func newActionHandler(logger *logrus.Logger, tarianServerAddress string, opts []
 // QueueEvent queues a Tarian event for processing.
 // It logs the queued event and adds it to the events channel.
 func (ah *actionHandler) QueueEvent(event *tarianpb.Event) {
-	ah.logger.WithField("event", event).Debug("event queued")
+	ah.logger.WithField("event", event).Trace("event queued")
 	ah.eventsChan <- event
 }
 
@@ -85,7 +85,7 @@ func (ah *actionHandler) Run() {
 // ProcessActions processes Tarian actions based on Tarian events.
 // It checks if actions should be executed for each event target and invokes the appropriate action.
 func (ah *actionHandler) ProcessActions(event *tarianpb.Event) {
-	ah.logger.WithField("event", event).Debug("event processed")
+	ah.logger.WithField("event", event).Trace("event processed")
 	if event.GetTargets() == nil {
 		return
 	}
