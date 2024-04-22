@@ -3,6 +3,7 @@ package protoqueue
 import (
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -175,12 +176,30 @@ func (j *JetStream) Publish(queuedMessage proto.Message) error {
 		return fmt.Errorf("nats: jetstream publish: failed to marshal queued message: %w", err)
 	}
 
-	_, err = j.Conn.JSContext.Publish(j.StreamName, data)
+	err = j.publishWithRetry(j.StreamName, data)
 	if err != nil {
 		return fmt.Errorf("nats: jetstream publish: failed to publish message: %w", err)
 	}
 
 	return nil
+}
+
+func (j *JetStream) publishWithRetry(subject string, data []byte) error {
+	maxRetries := 5
+	RetryInterval := 5 * time.Second
+	var err error
+	for i := 0; i < maxRetries; i++ {
+		// Publish message
+		_, err = j.Conn.JSContext.Publish(subject, data)
+		if err == nil {
+			// Message published successfully
+			return nil
+		}
+		log.Printf("Publish attempt %d failed: %v", i+1, err)
+		// Wait before retrying
+		time.Sleep(RetryInterval)
+	}
+	return err
 }
 
 // NextMessage retrieves the next message from the JetStream queue and unmarshals it into the provided protobuf message.
