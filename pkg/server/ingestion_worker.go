@@ -34,33 +34,40 @@ func NewIngestionWorker(logger *logrus.Logger, eventStore store.EventStore, queu
 }
 
 // Start starts the IngestionWorker, continuously processing messages from the ingestion queue.
-//
-// Working:
-// - The IngestionWorker continuously fetches messages from the ingestion queue.
-// - It checks if the message is a valid event.
-// - If it is a valid event, it updates the server timestamp and stores the event in the event store.
-// - If there are errors during processing, they are logged.
+// It uses a goroutine and a buffered channel to read events from the queue in the background.
 func (iw *IngestionWorker) Start() {
-	for {
-		msg, err := iw.IngestionQueue.NextMessage(&tarianpb.Event{})
-		if err != nil {
-			iw.logger.WithError(err).Error("error while processing event")
-			continue
-		}
+	eventChan := make(chan *tarianpb.Event, 1000) // buffered channel with capacity 1000
 
-		event, ok := msg.(*tarianpb.Event)
-		if !ok {
-			iw.logger.WithError(err).Error("error while processing event")
-			continue
-		}
+	go func() {
+		defer close(eventChan) // close the channel on exit
 
-		event.ServerTimestamp = timestamppb.Now()
-		uid := uuid.NewV4()
-		event.Uid = uid.String()
-		err = iw.eventStore.Add(event)
+		for {
+			event, err := iw.IngestionQueue.NextMessage(&tarianpb.Event{})
+			if err != nil {
+				iw.logger.WithError(err).Error("error while processing event")
+				continue
+			}
 
-		if err != nil {
-			iw.logger.WithError(err).Error("error while processing event")
+			eventChan <- event.(*tarianpb.Event)
 		}
+	}()
+
+	go func() {
+		defer iw.logger.Info("stopped consuming events from ingestion queue")
+
+		for event := range eventChan {
+			iw.processEvent(event)
+		}
+	}()
+}
+
+func (iw *IngestionWorker) processEvent(event *tarianpb.Event) {
+	event.ServerTimestamp = timestamppb.Now()
+	uid := uuid.NewV4()
+	event.Uid = uid.String()
+	err := iw.eventStore.Add(event)
+
+	if err != nil {
+		iw.logger.WithError(err).Error("error while processing event")
 	}
 }
