@@ -61,7 +61,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	go.mongodb.org/mongo-driver v1.10.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/net v0.22.0
+	golang.org/x/net v0.23.0
 	golang.org/x/oauth2 v0.18.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
@@ -119,3 +119,5 @@ require (
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 )
+
+replace github.com/intelops/tarian-detector => github.com/andylibrian/tarian-detector v0.0.0-20240314095358-bd4d5419e74a
