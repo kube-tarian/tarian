@@ -223,11 +223,11 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 				continue
 			}
 
-			if event == nil {
+			if event.EventId == "" {
 				continue
 			}
 
-			pid := event["hostProcessId"].(uint32)
+			pid := event.HostProcessId
 
 			// Retrieve the container ID.
 			containerID, err := procsContainerID(pid)
@@ -239,7 +239,7 @@ func (n *NodeAgent) loopTarianDetectorReadEvents(ctx context.Context) error {
 				continue
 			}
 
-			detectionDataType := event["eventId"].(string)
+			detectionDataType := event.EventId
 
 			// Find the corresponding Kubernetes Pod.
 			pod := podWatcher.FindPod(containerID)
@@ -279,6 +279,19 @@ func (n *NodeAgent) setupEventsDetector() (*detector.EventsDetector, *ebpf.Handl
 	if err != nil {
 		n.logger.Errorf("error while get tarian-detector ebpf module: %v", err)
 		return nil, nil, nil, fmt.Errorf("error while getting tarian-detector ebpf module: %w", err)
+	}
+
+	// Temporarily skip read and write syscalls until tarian-detector
+	// is able to reduce the volume of events generated
+	for _, p := range tarianEbpfModule.GetPrograms() {
+		i, err := p.GetName().Info()
+		if err != nil {
+			continue
+		}
+
+		if strings.Contains(i.Name, "tdf_write") || strings.Contains(i.Name, "tdf_read") {
+			p.Disable()
+		}
 	}
 
 	tarianDetector, err := tarianEbpfModule.Prepare()
@@ -322,8 +335,8 @@ func (n *NodeAgent) setupPodWatcher() (*PodWatcher, error) {
 	return watcher, nil
 }
 
-func (n *NodeAgent) execEventFromTarianDetector(bpfEvt map[string]any, containerID string, pod *corev1.Pod) (*ExecEvent, error) {
-	pid := bpfEvt["hostProcessId"].(uint32)
+func (n *NodeAgent) execEventFromTarianDetector(bpfEvt eventparser.TarianDetectorEvent, containerID string, pod *corev1.Pod) (*ExecEvent, error) {
+	pid := bpfEvt.HostProcessId
 
 	var podName string
 	var podUID string
@@ -337,13 +350,11 @@ func (n *NodeAgent) execEventFromTarianDetector(bpfEvt map[string]any, container
 	podLabels = pod.GetLabels()
 	podAnnotations = pod.GetAnnotations()
 
-	execFileName := bpfEvt["directory"].(string) + "/" + bpfEvt["processName"].(string)
-	if eventContext, ok := bpfEvt["context"].([]eventparser.Arg); ok {
-		for _, c := range eventContext {
-			if c.Name == "filename" {
-				execFileName = c.Value
-				break
-			}
+	execFileName := bpfEvt.Executable
+	for _, c := range bpfEvt.Context {
+		if c.Name == "filename" {
+			execFileName = c.Value
+			break
 		}
 	}
 
