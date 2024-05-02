@@ -69,7 +69,7 @@ func (cs *ConfigServer) EnableAddConstraint(value bool) {
 //   - *tarianpb.GetConstraintsResponse: The response containing constraints.
 //   - error: An error if the request fails.
 func (cs *ConfigServer) GetConstraints(reqCtx context.Context, request *tarianpb.GetConstraintsRequest) (*tarianpb.GetConstraintsResponse, error) {
-	cs.logger.Debug("Received get config RPC")
+	cs.logger.Trace("Received get config RPC")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -98,7 +98,7 @@ func (cs *ConfigServer) AddConstraint(reqCtx context.Context, request *tarianpb.
 	defer cancel()
 
 	r, err := cs.configClient.AddConstraint(ctx, request)
-	return r, fmt.Errorf("AddConstraint: %w", err)
+	return r, err
 }
 
 // RemoveConstraint removes a constraint from the Tarian server.
@@ -121,7 +121,7 @@ func (cs *ConfigServer) RemoveConstraint(reqCtx context.Context, request *tarian
 
 	r, err := cs.configClient.RemoveConstraint(ctx, request)
 
-	return r, fmt.Errorf("RemoveConstraint: %w", err)
+	return r, err
 }
 
 // Close closes the gRPC connection.
@@ -187,7 +187,7 @@ func NewEventServer(logger *logrus.Logger, tarianServerAddress string, opts []gr
 //   - *tarianpb.IngestEventResponse: The response indicating the result of ingesting the event.
 //   - error: An error if the request fails.
 func (es *EventServer) IngestEvent(requestContext context.Context, request *tarianpb.IngestEventRequest) (*tarianpb.IngestEventResponse, error) {
-	es.logger.Debug("Received ingest event RPC")
+	es.logger.Trace("Received ingest event RPC")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -195,7 +195,7 @@ func (es *EventServer) IngestEvent(requestContext context.Context, request *tari
 	r, err := es.eventClient.IngestEvent(ctx, request)
 	es.actionHandler.QueueEvent(request.GetEvent())
 
-	return r, fmt.Errorf("IngestEvent: %w", err)
+	return r, err
 }
 
 // Close closes the gRPC connection and cancels the context.
