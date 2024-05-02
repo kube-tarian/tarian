@@ -3,7 +3,6 @@ package protoqueue
 import (
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -189,14 +188,14 @@ func (j *JetStream) publishWithRetry(subject string, data []byte) error {
 	RetryInterval := 5 * time.Second
 	var err error
 	for i := 0; i < maxRetries; i++ {
-		// Publish message
 		_, err = j.Conn.JSContext.Publish(subject, data)
 		if err == nil {
-			// Message published successfully
 			return nil
 		}
-		log.Printf("Publish attempt %d failed: %v", i+1, err)
-		// Wait before retrying
+
+		j.logger.Warn("Publish attempt failed")
+		j.logger.WithError(err).Warnf("Publish attempt %d failed", i+1)
+
 		time.Sleep(RetryInterval)
 	}
 	return err
