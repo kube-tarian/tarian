@@ -13,7 +13,7 @@ import (
 type IngestionWorker struct {
 	eventStore                      store.EventStore
 	IngestionQueue                  protoqueue.QueueSubscriber
-	ingestionQueueForEventDetection protoqueue.QueueSubscriber
+	IngestionQueueForEventDetection protoqueue.QueueSubscriber
 	logger                          *logrus.Logger
 }
 
@@ -30,7 +30,7 @@ func NewIngestionWorker(logger *logrus.Logger, eventStore store.EventStore, queu
 	return &IngestionWorker{
 		eventStore:                      eventStore,
 		IngestionQueue:                  queueSubscriber,
-		ingestionQueueForEventDetection: queueSubscriberForEventDetection,
+		IngestionQueueForEventDetection: queueSubscriberForEventDetection,
 		logger:                          logger,
 	}
 }
@@ -39,7 +39,7 @@ func NewIngestionWorker(logger *logrus.Logger, eventStore store.EventStore, queu
 // It uses a goroutine and a buffered channel to read events from the queue in the background.
 func (iw *IngestionWorker) Start() {
 	go iw.loopConsumeQueue(iw.IngestionQueue)
-	go iw.loopConsumeQueueEventDetection(iw.ingestionQueueForEventDetection)
+	go iw.loopConsumeQueue(iw.IngestionQueueForEventDetection)
 }
 
 func (iw *IngestionWorker) loopConsumeQueue(queue protoqueue.QueueSubscriber) {
@@ -59,13 +59,11 @@ func (iw *IngestionWorker) loopConsumeQueue(queue protoqueue.QueueSubscriber) {
 		}
 	}()
 
-	go func() {
-		defer iw.logger.Info("stopped consuming events from ingestion queue")
+	defer iw.logger.Info("stopped consuming events from ingestion queue")
 
-		for event := range eventChan {
-			iw.processEvent(event)
-		}
-	}()
+	for event := range eventChan {
+		iw.processEvent(event)
+	}
 }
 
 func (iw *IngestionWorker) processEvent(event *tarianpb.Event) {
@@ -76,28 +74,5 @@ func (iw *IngestionWorker) processEvent(event *tarianpb.Event) {
 
 	if err != nil {
 		iw.logger.WithError(err).Error("error while processing event")
-	}
-}
-
-func (iw *IngestionWorker) loopConsumeQueueEventDetection(queue protoqueue.QueueSubscriber) {
-	for {
-		msg, err := queue.NextMessage(&tarianpb.Event{})
-		if err != nil {
-			// iw.logger.WithError(err).Error("error while processing event")
-			continue
-		}
-
-		event, ok := msg.(*tarianpb.Event)
-		if !ok {
-			// iw.logger.WithError(err).Error("error while processing event")
-			continue
-		}
-
-		event.ServerTimestamp = timestamppb.Now()
-		_ = iw.eventStore.Add(event)
-
-		// if err != nil {
-		// iw.logger.WithError(err).Error("error while processing event")
-		// }
 	}
 }
